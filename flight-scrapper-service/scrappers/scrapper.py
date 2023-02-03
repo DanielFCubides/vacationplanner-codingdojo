@@ -6,18 +6,20 @@ from dataclasses import dataclass
 class SearchParams:
     origin: str
     destination: str
-    arrivalDate: str
-    returnDate: str
-    numberOfPersons: int = 1
+    arrival_date: str
+    return_date: str
+    number_of_persons: int = 1
+    checked_baggages: int = 0
+    carry_on_baggages: int = 0
 
 
 @dataclass
 class FlightResult:
     airline: str
-    flightNumber: str
+    flight_number: str
     cost: float
-    arrivalDate: str
-    returnDate: str
+    arrival_date: str
+    return_date: str
 
 
 class Scrapper(ABC):
