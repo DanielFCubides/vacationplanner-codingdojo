@@ -1,0 +1,10 @@
+version: "3.9"
+services:
+  vacation-planner:
+    build: ./vacation_stay_scrapper
+    ports:
+      - "8000:80"
+  flight-scrapper:
+    build: ./flight-scrapper-service
+    ports:
+      - "8001:5000"
