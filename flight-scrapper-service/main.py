@@ -11,7 +11,5 @@ def hello_world():
 
 @app.route("/flights", methods=['GET'])
 def flights():
-    if request.method == 'GET':
-        return [{"hello": "<p>Hello, World!</p>"}, {"hello": "<p>Hello, World!</p>"}, {"hello": "<p>Hello, World!</p>"},
-                {"hello": "<p>Hello, World!</p>"}]
-    return "empty", 404
+    return [{"hello": "<p>Hello, World!</p>"}, {"hello": "<p>Hello, World!</p>"}, {"hello": "<p>Hello, World!</p>"},
+                {"hello": "<p>Hello, World!</p>"}], 200
