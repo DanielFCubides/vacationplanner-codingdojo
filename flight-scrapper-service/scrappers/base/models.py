@@ -11,7 +11,7 @@ class SearchParams(base.SearchParams):
     destination: str
     arrival_date: datetime
     return_date: Optional[datetime] = None
-    number_of_persons: Optional[int] = 1
+    passengers: Optional[int] = 1
     checked_baggages: Optional[int] = 0
     carry_on_baggages: Optional[int] = 0
 
