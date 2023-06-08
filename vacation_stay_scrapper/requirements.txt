@@ -5,3 +5,4 @@ ipython
 pytest
 requests
 uvicorn
+httpx
