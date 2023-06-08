@@ -1,2 +1,7 @@
 fastapi
 pdbpp
+beautifulsoup4
+ipython
+pytest
+requests
+uvicorn

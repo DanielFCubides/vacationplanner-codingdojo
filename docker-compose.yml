@@ -3,8 +3,12 @@ services:
   vacation-planner:
     build: ./vacation_stay_scrapper
     ports:
-      - "8000:80"
+      - "8000:8000"
+    volumes:
+      - ./vacation_stay_scrapper:/app
   flight-scrapper:
     build: ./flight-scrapper-service
     ports:
       - "8001:5000"
+    volumes:
+      - ./flight-scrapper-service:/app
