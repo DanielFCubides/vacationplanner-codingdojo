@@ -1,0 +1,5 @@
+# Base
+requests==2.28.2
+
+# Scrappers
+bs4==0.0.1
