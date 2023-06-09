@@ -76,8 +76,6 @@ class HTTPConnector(Connector):
 
     @staticmethod
     def _validate_response(response: Response):
-        if (
-            HTTPStatus.BAD_REQUEST <= response.status_code
-            <= HTTPStatus.INTERNAL_SERVER_ERROR
-        ):
+        # passthrough for every status code below 400
+        if response.status_code >= HTTPStatus.BAD_REQUEST:
             raise HTTPException(f'{response.status_code}, {response.json()}')

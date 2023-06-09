@@ -6,6 +6,7 @@ import pytest
 from starlette import status
 from starlette.testclient import TestClient
 
+from exceptions import HTTPException
 from main import app
 from utils.connector import HTTPConnector
 
@@ -58,3 +59,22 @@ class TestFlightAPI:
         })
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == []
+
+    def test_flight_services_unavailable(
+        self, client,
+        mock_connector,
+    ):
+        mock_connector.make_request.side_effect = \
+            HTTPException('500, Server Error')
+
+        with pytest.raises(HTTPException) as e:
+            arrival_date = date(2023, 11, 6)
+            client.get('/vacation-plan', params={
+                "origin": "A",
+                "destination": "B",
+                "arrival_date": arrival_date.isoformat(),
+                "passengers": 2,
+                "return_date": (arrival_date + timedelta(days=6)).isoformat(),
+            })
+
+        assert str(e.value) == '500, Server Error'
