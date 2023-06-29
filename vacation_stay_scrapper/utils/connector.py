@@ -5,11 +5,19 @@ from http import HTTPStatus
 from typing import Optional, Union
 
 import requests
+from requests import RequestException
 from requests.models import Response
 
+from constants import MIN_FAILURE_ATTEMPTS, MIN_DELAY_ATTEMPT
 from exceptions import HTTPException
 from utils import logger as default_logger
+from utils.circuit_breaker import CircuitBreaker
 
+circuit_breaker = CircuitBreaker(
+    exceptions=(HTTPException, RequestException),
+    delay=MIN_DELAY_ATTEMPT,
+    failure_attempts=MIN_FAILURE_ATTEMPTS
+)
 
 class Connector(ABC):
 
@@ -48,6 +56,7 @@ class HTTPConnector(Connector):
     def __init__(self, url: str):
         super().__init__(url)
 
+    @circuit_breaker
     def make_request(
         self,
         method: str,
@@ -68,14 +77,13 @@ class HTTPConnector(Connector):
         try:
             response = function(url=f"{self.url}/{service}")
             self._validate_response(response)
-        except HTTPException as e:
+            return response.json()
+        except RequestException as e:
             self.logger.exception(f'{self.__class__.__name__} error:: {str(e)}')
-            raise e
-
-        return response.json()
+            raise HTTPException(e.args[0])
 
     @staticmethod
     def _validate_response(response: Response):
         # passthrough for every status code below 400
         if response.status_code >= HTTPStatus.BAD_REQUEST:
-            raise HTTPException(f'{response.status_code}, {response.json()}')
+            raise HTTPException(f'{response.status_code}, {response.text}')
