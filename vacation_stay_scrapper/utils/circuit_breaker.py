@@ -6,8 +6,11 @@ from typing import Callable, Union
 
 from constants import MIN_DELAY_ATTEMPT, MIN_FAILURE_ATTEMPTS
 from exceptions import HTTPException, UnknownException, ServiceUnavailable
+from utils import logger as default_logger
 
-logger = logging.getLogger(__name__)
+logger = default_logger.setup_logger(
+    logger_name=__name__, log_file=__file__
+)
 
 
 class CircuitBreakerState(str, Enum):
@@ -48,20 +51,38 @@ class CircuitBreaker:
     def handle_error(self, e: Exception):
         if self._actual_failure_attempts >= self.failure_attempts:
             self.state = CircuitBreakerState.OPEN
+            logger.warning(
+                'Error Handling :: maximum retries connection reached '
+                'external service unavailable'
+            )
             raise ServiceUnavailable('Service is not available at the moment')
 
         if type(e) not in self.exceptions:
-            raise UnknownException('Unhandled Error')
+            msg = f'Unknown reason {e.args[0]}'
+            logger.warning(f'Error handling :: {msg}')
+            raise UnknownException(msg)
 
         self._actual_failure_attempts += 1
         self.__last_retry_timestamp = datetime.now()
+        logging.warning(
+            f'Error handling :: '
+            f'trying to reach service after {self._actual_failure_attempts} attempts'
+        )
 
     def handle_recovery(self):
         last_retry = self.__last_retry_timestamp + timedelta(seconds=self.delay)
-        if last_retry <= datetime.now():
+        now = datetime.now()
+        if last_retry <= now:
+            recover_after = now - last_retry
             self.state = CircuitBreakerState.CLOSE
             self.__last_retry_timestamp = None
             self._actual_failure_attempts = 0
+            logger.warning(
+                f'Service Recovery :: '
+                f'service available after {recover_after.seconds} seconds'
+            )
             return
 
-        raise ServiceUnavailable('Service is not available at the moment')
+        msg = 'Service is not available at the moment'
+        logger.warning(f'Service Recovery :: {msg}')
+        raise ServiceUnavailable(msg)

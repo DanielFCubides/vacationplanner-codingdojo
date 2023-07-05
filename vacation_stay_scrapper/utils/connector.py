@@ -66,7 +66,9 @@ class HTTPConnector(Connector):
     ):
         _method = method.lower()
         if _method not in self._allowed_methods:
-            raise HTTPException(f'send function does not support method {method}')
+            msg = f'Connection Interrupted :: method {method} not supported'
+            self.logger.error(f'Connection Interrupted :: {msg}')
+            raise HTTPException(msg)
 
         params = (
             {'json': params}
@@ -74,16 +76,21 @@ class HTTPConnector(Connector):
             else {'data': params}
         )
         function = partial(getattr(requests, _method.lower()), **params)
+        url = f"{self.url}/{service}"
         try:
-            response = function(url=f"{self.url}/{service}")
+            response = function(url=url)
             self._validate_response(response)
             return response.json()
         except RequestException as e:
-            self.logger.exception(f'{self.__class__.__name__} error:: {str(e)}')
+            self.logger.warning(f'Connection Refused :: url: {url} {e.args[0]}')
             raise HTTPException(e.args[0])
 
-    @staticmethod
-    def _validate_response(response: Response):
+    def _validate_response(self, response: Response):
         # passthrough for every status code below 400
         if response.status_code >= HTTPStatus.BAD_REQUEST:
             raise HTTPException(f'{response.status_code}, {response.text}')
+
+        self.logger.debug(
+            f'Connection successfully :: url: {response.url} '
+            f'response: {response.text}'
+        )
