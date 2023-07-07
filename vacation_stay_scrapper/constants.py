@@ -1,0 +1,4 @@
+import os
+
+MIN_DELAY_ATTEMPT = os.environ.get('MIN_DELAY_ATTEMPT', 60)
+MIN_FAILURE_ATTEMPTS = os.environ.get('MIN_FAILURE_ATTEMPTS', 1)
