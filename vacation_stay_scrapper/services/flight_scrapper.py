@@ -1,5 +1,11 @@
 from typing import Any, Union
 from utils.connector import Connector
+from utils import logger as default_logger
+
+
+logger = default_logger.setup_logger(
+    logger_name=__name__, log_file=__file__
+)
 
 
 class FlightScrapper:
@@ -14,13 +20,16 @@ class FlightScrapper:
         response = self._connector.make_request(
             method='GET', service='flights', params=search_params
         )
+        logger.info(
+            f'flight service :: '
+            f'resource flights :: gathering {len(response)} flights'
+        )
         return response
 
     def _validate_search_params(self, search_params: dict[str, Any]):
         missing_params = set(search_params.keys()) & self._search_params
         if not missing_params:
-            raise ValueError(
-                "search_params is missing the required parameters: "
-                f"{self._search_params}"
-            )
+            msg = f'missing {self._search_params} parameters on service flights'
+            logger.error('flight service :: msg')
+            raise ValueError(msg)
 
