@@ -1,0 +1,37 @@
+@startuml
+'https://plantuml.com/component-diagram
+
+'components
+[stay-scrapper]
+[stay-db]
+[avianca]
+[Latam]
+[united]
+
+[flight-scrapper]
+[flight-db]
+[booking]
+[airbnb]
+[hostel central]
+actor user
+
+'conectors
+
+[stay-scrapper] -- [stay-db]
+[stay-scrapper] -- [avianca]
+[stay-scrapper] -- [Latam]
+[stay-scrapper] -- [united]
+
+
+[flight-scrapper] -- [flight-db]
+[flight-scrapper] -- [booking]
+[flight-scrapper] -- [airbnb]
+[flight-scrapper] -- [hostel central]
+
+
+[flight-scrapper] -- [stay-scrapper] #red
+user -- [stay-scrapper]
+
+
+
+@enduml

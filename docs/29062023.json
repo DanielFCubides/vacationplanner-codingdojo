@@ -1,0 +1,379 @@
+[
+  {
+    "user": "2as6d87sad67y87asdf",
+    "account": "1",
+    "location": "main.py - line 21",
+    "timestamp": "2023-05-01 10:30:15",
+    "level": "ERROR",
+    "type": "HttpConnection",
+    "message": "Failed to connect to external service: example.com/api - Connection timed out."
+  },
+  {
+    "timestamp": "2023-05-01 10:32:20",
+    "level": "INFO",
+    "type": "HttpConnection",
+    "message": "Successfully connected to external service: example.com/api."
+  },
+  {
+    "timestamp": "2023-05-01 10:34:55",
+    "level": "INFO",
+    "type": "Flights",
+    "message": "Found 5 flights between the dates 2023-06-15 and 2023-06-20."
+  },
+  {
+    "timestamp": "2023-05-01 10:35:10",
+    "level": "INFO",
+    "type": "Stays",
+    "message": "Found 10 stays between the dates 2023-07-01 and 2023-07-10."
+  },
+  {
+    "timestamp": "2023-05-01 10:36:45",
+    "level": "ERROR",
+    "type": "HttpConnection",
+    "message": "Failed to connect to external service: example.com/api - Connection refused."
+  },
+  {
+    "timestamp": "2023-05-01 10:37:50",
+    "level": "INFO",
+    "type": "HttpConnection",
+    "message": "Successfully connected to external service: example.com/api."
+  },
+  {
+    "timestamp": "2023-05-01 10:38:15",
+    "level": "INFO",
+    "type": "Flights",
+    "message": "Found 2 flights between the dates 2023-06-25 and 2023-06-30."
+  },
+  {
+    "timestamp": "2023-05-01 10:40:05",
+    "level": "INFO",
+    "type": "Stays",
+    "message": "Found 8 stays between the dates 2023-07-15 and 2023-07-20."
+  },
+  {
+    "timestamp": "2023-05-01 10:41:30",
+    "level": "ERROR",
+    "type": "HttpConnection",
+    "message": "Failed to connect to external service: example.com/api - DNS resolution failed."
+  },
+  {
+    "timestamp": "2023-05-01 10:42:45",
+    "level": "INFO",
+    "type": "HttpConnection",
+    "message": "Successfully connected to external service: example.com/api."
+  },
+  {
+    "timestamp": "2023-05-01 10:43:10",
+    "level": "INFO",
+    "type": "Flights",
+    "message": "Found 7 flights between the dates 2023-06-10 and 2023-06-15."
+  },
+  {
+    "timestamp": "2023-05-01 10:44:25",
+    "level": "INFO",
+    "type": "Stays",
+    "message": "Found 12 stays between the dates 2023-07-05 and 2023-07-15."
+  },
+  {
+    "timestamp": "2023-05-01 10:44:25",
+    "level": "INFO",
+    "type": "Stays",
+    "message": "Found 12 stays between the dates 2023-07-05 and 2023-07-15."
+  },
+  {
+    "timestamp": "2023-05-01 10:46:55",
+    "level": "INFO",
+    "type": "HttpConnection",
+    "message": "Successfully connected to external service: example.com/api."
+  },
+  {
+    "timestamp": "2023-05-01 10:47:20",
+    "level": "INFO",
+    "type": "Flights",
+    "message": "Found 3 flights between the dates 2023-06-20 and 2023-06-25."
+  },
+  {
+    "timestamp": "2023-05-01 10:48:35",
+    "level": "INFO",
+    "type": "Stays",
+    "message": "Found 9 stays between the dates 2023-07-10 and 2023-07-15."
+  },
+  {
+    "timestamp": "2023-05-01 10:50:00",
+    "level": "ERROR",
+    "type": "HttpConnection",
+    "message": "Failed to connect to external service: example.com/api - Server responded with a 500 Internal Server Error."
+  },
+  {
+    "timestamp": "2023-05-01 10:51:05",
+    "level": "INFO",
+    "type": "HttpConnection",
+    "message": "Successfully connected to external service: example.com/api."
+  },
+  {
+    "timestamp": "2023-05-01 10:51:30",
+    "level": "INFO",
+    "type": "Flights",
+    "message": "Found 4 flights between the dates 2023-06-30 and 2023-07-05."
+  },
+  {
+    "timestamp": "2023-05-01 10:52:45",
+    "level": "INFO",
+    "type": "Stays",
+    "message": "Found 11 stays between the dates 2023-07-01 and 2023-07-10."
+  },
+  {
+    "timestamp": "2023-05-01 10:54:10",
+    "level": "INFO",
+    "type": "HttpConnection",
+    "message": "Successfully connected to external service: example.com/api."
+  },
+  {
+    "timestamp": "2023-05-01 10:54:35",
+    "level": "ERROR",
+    "type": "HttpConnection",
+    "message": "Failed to connect to external service: example.com/api - Request timeout."
+  },
+  {
+    "timestamp": "2023-05-01 10:55:40",
+    "level": "INFO",
+    "type": "Flights",
+    "message": "Found 6 flights between the dates 2023-06-15 and 2023-06-20."
+  },
+  {
+    "timestamp": "2023-05-01 10:57:20",
+    "level": "INFO",
+    "type": "Stays",
+    "message": "Found 9 stays between the dates 2023-07-05 and 2023-07-15."
+  },
+  {
+    "timestamp": "2023-05-01 10:58:45",
+    "level": "INFO",
+    "type": "HttpConnection",
+    "message": "Successfully connected to external service: example.com/api."
+  },
+  {
+    "timestamp": "2023-05-01 10:59:10",
+    "level": "INFO",
+
+
+    "type": "Flights",
+    "message": "Found 3 flights between the dates 2023-06-25 and 2023-06-30."
+  },
+  {
+    "timestamp": "2023-05-01 11:00:25",
+    "level": "INFO",
+    "type": "Stays",
+    "message": "Found 7 stays between the dates 2023-07-10 and 2023-07-15."
+  },
+  {
+    "timestamp": "2023-05-01 11:01:50",
+    "level": "INFO",
+    "type": "HttpConnection",
+    "message": "Successfully connected to external service: example.com/api."
+  },
+  {
+    "timestamp": "2023-05-01 11:02:15",
+    "level": "ERROR",
+    "type": "HttpConnection",
+    "message": "Failed to connect to external service: example.com/api - Connection reset by peer."
+  },
+  {
+    "timestamp": "2023-05-01 11:03:20",
+    "level": "INFO",
+    "type": "Flights",
+    "message": "Found 2 flights between the dates 2023-06-10 and 2023-06-15."
+  },
+  {
+    "timestamp": "2023-05-01 11:04:35",
+    "level": "INFO",
+    "type": "Stays",
+    "message": "Found 10 stays between the dates 2023-07-01 and 2023-07-10."
+  },
+  {
+    "timestamp": "2023-05-01 11:05:50",
+    "level": "INFO",
+    "type": "HttpConnection",
+    "message": "Successfully connected to external service: example.com/api."
+  },
+  {
+    "timestamp": "2023-05-01 11:07:05",
+    "level": "INFO",
+    "type": "Flights",
+    "message": "Found 5 flights between the dates 2023-06-20 and 2023-06-25."
+  },
+  {
+    "timestamp": "2023-05-01 11:08:20",
+    "level": "INFO",
+    "type": "Stays",
+    "message": "Found 8 stays between the dates 2023-07-15 and 2023-07-20."
+  },
+  {
+    "timestamp": "2023-05-01 11:09:45",
+    "level": "INFO",
+    "type": "HttpConnection",
+    "message": "Successfully connected to external service: example.com/api."
+  },
+  {
+    "timestamp": "2023-05-01 11:10:10",
+    "level": "ERROR",
+    "type": "HttpConnection",
+    "message": "Failed to connect to external service: example.com/api - Host unreachable."
+  },
+  {
+    "timestamp": "2023-05-01 11:11:15",
+    "level": "INFO",
+    "type": "Flights",
+    "message": "Found 4 flights between the dates 2023-06-30 and 2023-07-05."
+  },
+  {
+    "timestamp": "2023-05-01 11:12:30",
+    "level": "INFO",
+    "type": "Stays",
+    "message": "Found 12 stays between the dates 2023-07-05 and 2023-07-15."
+  },
+  {
+    "timestamp": "2023-05-01 11:15:00",
+    "level": "INFO",
+    "type": "HttpConnection",
+    "message": "Successfully connected to external service: example.com/api."
+  },
+  {
+    "timestamp": "2023-05-01 11:15:25",
+    "level": "INFO",
+    "type": "Flights",
+    "message": "Found 7 flights between the dates 2023-06-15 and 2023-06-20."
+  },
+  {
+    "timestamp": "2023-05-01 11:17:05",
+    "level": "INFO",
+    "type": "Stays",
+    "message": "Found 9 stays between the dates 2023-07-01 and 2023-07-10."
+  },
+  {
+    "timestamp": "2023-05-01 11:18:30",
+    "level": "ERROR",
+    "type": "HttpConnection",
+    "message": "Failed to connect to external service: example.com/api - SSL certificate validation error."
+  },
+  {
+    "timestamp": "2023-05-01 11:19:35",
+    "level": "INFO",
+    "type": "HttpConnection",
+    "message": "Successfully connected to external service: example.com/api."
+  },
+  {
+    "timestamp": "2023-05-01 11:20:00",
+    "level": "INFO",
+    "type": "Flights",
+    "message": "Found 3 flights between the dates 2023-06-25 and 2023-06-30."
+  },
+  {
+    "timestamp": "2023-05-01 11:21:15",
+    "level": "INFO",
+    "type": "Stays",
+    "message": "Found 7 stays between the dates 2023-07-10 and 2023-07-15."
+  },
+  {
+    "timestamp": "2023-05-01 11:22:40",
+    "level": "ERROR",
+    "type": "HttpConnection",
+    "message": "Failed to connect to external service: example.com/api - Connection timeout."
+  },
+  {
+    "timestamp": "2023-05-01 11:23:45",
+    "level": "INFO",
+    "type": "HttpConnection",
+    "message": "Successfully connected to external service: example.com/api."
+  },
+  {
+    "timestamp": "2023-05-01 11:24:10",
+    "level": "INFO",
+    "type": "Flights",
+    "message": "Found 6 flights between the dates 2023-06-20 and 2023-06-25."
+  },
+  {
+    "timestamp": "2023-05-01 11:25:25",
+    "level": "INFO",
+    "type": "Stays",
+    "message": "Found 10 stays between the dates 2023-07-05 and 2023-07-15."
+  },
+  {
+    "timestamp": "2023-05-01 11:26:50",
+    "level": "INFO",
+    "type": "HttpConnection",
+    "message": "Successfully connected to external service: example.com/api."
+  },
+  {
+    "timestamp": "2023-05-01 11:28:20",
+    "level": "INFO",
+    "type": "Flights",
+    "message": "Found 5 flights between the dates 2023-06-15 and 2023-06-20."
+  },
+  {
+    "timestamp": "2023-05-01 11:30:00",
+    "level": "INFO",
+    "type": "Stays",
+    "message": "Found 9 stays between the dates 2023-07-01 and 2023-07-10."
+  },
+  {
+    "timestamp": "2023-05-01 11:31:25",
+    "level": "INFO",
+    "type": "HttpConnection",
+    "message": "Successfully connected to external service: example.com/api."
+  },
+  {
+    "timestamp": "2023-05-01 11:31:50",
+    "level": "INFO",
+    "type": "Flights",
+    "message": "Found 2 flights between the dates 2023-06-25 and 2023-06-30."
+  },
+  {
+    "timestamp": "2023-05-01 11:33:05",
+    "level": "INFO",
+    "type": "Stays",
+    "message": "Found 7 stays between the dates 2023-07-10 and 2023-07-15."
+  },
+  {
+    "timestamp": "2023-05-01 11:34:30",
+    "level": "ERROR",
+    "type": "HttpConnection",
+    "message": "Failed to connect to external service: example.com/api - DNS resolution failed."
+  },
+  {
+    "timestamp": "2023-05-01 11:35:35",
+    "level": "INFO",
+    "type": "HttpConnection",
+    "message": "Successfully connected to external service: example.com/api."
+  },
+  {
+    "timestamp": "2023-05-01 11:36:00",
+    "level": "INFO",
+    "type": "Flights",
+    "message": "Found 3 flights between the dates 2023-06-10 and 2023-06-15."
+  },
+  {
+    "timestamp": "2023-05-01 11:37:15",
+    "level": "INFO",
+    "type": "Stays",
+    "message": "Found 11 stays between the dates 2023-07-01 and 2023-07-10."
+  },
+  {
+    "timestamp": "2023-05-01 11:38:40",
+    "level": "INFO",
+    "type": "HttpConnection",
+    "message": "Successfully connected to external service: example.com/api."
+  },
+  {
+    "timestamp": "2023-05-01 11:39:05",
+    "level": "ERROR",
+    "type": "HttpConnection",
+    "message": "Failed to connect to external service: example.com/api - SSL certificate verification failed."
+  },
+  {
+    "timestamp": "2023-05-01 11:40:10",
+    "level": "INFO",
+    "type": "Flights",
+    "message": "Found 4 flights between the dates 2023-06-30 "
+  }
+]
