@@ -24,7 +24,7 @@ def get_vacation_plan(
     arrival_date: date,
     passengers: int = 1, return_date: date | None = None,
     checked_baggage: int = 0, carry_on_baggage: int = 1,
-) -> list[Union[dict | None]]:
+) -> Union[list[None], list[dict], dict]:
     flights = flight_services.get_flights(
         search_params={
             "origin": origin,

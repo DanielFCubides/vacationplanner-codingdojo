@@ -58,7 +58,7 @@ class TestFlightAPI:
         assert response.json() == mock_response
 
     def test_get_no_flights(self, client, mock_connector):
-        mock_connector.make_request.return_value = []
+        mock_connector.make_request.return_value = {"flights": []}
 
         arrival_date = date(2023, 11, 6)
         response = client.get('/vacation-plan', params={
@@ -69,7 +69,7 @@ class TestFlightAPI:
             "return_date": (arrival_date + timedelta(days=6)).isoformat(),
         })
         assert response.status_code == status.HTTP_200_OK
-        assert response.json() == []
+        assert response.json() == {"flights": []}
 
     def test_flight_services_unavailable(
         self, client,
@@ -90,20 +90,20 @@ class TestFlightAPI:
 
         assert str(e.value) == '500, Server Error'
 
-    def test_flight_services_circuit_breaker(self, client, mock_requests_get):
-        mock_requests_get.get.side_effect = HTTPException('400, Bad Request')
+    def test_flight_services_graceful_degradation(self, client, mock_requests_get):
+        # make mock responds the same exception over a for loop
+        mock_requests_get.get.side_effect = [HTTPException, HTTPException]
         for attempt in range(MIN_FAILURE_ATTEMPTS + 1):
             try:
-                client.get('/vacation-plan', params={
+                response = client.get('/vacation-plan', params={
                     "origin": "A",
                     "destination": "B",
                     "arrival_date": datetime.now().date().isoformat(),
                     "passengers": 2,
                     "return_date": (datetime.now().date() + timedelta(days=6)).isoformat(),
                 })
+                assert response.json().get('message')
+                assert response.json().get('search_params')
             except (HTTPException, ServiceUnavailable) as e:
-                # After a MIN_FAILURE_ATTEMPTS is reached, exception has to be
-                # of type ServiceUnavailable with circuit breaker pattern
                 if not isinstance(e, ServiceUnavailable):
                     continue
-                assert str(e.args[0]) == 'Service is not available at the moment'

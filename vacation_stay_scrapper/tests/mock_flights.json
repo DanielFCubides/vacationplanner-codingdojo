@@ -1,4 +1,5 @@
-[
+{
+   "flights": [
    {
      "departureDate":"2023-07-04",
      "returnDate":"2023-07-11",
@@ -111,5 +112,6 @@
         ]
      },
      "fareFamilyCode":"XS"
-   }
-]
+  }
+   ]
+}
