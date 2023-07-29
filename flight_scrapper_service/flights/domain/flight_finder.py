@@ -4,7 +4,7 @@ from flights.application.search import (
 )
 from utils import loggers
 
-logger = loggers.setup_logger()
+logger = loggers.setup_logger(logger_name=__name__)
 
 
 class FlightFinder:
