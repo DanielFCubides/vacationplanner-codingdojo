@@ -1,7 +1,10 @@
-from typing import Union
-from flight_scrapper_service.flights.application.search import (
+from typing import Tuple, Union
+from flights.application.search import (
     FlightsRepository
 )
+from utils import loggers
+
+logger = loggers.setup_logger()
 
 
 class FlightFinder:
@@ -18,7 +21,8 @@ class FlightFinder:
             self, 
             *, 
             id_fly: int
-    ) -> Union[(dict, list), int]:
+    ) -> Tuple[dict | list, int]:
+        logger.info('Start the service with a repository')
         return self.repository.get(
             id_fly=id_fly
         )

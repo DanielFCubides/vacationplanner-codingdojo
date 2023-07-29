@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Union
+from typing import Tuple, Union
 
 
 class FlightsRepository(ABC):
@@ -10,7 +10,7 @@ class FlightsRepository(ABC):
         *, 
         id_fly: int, 
         **kwargs
-    ) -> Union[(dict, list), int]:
+    ) -> Tuple[dict | list, int]:
         """
         Obtain a flight with all information
         """

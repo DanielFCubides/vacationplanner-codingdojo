@@ -1,9 +1,12 @@
-from typing import Union
-from flight_scrapper_service.constants import RESPONSES_FLYING
-from flight_scrapper_service.flights.application.search import (
+from typing import Tuple, Union
+from constants import RESPONSES_FLYING
+from flights.application.search import (
     FlightsRepository
 )
 from http import HTTPStatus
+from utils import loggers
+
+logger = loggers.setup_logger()
 
 class FlightFinderWithConstant(FlightsRepository):
 
@@ -12,13 +15,16 @@ class FlightFinderWithConstant(FlightsRepository):
         *, 
         id_fly: int, 
         **kwargs
-    ) -> Union[(dict, list), int]:
-        
+    ) -> Tuple[dict | list, int]:
+        logger.info(f'Start getting a response with id {id_fly}')
         if id_fly <= 4:
-            return RESPONSES_FLYING[id_fly], HTTPStatus.OK.value 
+            logger.info('Get a correct response')
+            return RESPONSES_FLYING[id_fly], HTTPStatus.OK.value
         
         elif id_fly == 5:
+            logger.warning('Get a bad request')
             return {"t": "Hello World"}, HTTPStatus.BAD_REQUEST.value
         
         else:
+            logger.exception('Get an internal server error')
             return {}, HTTPStatus.INTERNAL_SERVER_ERROR.value

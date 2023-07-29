@@ -1,10 +1,8 @@
-from flask import Flask
-from flask import request
-from fastapi.responses import JSONResponse
+from flask import Flask, jsonify
 import random
 
-from flight_scrapper_service.flights.domain.flight_finder import FlightFinder
-from flight_scrapper_service.flights.infrastructure.flight_finder import FlightFinderWithConstant
+from flights.domain.flight_finder import FlightFinder
+from flights.infrastructure.flight_finder import FlightFinderWithConstant
 
 app = Flask(__name__)
 
@@ -24,4 +22,4 @@ def flights():
         id_fly=id_fly
     )
 
-    return JSONResponse(content=data, status=status)
+    return jsonify(data), status
