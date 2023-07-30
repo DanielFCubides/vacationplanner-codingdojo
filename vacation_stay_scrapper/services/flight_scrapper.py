@@ -20,14 +20,22 @@ class FlightScrapper:
     @exception_handler.handle_exception
     def get_flights(
         self, search_params: dict[str, Any]
-    ) -> Union[list[None], list[dict], dict]:
+    ) -> dict:
+        response = {'flights': []}
         self._validate_search_params(search_params)
-        response = self._connector.make_request(
-            method='GET', service='flights', params=search_params
+        _response = self._connector.make_request(
+            method='POST', service='flights', params=search_params
         )
+
+        if isinstance(_response, list):
+            response['flights'] = _response
+
+        if isinstance(_response, dict):
+            response['flights'].append(_response)
+
         _logger.info(
             f'flight service :: '
-            f'resource flights :: gathering {len(response.get("flights", []))} flights'
+            f'resource flights :: gathering {len(response.get("flights"))} flights'
         )
         return response
 

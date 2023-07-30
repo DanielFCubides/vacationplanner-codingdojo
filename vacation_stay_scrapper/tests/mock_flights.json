@@ -1,5 +1,4 @@
-{
-   "flights": [
+[
    {
      "departureDate":"2023-07-04",
      "returnDate":"2023-07-11",
@@ -38,7 +37,7 @@
      },
      "fareFamilyCode":"XS"
    },
-  {
+   {
      "departureDate":"2023-10-20",
      "returnDate":"2023-10-26",
      "prices":{
@@ -76,7 +75,7 @@
      },
      "fareFamilyCode":"XS"
    },
-  {
+   {
      "departureDate":"2023-11-06",
      "returnDate":"2023-11-15",
      "prices":{
@@ -112,6 +111,5 @@
         ]
      },
      "fareFamilyCode":"XS"
-  }
-   ]
-}
+   }
+]
