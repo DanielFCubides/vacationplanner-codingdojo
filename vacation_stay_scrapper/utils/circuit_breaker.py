@@ -8,9 +8,7 @@ from constants import MIN_DELAY_ATTEMPT, MIN_FAILURE_ATTEMPTS
 from exceptions import HTTPException, UnknownException, ServiceUnavailable
 from utils import logger as default_logger
 
-logger = default_logger.setup_logger(
-    logger_name=__name__, log_file=__file__
-)
+logger = default_logger.setup_logger(logger_name=__name__)
 
 
 class CircuitBreakerState(str, Enum):

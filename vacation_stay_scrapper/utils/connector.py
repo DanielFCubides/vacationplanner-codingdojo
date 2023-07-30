@@ -28,12 +28,13 @@ class Connector(ABC):
         logger_formatter: Optional[logging.Formatter] = None
     ):
         self.url = url
+        if self.url.endswith('/'):
+            self.url = self.url[:-1]
         self._get_logger(formatter=logger_formatter)
 
     def _get_logger(self, formatter: logging.Formatter):
         logger = default_logger.setup_logger(
-            logger_name=__name__, log_file=__file__,
-            formatter=formatter
+            logger_name=__name__, formatter=formatter
         )
         self.logger = logger
 
