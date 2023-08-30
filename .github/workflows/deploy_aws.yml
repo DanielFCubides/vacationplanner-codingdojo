@@ -12,13 +12,30 @@ env:
   ECS_CLUSTER: vacationplanner
   ECS_TASK_DEFINITION: vacation_stay_planner_definition
   CONTAINER_NAME: vacation_stay_planner
+  DIRECTORY: vacation_stay_scrapper,flight-scrapper-service
 
 
 #permissions:
 #  contents: read
 
+
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        directory: ${{fromJson(env.DIRECTORY)}}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Build Docker image from ${{ matrix.directory }}
+      run: |
+        docker build -t test-image-${{ matrix.directory }} ./${{ matrix.directory }}
+
   deploy:
+    needs: [test]
     name: Deploy
     runs-on: ubuntu-latest
     #environment: production
