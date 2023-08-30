@@ -57,7 +57,8 @@ jobs:
       #  container-name: ${{ env.CONTAINER_NAME }}
       #  image: ${{ steps.build-image.outputs.image }}
       run: |
-        aws ecs describe-task-definition --task-definition ${{ env.ECS_TASK_DEFINITION }} > task-definition.json
+        aws ecs describe-task-definition --task-definition ${{ env.ECS_TASK_DEFINITION }} \
+          --query taskDefinition > task-definition.json
 
     - name: Deploy Amazon ECS task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
