@@ -11,7 +11,7 @@ env:
   ECS_SERVICE: vacation_stay_scrapper
   ECS_CLUSTER: vacation-planner
   ECS_TASK_DEFINITION: vacation-planner
-  CONTAINER_NAME: vacation_stay_scrapper
+  CONTAINER_NAME: vacation_stay_planner
 
 
 #permissions:
