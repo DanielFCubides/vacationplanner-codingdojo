@@ -63,26 +63,11 @@ jobs:
         container-name: ${{ env.CONTAINER_NAME }}
         image: ${{ steps.build-image.outputs.image }}
 
-    - name: Deploy AWS ECS Service
-      uses: icalia-actions/deploy-aws-ecs-service@v0.0.7
-      env:
-        TARGET_GROUP_ARN: arn:aws:elasticloadbalancing:us-east-1:821173069804:targetgroup/vacation-planner/3044d905e37592b4
-        LOAD_BALANCER_NAME: vacation-planner
+    - name: Deploy to Amazon ECS
+      id: deploy-to-ecs
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
-        name: ${{ env.ECS_SERVICE }}
+        task-definition: task-definition.json
+        service: ${{ env.ECS_SERVICE }}
         cluster: ${{ env.ECS_CLUSTER }}
-        desired-count: 1
-        definition-template: task-definition.json
-        load-balancers: |-
-          [
-            {
-              "targetGroupArn":$TARGET_GROUP_ARN,
-              "containerName":$CONTAINER_NAME
-              "containerPort":8000
-            },
-            {
-              "loadBalancerName":$LOAD_BALANCER_NAME
-              "containerName":$CONTAINER_NAME,
-              "containerPort":8000
-            }
-          ]
+        wait-for-service-stability: true
