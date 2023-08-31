@@ -76,13 +76,13 @@ jobs:
         load-balancers: |-
           [
             {
-              "targetGroupArn":${{ TARGET_GROUP_ARN }},
-              "containerName":${{ CONTAINER_NAME }}
+              "targetGroupArn":$TARGET_GROUP_ARN,
+              "containerName":$CONTAINER_NAME
               "containerPort":8000
             },
             {
-              "loadBalancerName":${{ LOAD_BALANCER_NAME }}
-              "containerName":${{ CONTAINER_NAME }},
+              "loadBalancerName":$LOAD_BALANCER_NAME
+              "containerName":$CONTAINER_NAME,
               "containerPort":8000
             }
           ]
