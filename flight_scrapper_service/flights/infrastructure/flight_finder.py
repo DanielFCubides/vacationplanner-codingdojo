@@ -18,13 +18,22 @@ class FlightFinderWithConstant(FlightsRepository):
     ) -> Tuple[dict | list, int]:
         logger.info(f'Start getting a response with id {id_fly}')
         if id_fly <= 4:
-            logger.info('Get a correct response')
-            return RESPONSES_FLYING[id_fly], HTTPStatus.OK.value
+            info = (RESPONSES_FLYING[id_fly], HTTPStatus.OK.value)
+            logger.info(
+                f'Get a correct response :: flights {info[0]} and status {info[1]}'
+            )
+            return info
         
         elif id_fly == 5:
-            logger.warning('Get a bad request')
-            return {"t": "Hello World"}, HTTPStatus.BAD_REQUEST.value
+            info = {"t": "Hello World"}, HTTPStatus.BAD_REQUEST.value
+            logger.warning(
+                f'Get a bad request :: flights {info[0]} and status {info[1]}'
+            )
+            return info
         
         else:
-            logger.exception('Get an internal server error')
-            return {}, HTTPStatus.INTERNAL_SERVER_ERROR.value
+            info = {}, HTTPStatus.INTERNAL_SERVER_ERROR.value
+            logger.exception(
+                f'Get an internal server error :: flights {info[0]} and status {info[1]}'
+            )
+            return info
