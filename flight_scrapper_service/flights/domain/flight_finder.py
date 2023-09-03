@@ -22,7 +22,6 @@ class FlightFinder:
             *, 
             id_fly: int
     ) -> Tuple[dict | list, int]:
-        logger.info('Start the service with a repository')
         return self.repository.get(
             id_fly=id_fly
         )
