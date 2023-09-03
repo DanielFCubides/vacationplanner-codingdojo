@@ -2,7 +2,7 @@
 RESPONSES_FLYING = {
     1: {
      "departureDate":"2023-07-04",
-     "returnDate":"2023-07-11",
+     "fareFamilyCode":"XS",
      "prices":{
         "unitPrices":[
            {
@@ -36,11 +36,11 @@ RESPONSES_FLYING = {
            }
         ]
      },
-     "fareFamilyCode":"XS"
+     "returnDate":"2023-07-11"
    },
    2: {
      "departureDate":"2023-10-20",
-     "returnDate":"2023-10-26",
+     "fareFamilyCode":"XS",
      "prices":{
         "unitPrices":[
            {
@@ -74,11 +74,11 @@ RESPONSES_FLYING = {
            }
         ]
      },
-     "fareFamilyCode":"XS"
+     "returnDate":"2023-10-26"
    },
    3: {
      "departureDate":"2023-11-06",
-     "returnDate":"2023-11-15",
+     "fareFamilyCode":"XS",
      "prices":{
         "unitPrices":[
            {
@@ -111,12 +111,12 @@ RESPONSES_FLYING = {
            }
         ]
      },
-     "fareFamilyCode":"XS"
+     "returnDate":"2023-11-15"
    },
    4: [
    {
      "departureDate":"2023-07-04",
-     "returnDate":"2023-07-11",
+     "fareFamilyCode":"XS",
      "prices":{
         "unitPrices":[
            {
@@ -150,11 +150,11 @@ RESPONSES_FLYING = {
            }
         ]
      },
-     "fareFamilyCode":"XS"
+     "returnDate":"2023-07-11"
    },
   {
      "departureDate":"2023-10-20",
-     "returnDate":"2023-10-26",
+     "fareFamilyCode":"XS",
      "prices":{
         "unitPrices":[
            {
@@ -188,11 +188,11 @@ RESPONSES_FLYING = {
            }
         ]
      },
-     "fareFamilyCode":"XS"
+     "returnDate":"2023-10-26"
    },
   {
      "departureDate":"2023-11-06",
-     "returnDate":"2023-11-15",
+     "fareFamilyCode":"XS",
      "prices":{
         "unitPrices":[
            {
@@ -225,7 +225,7 @@ RESPONSES_FLYING = {
            }
         ]
      },
-     "fareFamilyCode":"XS"
+     "returnDate":"2023-11-15"
    }
 ]
 }
