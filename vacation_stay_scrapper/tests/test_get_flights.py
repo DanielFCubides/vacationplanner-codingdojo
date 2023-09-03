@@ -28,10 +28,10 @@ def mock_connector(monkeypatch):
     return mock
 
 @pytest.fixture
-def mock_requests_get(monkeypatch):
+def mock_requests_post(monkeypatch):
     mock = MagicMock(spec=requests)
     monkeypatch.setattr(
-        'requests.get',
+        'requests.post',
         mock.get
     )
     return mock
@@ -42,11 +42,11 @@ class TestFlightAPI:
     def test_get_flights(self, client, mock_connector):
         with open('tests/mock_flights.json', 'r') as file:
             data = json.load(file)
-            mock_response = data  # assertion variable
+            mock_response = {'flights': data}  # assertion variable
             mock_connector.make_request.return_value = data
 
         arrival_date = date(2023, 7, 4)
-        response = client.get('/vacation-plan', params={
+        response = client.post('/vacation-plan', json={
             "origin": "A",
             "destination": "B",
             "arrival_date": arrival_date.isoformat(),
@@ -61,7 +61,7 @@ class TestFlightAPI:
         mock_connector.make_request.return_value = []
 
         arrival_date = date(2023, 11, 6)
-        response = client.get('/vacation-plan', params={
+        response = client.post('/vacation-plan', json={
             "origin": "A",
             "destination": "B",
             "arrival_date": arrival_date.isoformat(),
@@ -69,7 +69,7 @@ class TestFlightAPI:
             "return_date": (arrival_date + timedelta(days=6)).isoformat(),
         })
         assert response.status_code == status.HTTP_200_OK
-        assert response.json() == []
+        assert not response.json().get('flights')
 
     def test_flight_services_unavailable(
         self, client,
@@ -80,7 +80,7 @@ class TestFlightAPI:
 
         with pytest.raises(HTTPException) as e:
             arrival_date = date(2023, 11, 6)
-            client.get('/vacation-plan', params={
+            client.post('/vacation-plan', json={
                 "origin": "A",
                 "destination": "B",
                 "arrival_date": arrival_date.isoformat(),
@@ -90,20 +90,20 @@ class TestFlightAPI:
 
         assert str(e.value) == '500, Server Error'
 
-    def test_flight_services_circuit_breaker(self, client, mock_requests_get):
-        mock_requests_get.get.side_effect = HTTPException('400, Bad Request')
+    def test_flight_services_graceful_degradation(self, client, mock_requests_post):
+        # make mock responds the same exception over a for loop
+        mock_requests_post.get.side_effect = [HTTPException, HTTPException]
         for attempt in range(MIN_FAILURE_ATTEMPTS + 1):
             try:
-                client.get('/vacation-plan', params={
+                response = client.post('/vacation-plan', json={
                     "origin": "A",
                     "destination": "B",
                     "arrival_date": datetime.now().date().isoformat(),
                     "passengers": 2,
                     "return_date": (datetime.now().date() + timedelta(days=6)).isoformat(),
                 })
+                assert response.json().get('message')
+                assert response.json().get('search_params')
             except (HTTPException, ServiceUnavailable) as e:
-                # After a MIN_FAILURE_ATTEMPTS is reached, exception has to be
-                # of type ServiceUnavailable with circuit breaker pattern
                 if not isinstance(e, ServiceUnavailable):
                     continue
-                assert str(e.args[0]) == 'Service is not available at the moment'
