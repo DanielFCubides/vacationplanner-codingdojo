@@ -11,17 +11,38 @@ env:
   ECS_SERVICE: vacation_stay_scrapper
   ECS_CLUSTER: vacation-planner
   ECS_TASK_DEFINITION: vacation-planner
-  CONTAINER_NAME: vacation_stay_planner
 
 
-#permissions:
-#  contents: read
+permissions:
+  contents: read
 
 jobs:
+  micro-services:
+    name: Micro Services
+    runs-on: ubuntu-latest
+    outputs:
+      dockerfile_folders: ${{ steps.micro-services.outputs.dockerfile_folders }}
+    steps:
+      - name: Preparing microservices
+        id: micro-services
+        run: |
+          dockerfile_folders=()
+          for folder in */; do
+              if [ -f "$folder/Dockerfile" ]; then
+                  dockerfile_folders+=("$folder")
+              fi
+          done
+          echo "dockerfile_folders=dockerfile_folders" >> $GITHUB_OUTPUT
+
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    #environment: production
+    strategy:
+      matrix:
+        max-parallel: [ 2 ]
+        folders: ${{ fromJson(needs.micro-services.outputs.dockerfile_folders) }}
+        docker_images: ${{ steps.build-image.outputs.image }}
+        task-definitions: ${{ steps.task-def.outputs.task-definition }}
 
     steps:
     - name: Checkout
@@ -44,7 +65,7 @@ jobs:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         IMAGE_TAG: ${{ github.sha }}
       run: |
-        cd vacation_stay_scrapper
+        cd ${{ matrix.folders }}
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
@@ -60,14 +81,14 @@ jobs:
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
         task-definition: task-definition.json
-        container-name: ${{ env.CONTAINER_NAME }}
-        image: ${{ steps.build-image.outputs.image }}
+        container-name: ${{ matrix.folders }}
+        image: ${{ matrix.docker_images }}
 
     - name: Deploy to Amazon ECS
       id: deploy-to-ecs
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
-        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        task-definition: ${{ matrix.task-definitions }}
         service: ${{ env.ECS_SERVICE }}
         cluster: ${{ env.ECS_CLUSTER }}
         wait-for-service-stability: true
