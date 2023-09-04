@@ -7,8 +7,8 @@ services:
     volumes:
       - ./vacation_stay_scrapper:/app
   flight-scrapper:
-    build: ./flight-scrapper-service
+    build: ./flight_scrapper_service
     ports:
       - "8001:5000"
     volumes:
-      - ./flight-scrapper-service:/app
+      - ./flight_scrapper_service:/app
