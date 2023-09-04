@@ -23,16 +23,16 @@ jobs:
     outputs:
       dockerfile_folders: ${{ steps.micro-services.outputs.dockerfile_folders }}
     steps:
-      - name: Preparing microservices
-        id: micro-services
-        run: |
-          dockerfile_folders=()
-          for folder in */; do
-              if [ -f "$folder/Dockerfile" ]; then
-                  dockerfile_folders+=("$folder")
-              fi
-          done
-          echo "dockerfile_folders=dockerfile_folders" >> $GITHUB_OUTPUT
+    - name: Preparing microservices
+      id: micro-services
+      run: |
+        dockerfile_folders=()
+        for folder in */; do
+            if [ -f "$folder/Dockerfile" ]; then
+                dockerfile_folders+=("$folder")
+            fi
+        done
+        echo "dockerfile_folders=dockerfile_folders" >> $GITHUB_OUTPUT
 
   deploy:
     name: Deploy
