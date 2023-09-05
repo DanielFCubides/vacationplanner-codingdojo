@@ -29,6 +29,7 @@ jobs:
         dockerfile_folders=()
         for folder in */; do
             if [ -f "$folder/Dockerfile" ]; then
+                echo "Image to build: $folder"
                 dockerfile_folders+=("$folder")
             fi
         done
@@ -41,8 +42,6 @@ jobs:
       matrix:
         max-parallel: [ 2 ]
         folders: ${{ fromJson(needs.micro-services.outputs.dockerfile_folders) }}
-        docker_images: ${{ steps.build-image.outputs.image }}
-        task-definitions: ${{ steps.task-def.outputs.task-definition }}
 
     steps:
     - name: Checkout
@@ -65,6 +64,7 @@ jobs:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         IMAGE_TAG: ${{ github.sha }}
       run: |
+        echo ${{ matrix.folders }} 
         cd ${{ matrix.folders }}
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
@@ -82,13 +82,13 @@ jobs:
       with:
         task-definition: task-definition.json
         container-name: ${{ matrix.folders }}
-        image: ${{ matrix.docker_images }}
+        image: ${{ steps.build-image.outputs.image }}
 
     - name: Deploy to Amazon ECS
       id: deploy-to-ecs
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
-        task-definition: ${{ matrix.task-definitions }}
+        task-definition: ${{ steps.task-def.outputs.task-definition
         service: ${{ env.ECS_SERVICE }}
         cluster: ${{ env.ECS_CLUSTER }}
         wait-for-service-stability: true
