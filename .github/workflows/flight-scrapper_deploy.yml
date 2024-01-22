@@ -51,6 +51,7 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Download task definition
+        id: download-task-def
         run: |
           aws ecs describe-task-definition --task-definition ${{ env.ECS_TASK_DEFINITION }} --query taskDefinition > task-definition.json
           TASK_DEF_ARN=$(jq -r ".taskDefinitionArn" task-definition.json)
@@ -82,7 +83,7 @@ jobs:
                   --service-name $ECS_SERVICE \
                   --launch-type FARGATE \
                   --desired-count 1 \
-                  --task-definition ${{ steps.update-task-def.outputs.task-definition }} \
+                  --task-definition ${{ steps.download-task-def.outputs.task-definition }} \
                   --network-configuration "awsvpcConfiguration={subnets=${{ vars.SUBNETS_IDS }} ,securityGroups=${{ vars.SECURITY_GROUPS }},assignPublicIp=DISABLED}" \
                   --scheduling-strategy REPLICA
               echo "service=$ECS_SERVICE" >> $GITHUB_OUTPUT
