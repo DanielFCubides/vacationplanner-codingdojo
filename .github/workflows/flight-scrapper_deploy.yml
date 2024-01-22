@@ -65,7 +65,7 @@ jobs:
       - name: Check ECS Service
         id: check-ecs-services
         run: |
-          ECS_SERVICE=flight-scrapper
+          ECS_SERVICE=flight_scrapper
           existing_services=$(aws ecs list-services --cluster ${{ env.ECS_CLUSTER }} --query "serviceArns[]" --output text)
       
           if echo "$existing_services" | grep -q "$ECS_SERVICE"; then
@@ -78,11 +78,11 @@ jobs:
               aws ecs create-service \
                   --cluster ${{ env.ECS_CLUSTER }} \
                   --service-name $ECS_SERVICE \
-                  --launch-type "FARGATE" \
+                  --launch-type FARGATE \
                   --desired-count 1 \
                   --task-definition ${{ steps.update-task-def.outputs.task-definition }} \
                   --network-configuration "awsvpcConfiguration={subnets=${{ env.SUBNETS_IDS }} ,securityGroups=${{ env.SECURITY_GROUPS }},assignPublicIp=DISABLED}" \
-                  --scheduling-strategy "REPLICA"
+                  --scheduling-strategy REPLICA
               echo "service=$ECS_SERVICE" >> $GITHUB_OUTPUT
               echo "Deploying service $ECS_SERVICE..."
           fi
