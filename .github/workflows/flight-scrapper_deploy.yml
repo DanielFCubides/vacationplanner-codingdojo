@@ -32,7 +32,7 @@ jobs:
       - name: Set Docker Tag
         id: docker-tag
         run: |
-          echo "docker_tag=${{ env.DOCKER_HUB_REGISTRY }}/flight-scrapper:${{ github.sha }}" >> $GITHUB_ENV
+          echo "docker_tag=${{ env.DOCKER_HUB_REGISTRY }}/flight-scrapper:${{ github.sha }}" >> $GITHUB_OUTPUT
 
       - name: Build and push
         id: build-and-push
@@ -71,7 +71,7 @@ jobs:
           if echo "$existing_services" | grep -q "$ECS_SERVICE"; then
               echo "Service $ECS_SERVICE already exists."
               echo "service=$ECS_SERVICE" >> $GITHUB_OUTPUT
-               echo "run_service=true" >> $GITHUB_OUTPUT
+              echo "run_service=true" >> $GITHUB_OUTPUT
           else
               echo "run_service=false" >> $GITHUB_OUTPUT
               echo "Creating service $ECS_SERVICE..."
