@@ -53,6 +53,8 @@ jobs:
       - name: Download task definition
         run: |
           aws ecs describe-task-definition --task-definition ${{ env.ECS_TASK_DEFINITION }} --query taskDefinition > task-definition.json
+          TASK_DEF_ARN=$(jq -r ".taskDefinitionArn" task-definition.json)
+          echo "task_definition_arn=$TASK_DEF_ARN" >> $GITHUB_OUTPUT
 
       - name: update task definition
         id: update-task-def
