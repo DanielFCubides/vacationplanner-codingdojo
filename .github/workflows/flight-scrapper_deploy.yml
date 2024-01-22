@@ -29,12 +29,18 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME_SEBAS }}
           password: ${{ secrets.DOCKER_PASSWORD_SEBAS }}
 
+      - name: Set Docker Tag
+        id: docker-tag
+        run: |
+          echo "DOCKER_TAG=${{ env.DOCKER_HUB_REGISTRY }}/flight-scrapper:${{ github.sha }}" >> $GITHUB_ENV
+          echo "::set-output name=tag::${{ DOCKER_TAG }}"
+
       - name: Build and push
         id: build-and-push
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: ${{ env.DOCKER_HUB_REGISTRY }}/flight-scrapper:${{ github.sha }}
+          tags: ${{ steps.docker-tag.outputs.tag }}
           context: ./flight_scrapper_service
           file: ./flight_scrapper_service/Dockerfile
 
@@ -55,7 +61,7 @@ jobs:
         with:
           task-definition: task-definition.json
           container-name: flight-scrapper
-          image: ${{ steps.build-and-push.outputs.tags }}
+          image: ${{ steps.docker-tag.outputs.tag }}
 
       - name: Check ECS Service
         id: check-ecs-services
