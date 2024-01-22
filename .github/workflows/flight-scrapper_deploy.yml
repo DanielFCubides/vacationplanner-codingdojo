@@ -75,7 +75,7 @@ jobs:
           else
               echo "run_service=false" >> $GITHUB_OUTPUT
               echo "Creating service $ECS_SERVICE..."
-              aws ecs create-service \s
+              aws ecs create-service \
                   --cluster ${{ env.ECS_CLUSTER }} \
                   --service-name $ECS_SERVICE \
                   --launch-type "FARGATE" \
