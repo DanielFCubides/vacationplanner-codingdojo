@@ -83,7 +83,7 @@ jobs:
                   --service-name $ECS_SERVICE \
                   --launch-type FARGATE \
                   --desired-count 1 \
-                  --task-definition ${{ steps.download-task-def.outputs.task_definition_arn }} \
+                  --task-definition ${{ steps.update-task-def.outputs.task-definition }} \
                   --network-configuration "awsvpcConfiguration={subnets=${{ vars.SUBNETS_IDS }} ,securityGroups=${{ vars.SECURITY_GROUPS }},assignPublicIp=DISABLED}" \
                   --scheduling-strategy REPLICA
               echo "service=$ECS_SERVICE" >> $GITHUB_OUTPUT
