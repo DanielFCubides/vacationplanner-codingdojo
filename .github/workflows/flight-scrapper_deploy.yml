@@ -1,0 +1,101 @@
+name: Flight Scrapper deploy system
+run-name: flight-scrapper-deploy
+
+on:
+  pull_request:
+    branches:
+      - main
+
+
+env:
+  ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+  ECS_TASK_DEFINITION: ${{ vars.FLIGHT_SERVICE_TASK_DEFINITION }}
+  DOCKER_HUB_REGISTRY: ${{ vars.DOCKER_HUB_REGISTRY_SEBAS }}
+
+permissions:
+  contents: read
+
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME_SEBAS }}
+          password: ${{ secrets.DOCKER_PASSWORD_SEBAS }}
+
+      - name: Set Docker Tag
+        id: docker-tag
+        run: |
+          echo "docker_tag=${{ env.DOCKER_HUB_REGISTRY }}/flight-scrapper:${{ github.sha }}" >> $GITHUB_OUTPUT
+
+      - name: Build and push
+        id: build-and-push
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: ${{ steps.docker-tag.outputs.docker_tag }}
+          context: ./flight_scrapper_service
+          file: ./flight_scrapper_service/Dockerfile
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Download task definition
+        id: download-task-def
+        run: |
+          aws ecs describe-task-definition --task-definition ${{ env.ECS_TASK_DEFINITION }} --query taskDefinition > task-definition.json
+          TASK_DEF_ARN=$(jq -r ".taskDefinitionArn" task-definition.json)
+          echo "task_definition_arn=$TASK_DEF_ARN" >> $GITHUB_OUTPUT
+
+      - name: update task definition
+        id: update-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: flight-scrapper
+          image: ${{ steps.docker-tag.outputs.docker_tag }}
+
+      - name: Check ECS Service
+        id: check-ecs-services
+        run: |
+          ECS_SERVICE=flight_scrapper
+          existing_services=$(aws ecs list-services --cluster ${{ env.ECS_CLUSTER }} --query "serviceArns[]" --output text)
+      
+          if echo "$existing_services" | grep -q "$ECS_SERVICE"; then
+              echo "Service $ECS_SERVICE already exists."
+              echo "service=$ECS_SERVICE" >> $GITHUB_OUTPUT
+              echo "run_service=true" >> $GITHUB_OUTPUT
+          else
+              echo "run_service=false" >> $GITHUB_OUTPUT
+              echo "Creating service $ECS_SERVICE..."
+              aws ecs create-service \
+                  --cluster ${{ env.ECS_CLUSTER }} \
+                  --service-name $ECS_SERVICE \
+                  --launch-type FARGATE \
+                  --desired-count 1 \
+                  --task-definition ${{ steps.update-task-def.outputs.task-definition }} \
+                  --network-configuration "awsvpcConfiguration={subnets=${{ vars.SUBNETS_IDS }} ,securityGroups=${{ vars.SECURITY_GROUPS }},assignPublicIp=DISABLED}" \
+                  --scheduling-strategy REPLICA
+              echo "service=$ECS_SERVICE" >> $GITHUB_OUTPUT
+              echo "Deploying service $ECS_SERVICE..."
+          fi
+
+      - name: Deploy to Amazon ECS
+        id: deploy
+        if: ${{ steps.check-ecs-services.outputs.run_service == 'true' }}
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.update-task-def.outputs.task-definition }}
+          service: ${{ steps.check-ecs-services.outputs.service }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
