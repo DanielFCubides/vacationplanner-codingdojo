@@ -11,31 +11,33 @@ env:
   ECS_SERVICE: vacation_stay_scrapper
   ECS_CLUSTER: vacation-planner
   ECS_TASK_DEFINITION: vacation-planner
+  CONTAINER_NAME: vacation_stay_planner
+  DIRECTORY: vacation_stay_scrapper,flight-scrapper-service
+
+
 
 
 permissions:
   contents: read
 
+
 jobs:
-  micro-services:
-    name: Micro Services
+  test:
     runs-on: ubuntu-latest
-    outputs:
-      dockerfile_folders: ${{ steps.micro-services.outputs.dockerfile_folders }}
+    strategy:
+      matrix:
+        directory: ${{fromJson(env.DIRECTORY)}}
+
     steps:
-    - name: Preparing microservices
-      id: micro-services
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Build Docker image from ${{ matrix.directory }}
       run: |
-        dockerfile_folders=()
-        for folder in */; do
-            if [ -f "$folder/Dockerfile" ]; then
-                echo "Image to build: $folder"
-                dockerfile_folders+=("$folder")
-            fi
-        done
-        echo "dockerfile_folders=dockerfile_folders" >> $GITHUB_OUTPUT
+        docker build -t test-image-${{ matrix.directory }} ./${{ matrix.directory }}
 
   deploy:
+    needs: [test]
     name: Deploy
     runs-on: ubuntu-latest
     strategy:
