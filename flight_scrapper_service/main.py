@@ -1,6 +1,7 @@
 from flask import Flask, jsonify
 import random
 
+from scrappers.airline1 import airline_scrapper
 from flights.domain.flight_finder import FlightFinder
 from flights.infrastructure.flight_finder import (
     FlightFinderWithConstant
@@ -12,6 +13,13 @@ app = Flask(__name__)
 @app.route("/")
 def hello_world():
     return {"hello": "<p>Hello, World!</p>"}
+
+
+@app.route("/airline1")
+def airline1():
+    repository = airline_scrapper.AirlineSearch()
+    result = repository.get_flights()
+    return result
 
 
 @app.route("/flights", methods=['GET'])
