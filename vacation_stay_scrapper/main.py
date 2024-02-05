@@ -25,7 +25,7 @@ class SearchParams(BaseModel):
 
 @app.get('/')
 def index():
-    return {'message': 'hello world'}
+    return {'message': 'health-check'}, status.HTTP_200_OK
 
 
 @app.post('/vacation-plan', status_code=status.HTTP_200_OK)
