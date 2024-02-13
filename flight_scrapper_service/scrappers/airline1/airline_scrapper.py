@@ -1,4 +1,5 @@
 import time
+from datetime import date
 from typing import List
 
 from selenium import webdriver
@@ -9,6 +10,7 @@ from selenium.webdriver.common.by import By
 class AirlineSearch:
     def __init__(self):
         self.driver = webdriver.Chrome()
+
     def get_info_site(self):
         driver = webdriver.Chrome()
         driver.get("http://www.python.org")
@@ -43,3 +45,29 @@ class AirlineSearch:
         driver.close()
 
         return result
+
+    def get_flights_search(
+        self,
+        initial_departure_time: date,
+        arrival_departure_time: date,
+        from_: str,
+        to: str,
+        passengers: int
+    ):
+        url = "https://booking.avianca.com/av/booking/avail"
+        custom_headers = {
+            "user-agent":
+                "Mozilla / 5.0(Macintosh;IntelMacOSX10_15_7) AppleWebKit / 537.36(KHTML, likeGecko) Chrome / 121.0.0.0Safari / 537.36"
+        }
+        query_parameters = (
+            f"departureDate={initial_departure_time.strftime('%Y-%m-%d')}&tripType=round-trip&from={from_}&to={to}&nbAdults={passengers}"
+            f"&nbChildren=0&nbInfants=0&language=ES&returnDate={arrival_departure_time.strftime('%Y-%m-%d')}"
+            f"&promoCode=&negoFare=&overrides=%7B%22enableFlexCancelTeaser%22:%22true%22,%22useHPP%22:%22true%22%7D&accessMethod=default&backend=PRD"
+        )
+        _url = f"{url}?{query_parameters}"
+        self.driver.get(_url)
+        time.sleep(2)
+        print(self.driver.title)
+        print(_url)
+
+        return self.driver.title
