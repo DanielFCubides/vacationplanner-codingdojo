@@ -9,6 +9,6 @@ services:
   flight-scrapper:
     build: ./flight_scrapper_service
     ports:
-      - "8001:5000"
+      - "8001:8080"
     volumes:
       - ./flight_scrapper_service:/app

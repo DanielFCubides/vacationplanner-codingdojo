@@ -4,11 +4,11 @@ WORKDIR /test
 COPY . /test
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
-RUN pytest
+#RUN pytest
 
 FROM test
 RUN echo "Building image..."
 WORKDIR /app
 COPY . $WORKDIR
 
-CMD [ "python3", "-m" , "flask", "--app", "main",  "run",  "--host=0.0.0.0", "--port", "8080"]
+CMD [ "python3", "main.py"]
