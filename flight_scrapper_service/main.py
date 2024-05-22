@@ -3,15 +3,20 @@ import string
 from flask import Flask, jsonify
 import random
 
+from graphql_server.flask import GraphQLView
+
 from flights.domain.flight_finder import FlightFinder
 from flights.infrastructure.flight_finder import (
     FlightFinderWithConstant
 )
 
 from presentations.grpc.grpc_hello_world import serve
+from presentations.graphql import schema
+
 
 REST = "rest"
 GRPC = "grpc"
+GRAPHQL = "graphql"
 
 
 def create_app(method: string):
@@ -36,13 +41,28 @@ def create_app(method: string):
         return app
     if method == GRPC:
         return serve()
+    if method == GRAPHQL:
+        app = Flask(__name__)
+
+        app.add_url_rule(
+            '/graphql',
+            view_func=GraphQLView.as_view(
+                'graphql',
+                schema=schema.my_schema,
+                graphiql=True  # Habilita la interfaz GraphiQL
+            )
+
+        )
+
+        return app
 
 
-method = GRPC
+
+method = GRAPHQL
 app = create_app(method)
 
 if __name__ == "__main__":
-    if method == REST:
+    if method == REST or method == GRAPHQL:
         app.run(host="0.0.0.0", port=8080, debug=True)
     if method == GRPC:
         app()

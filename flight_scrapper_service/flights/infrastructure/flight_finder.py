@@ -37,3 +37,10 @@ class FlightFinderWithConstant(FlightsRepository):
                 f'Get an internal server error :: flights {info[0]} and status {info[1]}'
             )
             return info
+
+    def get_all(self):
+        flight = RESPONSES_FLYING.values()
+        return flight
+
+
+
