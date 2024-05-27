@@ -1,7 +1,7 @@
 from concurrent import futures
 import grpc
-import service_pb2
-import service_pb2_grpc
+from presentations.grpc import service_pb2
+from presentations.grpc import service_pb2_grpc
 
 
 class Greeter(service_pb2_grpc.GreeterServicer):

@@ -16,13 +16,13 @@ GRPC = "grpc"
 
 def create_app(method: string):
     if method == REST:
-        app = Flask(__name__)
+        app_ = Flask(__name__)
 
-        @app.route("/")
+        @app_.route("/")
         def hello_world():
             return {"hello": "<p>Hello, World!</p>"}
 
-        @app.route("/flights", methods=['GET'])
+        @app_.route("/flights", methods=['GET'])
         def flights():
             id_fly = random.randint(1, 7)
             data, status = FlightFinder(
@@ -33,12 +33,12 @@ def create_app(method: string):
 
             return jsonify(data), status
 
-        return app
+        return app_
     if method == GRPC:
         return serve()
 
 
-method = GRPC
+method = REST
 app = create_app(method)
 
 if __name__ == "__main__":
@@ -46,5 +46,3 @@ if __name__ == "__main__":
         app.run(host="0.0.0.0", port=8080, debug=True)
     if method == GRPC:
         app()
-
-
