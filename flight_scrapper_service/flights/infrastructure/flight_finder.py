@@ -1,12 +1,12 @@
-from typing import Tuple, Union
+from typing import Tuple, Union, Any
 from constants import RESPONSES_FLYING
 from flights.application.search import (
     FlightsRepository
 )
-from http import HTTPStatus
 from utils import loggers
 
 logger = loggers.setup_logger(logger_name=__name__)
+
 
 class FlightFinderWithConstant(FlightsRepository):
 
@@ -15,32 +15,29 @@ class FlightFinderWithConstant(FlightsRepository):
         *, 
         id_fly: int, 
         **kwargs
-    ) -> Tuple[dict | list, int]:
+    ) -> Union[Tuple[dict | list, int], None]:
         logger.info(f'Start getting a response with id {id_fly}')
-        if id_fly <= 4:
-            info = (RESPONSES_FLYING[id_fly], HTTPStatus.OK.value)
+        try:
+            flight = RESPONSES_FLYING[id_fly]
             logger.info(
-                f'Get a correct response :: flights {info[0]} and status {info[1]}'
+                f'Flight found :: flight {id_fly}'
             )
-            return info
-        
-        elif id_fly == 5:
-            info = {"t": "Hello World"}, HTTPStatus.BAD_REQUEST.value
-            logger.warning(
-                f'Get a bad request :: flights {info[0]} and status {info[1]}'
+            return flight
+        except KeyError:
+            logger.error(
+                f'Flight not found :: flight ID {id_fly}'
             )
-            return info
-        
-        else:
-            info = {}, HTTPStatus.INTERNAL_SERVER_ERROR.value
-            logger.exception(
-                f'Get an internal server error :: flights {info[0]} and status {info[1]}'
+            return None
+        except Exception as e:
+            logger.error(
+                f'Unexpected error {e}'
             )
-            return info
+            raise
 
-    def get_all(self):
-        flight = RESPONSES_FLYING.values()
-        return flight
+    def get_all(self) -> list[dict[str, Any]]:
+        flights = RESPONSES_FLYING.values()
+        logger.info(f'Successfully return flights :: flight qty {len(flights)}')
+        return flights
 
 
 
