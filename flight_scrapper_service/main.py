@@ -24,7 +24,7 @@ class ServerTypes(Enum):
 
 def create_app(method: string):
     if method == ServerTypes.REST.value:
-        app = Flask(__name__)
+        app_ = Flask(__name__)
 
 
         @app_.route("/")
@@ -46,7 +46,7 @@ def create_app(method: string):
             except Exception:
                 return {}, 500
 
-        return app
+        return app_
     if method == ServerTypes.GRPC.value:
         return serve()
     if method == ServerTypes.GRAPHQL.value:

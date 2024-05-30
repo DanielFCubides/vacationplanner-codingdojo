@@ -1,4 +1,3 @@
-import webtest
 import json
 import pytest
 

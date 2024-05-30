@@ -9,7 +9,9 @@ services:
     volumes:
       - ./vacation_stay_scrapper:/app
   flight-scrapper:
-    build: ./flight_scrapper_service
+    build:
+      context: ./flight_scrapper_service
+      target: primary
     environment:
       - SERVER=rest
     ports:
