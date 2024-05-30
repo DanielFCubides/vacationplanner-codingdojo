@@ -12,10 +12,11 @@ python -m grpc_tools.protoc -I..\..\vacationplanner-codingdojo\flight_scrapper_s
 
 from flask import Flask, request, jsonify
 import grpc
-import service_pb2
+from presentations.grpc import service_pb2
 import service_pb2_grpc
 
 app = Flask(__name__)
+
 
 @app.route('/greet', methods=['POST'])
 def greet():
@@ -24,6 +25,7 @@ def greet():
         stub = service_pb2_grpc.GreeterStub(channel)
         response = stub.SayHello(service_pb2.HelloRequest(name=name))
     return jsonify(message=response.message)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

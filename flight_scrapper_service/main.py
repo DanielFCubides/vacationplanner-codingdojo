@@ -26,11 +26,12 @@ def create_app(method: string):
     if method == ServerTypes.REST.value:
         app = Flask(__name__)
 
-        @app.route("/")
+
+        @app_.route("/")
         def hello_world():
             return {"hello": "<p>Hello, World!</p>"}
 
-        @app.route("/flights", methods=['GET'])
+        @app_.route("/flights", methods=['GET'])
         def flights():
             id_fly = random.randint(1, 7)
             try:
@@ -66,6 +67,7 @@ def create_app(method: string):
 
 method = ServerTypes(os.getenv('SERVER', ServerTypes.GRPC.value))
 app = create_app(method.value)
+
 
 if __name__ == "__main__":
     if method == ServerTypes.REST or method == ServerTypes.GRAPHQL:

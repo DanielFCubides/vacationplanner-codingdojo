@@ -1,7 +1,9 @@
 from concurrent import futures
 import grpc
+
 from . import service_pb2
 from . import service_pb2_grpc
+
 
 
 class Greeter(service_pb2_grpc.GreeterServicer):

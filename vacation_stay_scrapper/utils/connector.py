@@ -19,6 +19,7 @@ circuit_breaker = CircuitBreaker(
     failure_attempts=MIN_FAILURE_ATTEMPTS
 )
 
+
 class Connector(ABC):
 
     _protocol: str

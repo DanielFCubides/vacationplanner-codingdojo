@@ -1,7 +1,9 @@
 version: "3.9"
 services:
   vacation-planner:
-    build: ./vacation_stay_scrapper
+    build:
+      context: ./vacation_stay_scrapper
+      target: primary
     ports:
       - "8000:8000"
     volumes:
@@ -14,3 +16,13 @@ services:
       - "8001:8080"
     volumes:
       - ./flight_scrapper_service:/app
+
+  vacation-planner-tests:
+    build:
+      context: ./vacation_stay_scrapper
+      target: tests
+
+  flight-scrapper-tests:
+    build:
+      context: ./flight_scrapper_service
+      target: tests
