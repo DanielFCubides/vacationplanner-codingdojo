@@ -10,18 +10,15 @@ logger = loggers.setup_logger(logger_name=__name__)
 class FlightFinder:
 
     def __init__(
-            self,
-            *,
-            repository: FlightsRepository
+        self,
+        *,
+        repository: FlightsRepository
     ):
         self.repository = repository
 
-    
     def search(
-            self, 
-            *, 
-            id_fly: int
+        self,
+        *,
+        id_fly: int
     ) -> Tuple[dict | list, int]:
-        return self.repository.get(
-            id_fly=id_fly
-        )
+        return self.repository.get(id_fly=id_fly)

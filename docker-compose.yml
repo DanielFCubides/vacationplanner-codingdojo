@@ -10,6 +10,8 @@ services:
       - ./vacation_stay_scrapper:/app
   flight-scrapper:
     build: ./flight_scrapper_service
+    environment:
+      - SERVER=rest
     ports:
       - "8001:8080"
     volumes:
