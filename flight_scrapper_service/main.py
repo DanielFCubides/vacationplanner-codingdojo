@@ -14,6 +14,7 @@ from flights.infrastructure.flight_finder import (
 
 from presentations.grpc.grpc_hello_world import serve
 from presentations.interface import schema
+from scrappers.airline1 import airline_scrapper
 
 
 class ServerTypes(Enum):
@@ -26,6 +27,11 @@ def create_app(method: string):
     if method == ServerTypes.REST.value:
         app_ = Flask(__name__)
 
+        @app_.route("/airline1")
+        def airline1():
+            repository = airline_scrapper.AirlineSearch()
+            result = repository.get_flights()
+            return result
 
         @app_.route("/")
         def hello_world():
@@ -65,7 +71,7 @@ def create_app(method: string):
         return app
 
 
-method = ServerTypes(os.getenv('SERVER', ServerTypes.GRPC.value))
+method = ServerTypes(os.getenv('SERVER', ServerTypes.REST.value))
 app = create_app(method.value)
 
 
