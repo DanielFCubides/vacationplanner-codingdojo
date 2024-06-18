@@ -30,8 +30,10 @@ def create_app(method: string):
         @app_.route("/airline1")
         def airline1():
             repository = airline_scrapper.AirlineSearch()
-            result = repository.get_flights()
-            return result
+            repository.get_info_site()
+            # result = repository.get_flights()
+            # return result
+            return "ok", 200
 
         @app_.route("/")
         def hello_world():

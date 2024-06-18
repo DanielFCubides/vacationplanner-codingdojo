@@ -28,3 +28,33 @@ services:
     build:
       context: ./flight_scrapper_service
       target: tests
+
+  selenium-hub:
+    image: selenium/hub:latest
+    environment:
+      - log-level=FINE
+    ports:
+      - "4442:4442"
+      - "4443:4443"
+      - "4444:4444"
+
+  node-1:
+    image: selenium/node-chrome:latest
+    ports:
+      - "5555:5555"
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - log-level=FINE
+
+  node-2:
+    image: selenium/node-chrome:latest
+    ports:
+      - "5556:5555"
+    depends_on:
+      - selenium-hub
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
