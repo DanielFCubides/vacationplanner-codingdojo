@@ -1,11 +1,14 @@
+import json
 import time
 
 import faker
 
+faker = faker.Faker()
+
 
 def stream():
     for i in range(20):
-        fake = faker.Faker()
-        name = fake.name()
+        name = faker.name()
+        print(name)
         time.sleep(1)
-        yield str(name).decode('utf-8')
+        yield f"{name}\n"

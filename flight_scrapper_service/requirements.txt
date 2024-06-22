@@ -73,3 +73,4 @@ Werkzeug==2.2.2
 wmctrl==0.5
 wsproto==1.2.0
 zipp==3.12.0
+faker

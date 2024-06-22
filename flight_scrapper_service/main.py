@@ -3,7 +3,7 @@ import string
 from enum import Enum
 
 import flask
-from flask import Flask, jsonify
+from flask import Flask, jsonify, stream_with_context
 import random
 
 from graphql_server.flask import GraphQLView
@@ -75,7 +75,7 @@ def create_app(method: string):
 
         @app.route('/events', methods=['GET'])
         def events():
-            return flask.Response(sse.stream(), mimetype='text/event-stream')
+            return flask.Response(stream_with_context(sse.stream()), content_type='text/event-stream')
 
         return app
 
