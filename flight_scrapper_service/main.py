@@ -2,7 +2,8 @@ import os
 import string
 from enum import Enum
 
-from flask import Flask, jsonify
+import flask
+from flask import Flask, jsonify, stream_with_context
 import random
 
 from graphql_server.flask import GraphQLView
@@ -14,12 +15,14 @@ from flights.infrastructure.flight_finder import (
 
 from presentations.grpc.grpc_hello_world import serve
 from presentations.interface import schema
+from presentations.ServerSentEvents import sse
 
 
 class ServerTypes(Enum):
     REST = "rest"
     GRPC = "grpc"
     GRAPHQL = "graphql"
+    SSE = "server-sent-events"
 
 
 def create_app(method: string):
@@ -63,14 +66,26 @@ def create_app(method: string):
         )
 
         return app
+    if method == ServerTypes.SSE.value:
+        app = Flask(__name__)
+
+        @app.route("/")
+        def hello_world():
+            return {"hello": "<p>Hello, World!</p>"}
+
+        @app.route('/events', methods=['GET'])
+        def events():
+            return flask.Response(stream_with_context(sse.stream()), content_type='text/event-stream')
+
+        return app
 
 
-method = ServerTypes(os.getenv('SERVER', ServerTypes.GRPC.value))
+method = ServerTypes(os.getenv('SERVER', ServerTypes.SSE.value))
 app = create_app(method.value)
 
 
 if __name__ == "__main__":
-    if method == ServerTypes.REST or method == ServerTypes.GRAPHQL:
+    if method == ServerTypes.REST or method == ServerTypes.GRAPHQL or method == ServerTypes.SSE:
         app.run(host="0.0.0.0", port=8080, debug=True)
     if method == ServerTypes.GRPC:
         app()
