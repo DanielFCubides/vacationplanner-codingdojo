@@ -1,153 +1,36 @@
-RESPONSES_FLYING = {
-    1: {
-        "departureDate": "2023-07-04",
-        "fareFamilyCode": "XS",
-        "prices": {
-            "unitPrices": [
-                {
-                    "travelerIds": [
-                        "ADT-1",
-                        "ADT-2"
-                    ],
-                    "prices": [
-                        {
-                            "base": 1275600,
-                            "total": 1316400,
-                            "currencyCode": "COP",
-                            "totalTaxes": 40800
-                        }
-                    ]
-                }
-            ],
-            "totalPrices": [
-                {
-                    "base": 2551200,
-                    "total": 2632800,
-                    "currencyCode": "COP",
-                    "taxes": [
-                        {
-                            "value": 0,
-                            "currencyCode": "COP",
-                            "code": "YQYR"
-                        }
-                    ],
-                    "totalTaxes": 81600
-                }
-            ]
-        },
-        "returnDate": "2023-07-11"
+from datetime import datetime
+
+FLIGHTS = [
+    {
+        "origin": "JFK",
+        "destination": "LAX",
+        "price": 350.00,
+        "flight_time": "6h 15m",
+        "arrival_date": datetime(2024, 7, 21, 14, 30),
+        "return_date": datetime(2024, 7, 28, 10, 45)
     },
-    2: {
-        "departureDate": "2023-10-20",
-        "fareFamilyCode": "XS",
-        "prices": {
-            "unitPrices": [
-                {
-                    "travelerIds": [
-                        "ADT-1",
-                        "ADT-2"
-                    ],
-                    "prices": [
-                        {
-                            "base": 1275600,
-                            "total": 1316400,
-                            "currencyCode": "COP",
-                            "totalTaxes": 40800
-                        }
-                    ]
-                }
-            ],
-            "totalPrices": [
-                {
-                    "base": 2551200,
-                    "total": 2632800,
-                    "currencyCode": "COP",
-                    "taxes": [
-                        {
-                            "value": 0,
-                            "currencyCode": "COP",
-                            "code": "YQYR"
-                        }
-                    ],
-                    "totalTaxes": 81600
-                }
-            ]
-        },
-        "returnDate": "2023-10-26"
+    {
+        "origin": "LAX",
+        "destination": "ORD",
+        "price": 250.00,
+        "flight_time": "4h 30m",
+        "arrival_date": datetime(2024, 7, 22, 16, 0),
+        "return_date": datetime(2024, 7, 29, 12, 0)
     },
-    3: {
-        "departureDate": "2023-11-06",
-        "fareFamilyCode": "XS",
-        "prices": {
-            "unitPrices": [
-                {
-                    "travelerIds": [
-                        "ADT-1"
-                    ],
-                    "prices": [
-                        {
-                            "base": 1275600,
-                            "total": 1316400,
-                            "currencyCode": "COP",
-                            "totalTaxes": 40800
-                        }
-                    ]
-                }
-            ],
-            "totalPrices": [
-                {
-                    "base": 1275600,
-                    "total": 1316400,
-                    "currencyCode": "COP",
-                    "taxes": [
-                        {
-                            "value": 0,
-                            "currencyCode": "COP",
-                            "code": "YQYR"
-                        }
-                    ],
-                    "totalTaxes": 40800
-                }
-            ]
-        },
-        "returnDate": "2023-11-15"
+    {
+        "origin": "ORD",
+        "destination": "MIA",
+        "price": 200.00,
+        "flight_time": "3h 45m",
+        "arrival_date": datetime(2024, 7, 23, 13, 15),
+        "return_date": datetime(2024, 7, 30, 11, 30)
     },
-    4: {
-        "departureDate": "2023-07-04",
-        "fareFamilyCode": "XS",
-        "prices": {
-            "unitPrices": [
-                {
-                    "travelerIds": [
-                        "ADT-1",
-                        "ADT-2"
-                    ],
-                    "prices": [
-                        {
-                            "base": 1275600,
-                            "total": 1316400,
-                            "currencyCode": "COP",
-                            "totalTaxes": 40800
-                        }
-                    ]
-                }
-            ],
-            "totalPrices": [
-                {
-                    "base": 2551200,
-                    "total": 2632800,
-                    "currencyCode": "COP",
-                    "taxes": [
-                        {
-                            "value": 0,
-                            "currencyCode": "COP",
-                            "code": "YQYR"
-                        }
-                    ],
-                    "totalTaxes": 81600
-                }
-            ]
-        },
-        "returnDate": "2023-07-11"
+    {
+        "origin": "MIA",
+        "destination": "DFW",
+        "price": 180.00,
+        "flight_time": "3h 30m",
+        "arrival_date": datetime(2024, 7, 24, 15, 0),
+        "return_date": datetime(2024, 7, 31, 10, 15)
     }
-}
+]

@@ -2,10 +2,14 @@ from typing import Any
 
 from graphene import Schema, ObjectType, String, Float, List, Field, Int
 
-from flights.infrastructure.flight_finder import FlightFinderWithConstant
+from flights.domain.scrappers.base import create_driver
+from flights.infrastructure.avianca import FlightFinderAvianca
+from utils.urls import DynamicURL
 
-
-flight_repo = FlightFinderWithConstant()
+#flight_repo = FlightFinderAvianca(
+#    url=DynamicURL.from_url('https://www.avianca.com/es/booking/select/'),
+#    scrapper=AviancaScrapper(driver='firefox', create_driver=create_driver)
+#)
 
 
 class Flight(ObjectType):
@@ -30,12 +34,14 @@ class RootQuery(ObjectType):
     flight = Field(Flight, id_=Int())
 
     def resolve_flights(self, info):
-        results = flight_repo.get_all()
-        return results
+        #results = flight_repo.get_all()
+        #return results
+        pass
 
     def resolve_flight(self, info, id_: int):
-        flight = flight_repo.get(id_fly=id_)
-        return flight if flight else None
+        #flight = flight_repo.get(id_fly=id_)
+        #return flight if flight else None
+        pass
 
 
 class Query(ObjectType):
