@@ -9,7 +9,7 @@ class FlightsRepo(ABC):
     def get_flight(
             self,
             *,
-            id_fly: int,
+            id_fly: str,
     ) -> dict:
         """
         Obtain a flight with all information
@@ -31,10 +31,9 @@ class FlightsRepo(ABC):
 class RedisRepo(FlightsRepo):
     client = RedisClient()
 
-    def get_flight(self, *, id_fly: str) -> dict:
-        hash = hashlib.sha1(id_fly.encode('utf8')).hexdigest()
+    def get_flight(self, *, id_flight: str) -> dict:
+        hash = hashlib.sha1(id_flight.encode('utf8')).hexdigest()
         flight = self.client.connection.hgetall(hash)
-        print(flight)
         return flight
 
     def save_flight(self, *, flight: dict) -> int:

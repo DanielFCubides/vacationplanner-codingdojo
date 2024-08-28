@@ -1,11 +1,13 @@
 import json
 import logging
+import random
 from collections import OrderedDict
 
 from flask import Flask, request
 
 from flights.domain.scrappers.models import SearchParams
 from main import dependencies
+from repositories.fligts_repository import RedisRepo
 from utils.urls import DynamicURL
 
 
@@ -15,6 +17,7 @@ logger = logging.getLogger(__name__)
 def create_app():
     app = Flask(__name__)
     app.logger.setLevel(logging.INFO)
+    cache_repo = RedisRepo()
 
     @app.route("/get_flights", methods=['POST'])
     def get_flights():
@@ -57,6 +60,16 @@ def create_app():
     @app.route("/")
     def hello_world():
         return {"hello": "<p>Hello, World!</p>"}
+
+    @app.route("/cache")
+    def cache():
+        # flight_id = str(random.randint(1,5000))
+        # 8b32237f6906db4dafcf1f046dbce2cfe9ea3f21
+        flight_id = str(2631)
+        flight = {"id_flight": flight_id, "from": "BOG", "to": "SMT"}
+        cache_repo.save_flight(flight=flight)
+        fight_output = cache_repo.get_flight(id_flight=flight.get("id_flight"))
+        return {"ok": fight_output}
 
     return app
 
