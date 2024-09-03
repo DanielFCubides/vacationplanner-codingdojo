@@ -1,10 +1,7 @@
-import json
 import logging
-from datetime import datetime
 from decimal import Decimal
 from typing import Callable, Any, Union
 
-import requests
 from selenium.webdriver.common.by import By
 from selenium.common import exceptions
 from selenium.webdriver.remote.webelement import WebElement
@@ -111,43 +108,3 @@ class AviancaScrapper(Scrapper):
             for flight in flights
         ]
         return results
-
-
-# class Scrapper1(Scrapper):
-#
-#     def get_flights(self, url: DynamicURL, body, api_key) -> list[FlightResults | None]:
-#         response = requests.post(
-#             url,
-#             data=json.dumps(body),
-#             headers={
-#                 'apiKey': api_key,
-#                 'Content-Type': 'application/json',
-#                 'User-Agent': 'PostmanRuntime/7.40.0'
-#             }
-#         )
-#         if response.status_code != 200:
-#             return []
-#         data = response.json()
-#         flight_options = []
-#
-#         for response in data.get("journeyPriceResponses", []):
-#             for schedule in response.get("schedules", []):
-#                 for journey in schedule.get("journeys", []):
-#                     departure_date = self.parse_datetime(journey.get("std"))
-#                     arrival_date = self.parse_datetime(journey.get("sta"))
-#                     for segment in journey.get("segments", []):
-#                         flight_details = FlightResults(
-#                             price=float(journey["fares"][0]["totalAmount"]),
-#                             flight_time=segment["duration"],
-#                             arrival_date=arrival_date,
-#                             return_date=departure_date
-#                         )
-#                         flight_options.append(flight_details)
-#
-#         return flight_options
-#
-#     def parse_datetime(self, datetime_str):
-#         try:
-#             return datetime.fromisoformat(datetime_str.replace('Z', '+00:00'))
-#         except ValueError:
-#             return None

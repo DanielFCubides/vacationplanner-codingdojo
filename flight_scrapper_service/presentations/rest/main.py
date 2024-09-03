@@ -1,9 +1,10 @@
-import json
 import logging
 from collections import OrderedDict
+from datetime import datetime
 
 from flask import Flask, request
 
+from constants import AVIANCA_URL
 from flights.domain.scrappers.models import SearchParams
 from main import dependencies
 from utils.urls import DynamicURL
@@ -18,45 +19,46 @@ def create_app():
 
     @app.route("/get_flights", methods=['POST'])
     def get_flights():
-        base_data = request.json
-        airline = base_data.pop('airline').lower()
-        base_url = base_data.pop('base_url', 'https://www.avianca.com/es/booking/select/')
-        search_data = SearchParams(**base_data.get('search_params'))
-        dynamic_url = DynamicURL.from_url(base_url)
-        scrapper = dependencies['scrappers'].get(airline)(
-            create_driver=dependencies.get('driver_factory')
-        )
-        finder = dependencies['finders'].get(airline)(dynamic_url, scrapper)
-        results = finder.get_flights(search_data)
-        response = OrderedDict(
-            count=len(results),
-            flights={
-                "arrival_date": search_data.arrival_date,
-                "return_date": search_data.return_date,
-                "results": results
-            }
-        )
-        return response, 200
+        # TODO replace this logic for a serialization methods
+        try:
+            airline = request.json.pop('airline').lower()
+            base_url = request.json.pop('base_url', AVIANCA_URL)
+            search_data = SearchParams(**request.json.get('search_params'))
+        except KeyError as e:
+            return {'error': f'Missing parameter: {e}'}, 400
+        except TypeError as e:
+            try:
+                missing_parameters = e.args[0].split(':')[1].strip().replace('\'', '')
+                return {'error': f'Missing search_params: {missing_parameters}'}, 400
+            except IndexError:
+                return {'error': f'Missing search_params'}, 400
 
-    @app.route("/v2/get_flights", methods=['POST'])
-    def get_flight2():
-        base_data = request.json
-        airline = base_data.pop('airline').lower()
-        base_url = base_data.pop('base_url', 'https://www.avianca.com/pricing/api/v1/journeys')
-        search_data = SearchParams(**base_data.get('search_params'))
-        dynamic_url = base_url
-        scrapper = dependencies['scrappers'].get(airline)()
-        finder = dependencies['finders'].get(airline)(
-            dynamic_url,
-            scrapper,
-            'd9eaa63c9008987381860a36e0d8c2aa2c6a936b41bf35e42bbe11e97bd452ea'
-        )
-        results = finder.get_flights(search_data)
-        return results, 200
+        dynamic_url = DynamicURL.from_url(base_url)
+
+        try:
+            scrapper = dependencies['scrappers'][airline]
+            finder = dependencies['finders'].get(airline)(dynamic_url, scrapper)
+        except KeyError as e:
+            return {'error': f'Airline dont available: {e}'}, 400
+
+        try:
+            results = finder.get_flights(search_data)
+            response = OrderedDict(
+                count=len(results),
+                flights={
+                    "arrival_date": search_data.arrival_date,
+                    "return_date": search_data.return_date,
+                    "results": results
+                }
+            )
+            return response, 200
+        except Exception as e:
+            logger.error(e)
+            return {'message': 'Something went wrong'}, 400
 
     @app.route("/")
     def hello_world():
-        return {"hello": "<p>Hello, World!</p>"}
+        return {"status": "alive", "timestamp": datetime.now()}
 
     return app
 
