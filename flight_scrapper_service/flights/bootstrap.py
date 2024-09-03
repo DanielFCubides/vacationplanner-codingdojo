@@ -38,7 +38,7 @@ def get_available_scrappers():
                 (None, None)
             )
             logger.info(f'Scrapper found: {member}')
-            classes[resource.stem] = class_
+            classes[resource.stem] = class_(create_driver=create_driver)
     return classes
 
 
