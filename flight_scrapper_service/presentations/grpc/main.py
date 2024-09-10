@@ -5,7 +5,6 @@ from . import service_pb2
 from . import service_pb2_grpc
 
 
-
 class Greeter(service_pb2_grpc.GreeterServicer):
 
     def SayHello(self, request, context):
@@ -13,7 +12,7 @@ class Greeter(service_pb2_grpc.GreeterServicer):
         return service_pb2.HelloReply(message=f'Hello, {request.name}!')
 
 
-def serve():
+def main():
     print("I am GRPC")
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     service_pb2_grpc.add_GreeterServicer_to_server(Greeter(), server)
@@ -23,4 +22,4 @@ def serve():
 
 
 if __name__ == '__main__':
-    serve()
+    main()

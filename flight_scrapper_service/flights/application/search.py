@@ -1,21 +1,13 @@
 from abc import ABC, abstractmethod
-from typing import Tuple, Union, List
+
+from flights.domain.scrappers.models import SearchParams, FlightResults
 
 
 class FlightsRepository(ABC):
 
     @abstractmethod
-    def get(
-            self,
-            *,
-            id_fly: int,
-            **kwargs
-    ) -> Tuple[dict | list, int]:
+    def get_flights(self, search_params: SearchParams) -> FlightResults:
         """
-        Obtain a flight with all information
+        Obtain flights based on search parameters
         """
         pass
-
-    @abstractmethod
-    def get_all(self) -> List[dict]:
-        ...

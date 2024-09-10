@@ -1,4 +1,3 @@
-version: "3.9"
 services:
   vacation-planner:
     build:
@@ -7,7 +6,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./vacation_stay_scrapper:/app
+      - ./vacation_stay_scrapper:/vacation_stay_scrapper
   flight-scrapper:
     build:
       context: ./flight_scrapper_service
@@ -17,14 +16,53 @@ services:
     ports:
       - "8001:8080"
     volumes:
-      - ./flight_scrapper_service:/app
+      - ./flight_scrapper_service:/flight_scrapper_service
 
   vacation-planner-tests:
     build:
       context: ./vacation_stay_scrapper
       target: tests
+    volumes:
+      - ./vacation_stay_scrapper:/vacation_stay_scrapper
 
   flight-scrapper-tests:
     build:
       context: ./flight_scrapper_service
       target: tests
+    volumes:
+      - ./flight_scrapper_service:/flight_scrapper_service
+
+  selenium-hub:
+    image: selenium/hub:latest
+    platform: linux/amd64
+    environment:
+      - log-level=FINE
+    ports:
+      - "4442:4442"
+      - "4443:4443"
+      - "4444:4444"
+
+  node-1:
+    image: selenium/node-firefox:latest
+    ports:
+      - "5555:5555"
+    environment:
+      - SE_NODE_GRID_URL=http://selenium-hub:4444
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - log-level=FINE
+
+  node-2:
+    image: selenium/node-chrome:latest
+    platform: linux/amd64
+    ports:
+      - "5556:5555"
+    depends_on:
+      - selenium-hub
+    environment:
+      - SE_NODE_GRID_URL=http://selenium-hub:4444
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - log-level=FINE

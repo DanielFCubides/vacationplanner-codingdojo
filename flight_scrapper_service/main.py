@@ -1,19 +1,14 @@
+import importlib
+import logging
 import os
-import string
+import sys
 from enum import Enum
+from typing import Callable, Union
 
-from flask import Flask, jsonify
-import random
+from flights.bootstrap import bootstrap
 
-from graphql_server.flask import GraphQLView
 
-from flights.domain.flight_finder import FlightFinder
-from flights.infrastructure.flight_finder import (
-    FlightFinderWithConstant
-)
-
-from presentations.grpc.grpc_hello_world import serve
-from presentations.interface import schema
+logger = logging.getLogger(__name__)
 
 
 class ServerTypes(Enum):
@@ -22,55 +17,50 @@ class ServerTypes(Enum):
     GRAPHQL = "graphql"
 
 
-def create_app(method: string):
-    if method == ServerTypes.REST.value:
-        app_ = Flask(__name__)
+dependencies = bootstrap()
 
 
-        @app_.route("/")
-        def hello_world():
-            return {"hello": "<p>Hello, World!</p>"}
+def app_factory(method: str) -> Union[Callable | bool]:
+    try:
+        root_path = os.path.dirname(__file__)
+        module_path = os.path.join(root_path, 'presentations', method, 'main.py')
 
-        @app_.route("/flights", methods=['GET'])
-        def flights():
-            id_fly = random.randint(1, 7)
-            try:
-                data = FlightFinder(
-                    repository=FlightFinderWithConstant()
-                ).search(
-                    id_fly=id_fly
-                )
-                if not data:
-                    return {},  404
-                return jsonify(data), 200
-            except Exception:
-                return {}, 500
+        if not os.path.exists(module_path):
+            logger.error(f"Error: {module_path} does not exist.")
+            return False
 
-        return app_
-    if method == ServerTypes.GRPC.value:
-        return serve()
-    if method == ServerTypes.GRAPHQL.value:
-        app = Flask(__name__)
+        spec = importlib.util.spec_from_file_location(f"main", module_path)
+        if spec is None:
+            logger.error(f"Failed to create module spec for {module_path}")
+            return False
 
-        app.add_url_rule(
-            '/graphql_server',
-            view_func=GraphQLView.as_view(
-                'graphql_server',
-                schema=schema.my_schema,
-                graphiql=True
-            )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
 
-        )
+        if hasattr(module, 'main'):
+            return module.main
+        else:
+            logger.error("No main() function found in the module.")
+            return False
 
-        return app
+    except ImportError as e:
+        logger.error(f"Failed to import module {method}: {str(e)}")
+    except AttributeError as e:
+        logger.error(f"Failed to execute main() in module {method}: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected error loading and executing module {method}: {str(e)}")
+
+    return False
 
 
-method = ServerTypes(os.getenv('SERVER', ServerTypes.GRPC.value))
-app = create_app(method.value)
+if __name__ == '__main__':
+    method = ServerTypes(os.getenv('SERVER', ServerTypes.REST.value))
+    logger.info(f'Starting a {method} server')
 
+    main = app_factory(method.value)
+    if not main:
+        logger.error('Failed to start main server')
+        sys.exit(1)
 
-if __name__ == "__main__":
-    if method == ServerTypes.REST or method == ServerTypes.GRAPHQL:
-        app.run(host="0.0.0.0", port=8080, debug=True)
-    if method == ServerTypes.GRPC:
-        app()
+    main()
+    logger.info(f'Finished executing {method} server')
