@@ -5,6 +5,7 @@ import pytest
 from flights.bootstrap import get_available_finders, get_available_scrappers
 from flights.domain.scrappers.base import Scrapper
 from presentations.rest.main import create_app
+from utils.connections.redis_client import RedisClient
 
 
 @pytest.fixture
@@ -44,9 +45,16 @@ def bootstrap_fixture(monkeypatch, mock_scrapper, mock_create_driver_function):
 
 
 @pytest.fixture
-def test_client(bootstrap_fixture):
+def test_client(bootstrap_fixture, mock_redis):
     app_ = create_app()
     app_.testing = True
     client = app_.test_client()
     return client
+
+
+@pytest.fixture
+def mock_redis(monkeypatch):
+    mock = Mock(spec=RedisClient)
+    monkeypatch.setattr('presentations.rest.main.RedisClient', mock)
+    return mock
 

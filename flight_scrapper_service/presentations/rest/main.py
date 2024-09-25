@@ -1,14 +1,13 @@
 import logging
-import random
-from collections import OrderedDict
 from datetime import datetime
 
 from flask import Flask, request
 
 from constants import AVIANCA_URL
-from flights.domain.scrappers.models import SearchParams
+from flights.domain.repositories.redis.redis_repository import RedisRepository
+from flights.domain.models import SearchParams
 from main import dependencies
-from repositories.fligts_repository import RedisRepo
+from utils.connections.redis_client import RedisClient
 from utils.urls import DynamicURL
 
 
@@ -18,7 +17,7 @@ logger = logging.getLogger(__name__)
 def create_app():
     app = Flask(__name__)
     app.logger.setLevel(logging.INFO)
-    cache_repo = RedisRepo()
+    cache_repo = RedisRepository(client=RedisClient())
 
     @app.route("/get_flights", methods=['POST'])
     def get_flights():
@@ -40,21 +39,17 @@ def create_app():
 
         try:
             scrapper = dependencies['scrappers'][airline]
-            finder = dependencies['finders'].get(airline)(dynamic_url, scrapper)
+            finder = dependencies['finders'].get(airline)(
+                url=dynamic_url,
+                scrapper=scrapper,
+                repository=cache_repo
+            )
         except KeyError as e:
             return {'error': f'Airline dont available: {e}'}, 400
 
         try:
             results = finder.get_flights(search_data)
-            response = OrderedDict(
-                count=len(results),
-                flights={
-                    "arrival_date": search_data.arrival_date,
-                    "return_date": search_data.return_date,
-                    "results": results
-                }
-            )
-            return response, 200
+            return results, 200
         except Exception as e:
             logger.error(e)
             return {'message': 'Something went wrong'}, 400
@@ -62,16 +57,6 @@ def create_app():
     @app.route("/")
     def hello_world():
         return {"status": "alive", "timestamp": datetime.now()}
-
-    @app.route("/cache")
-    def cache():
-        # flight_id = str(random.randint(1,5000))
-        # 8b32237f6906db4dafcf1f046dbce2cfe9ea3f21
-        flight_id = str(2631)
-        flight = {"id_flight": flight_id, "from": "BOG", "to": "SMT"}
-        cache_repo.save_flight(flight=flight)
-        fight_output = cache_repo.get_flight(id_flight=flight.get("id_flight"))
-        return {"ok": fight_output}
 
     return app
 

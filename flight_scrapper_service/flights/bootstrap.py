@@ -2,7 +2,7 @@ import importlib
 import inspect
 import logging
 
-from flights.application.search import FlightsRepository
+from flights.application.search import FlightsFinder
 from flights.domain.scrappers.base import Scrapper, create_driver
 
 logger = logging.Logger(__name__)
@@ -54,7 +54,7 @@ def get_available_finders():
             filter(
                 lambda mc: resource.stem in mc[0].lower()
                 and inspect.isclass(mc[1])
-                and issubclass(mc[1], FlightsRepository),
+                and issubclass(mc[1], FlightsFinder),
                 inspect.getmembers(module)
             ),
             (None, None)
