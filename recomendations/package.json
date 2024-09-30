@@ -1,0 +1,16 @@
+{
+  "name": "recomendations",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "system to gather information and create recomendations based on search criteria",
+  "main": "app.js",
+  "scripts": {
+    "test": "test"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.0",
+    "redis": "^4.7.0"
+  }
+}
