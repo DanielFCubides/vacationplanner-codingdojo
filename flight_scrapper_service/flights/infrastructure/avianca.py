@@ -5,7 +5,6 @@ from flights.application.search import FlightsFinder
 from flights.domain.repositories.base import FlightsRepository
 from flights.domain.scrappers.base import Scrapper
 from flights.domain.models import SearchParams, FlightResults
-from utils.flight_hash import create_search_params_hash
 from utils.urls import DynamicURL
 
 
@@ -31,8 +30,8 @@ class FlightFinderAvianca(FlightsFinder):
             f'Start getting a response with origin {search_params.origin} '
             f'and destination {search_params.destination}'
         )
-        results_id = create_search_params_hash(search_params)
-        saved_results = self._repository.get_flight_results(results_id)
+        # search params are the unique ID for a flight results
+        saved_results = self._repository.get_flight_results(search_params)
         if saved_results:
             saved_results.search_params = search_params
             response = self._create_response(saved_results)
@@ -70,6 +69,6 @@ class FlightFinderAvianca(FlightsFinder):
             'flights': {
                 "arrival_date": results.search_params.arrival_date,
                 "return_date": results.search_params.return_date,
-                "results": results
+                "results": results.results
             }
         }

@@ -1,11 +1,11 @@
 from unittest.mock import Mock, create_autospec
 
 import pytest
+from redis import Redis
 
 from flights.bootstrap import get_available_finders, get_available_scrappers
 from flights.domain.scrappers.base import Scrapper
 from presentations.rest.main import create_app
-from utils.connections.redis_client import RedisClient
 
 
 @pytest.fixture
@@ -29,13 +29,20 @@ def mock_scrapper():
 
 @pytest.fixture
 def bootstrap_fixture(monkeypatch, mock_scrapper, mock_create_driver_function):
-    def _bootstrap(airline: str = 'test_airline', scrappers=None, finders=None):
+    def _bootstrap(
+        airline: str = 'test_airline',
+        scrappers=None,
+        finders=None,
+        repositories=None
+    ):
         real_scrappers = {airline: get_available_scrappers().popitem()[1]}
         real_finders = {airline: get_available_finders().popitem()[1]}
+        real_repositories = get_available_finders()
         dependencies = {
             'driver_factory': mock_create_driver_function,
             'scrappers': {airline: scrappers} if scrappers else real_scrappers,
-            'finders': {airline: finders} if finders else real_finders
+            'finders': {airline: finders} if finders else real_finders,
+            'repositories': repositories if repositories else real_repositories
         }
         monkeypatch.setattr(
             'presentations.rest.main.dependencies',
@@ -45,7 +52,7 @@ def bootstrap_fixture(monkeypatch, mock_scrapper, mock_create_driver_function):
 
 
 @pytest.fixture
-def test_client(bootstrap_fixture, mock_redis):
+def test_client(bootstrap_fixture):
     app_ = create_app()
     app_.testing = True
     client = app_.test_client()
@@ -54,7 +61,6 @@ def test_client(bootstrap_fixture, mock_redis):
 
 @pytest.fixture
 def mock_redis(monkeypatch):
-    mock = Mock(spec=RedisClient)
-    monkeypatch.setattr('presentations.rest.main.RedisClient', mock)
+    mock = Mock(spec=Redis)
     return mock
 
