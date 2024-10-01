@@ -4,6 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from flights.domain.repositories.base_publisher import SearchPublisher
 from flights.infrastructure.avianca import FlightFinderAvianca
 from flights.domain.models import SearchParams, FlightResults, FlightResult, Flight
 from utils.urls import DynamicURL
@@ -54,8 +55,9 @@ class TestFlightsFinder:
         fake_repository = Mock(FlightsRepository)
         mock_url = Mock(spec=DynamicURL)
         scrapper = Mock(AviancaScrapper)
+        publisher = Mock(SearchPublisher)
         flight_finder = FlightFinderAvianca(
-            url=mock_url, scrapper=scrapper, repository=fake_repository
+            url=mock_url, scrapper=scrapper, repository=fake_repository, publisher=publisher
         )
 
         assert flight_finder.url == mock_url
@@ -73,8 +75,9 @@ class TestFlightsFinder:
         scrapper.get_flights.return_value = mock_flights_results
 
         # Call function under test
+        publisher = Mock(SearchPublisher)
         flight_finder = FlightFinderAvianca(
-            url=mock_url, scrapper=scrapper, repository=fake_repository
+            url=mock_url, scrapper=scrapper, repository=fake_repository, publisher=publisher
         )
         returned_results = flight_finder.get_flights(mock_search_params)
 
@@ -94,7 +97,10 @@ class TestFlightsFinder:
         fake_repository = Mock(FlightsRepository)
         fake_repository.get_flight_results.return_value = mock_flights_results
 
-        flight_finder = FlightFinderAvianca(mock_url, scrapper, fake_repository)
+        publisher = Mock(SearchPublisher)
+        flight_finder = FlightFinderAvianca(
+            url=mock_url, scrapper=scrapper, repository=fake_repository, publisher=publisher
+        )
         result = flight_finder.get_flights(mock_search_params)
 
         assert result['count'] == 1
@@ -113,8 +119,9 @@ class TestFlightsFinder:
         scrapper.get_flights.return_value = FlightResults(id_=uuid.uuid4(), results=[], search_params=[])
         fake_repository = Mock(FlightsRepository)
         fake_repository.get_flight_results.return_value = []
+        publisher = Mock(SearchPublisher)
         flight_finder = FlightFinderAvianca(
-            url=mock_url, scrapper=scrapper, repository=fake_repository
+            url=mock_url, scrapper=scrapper, repository=fake_repository, publisher=publisher
         )
         results = flight_finder.get_flights(mock_search_params)
         assert results.get('count') == 0
@@ -128,8 +135,9 @@ class TestFlightsFinder:
         scrapper.get_flights.side_effect = Exception("Mocked exception")
         fake_repository = Mock(FlightsRepository)
         fake_repository.get_flight_results.return_value = []
+        publisher = Mock(SearchPublisher)
         flight_finder = FlightFinderAvianca(
-            url=mock_url, scrapper=scrapper, repository=fake_repository
+            url=mock_url, scrapper=scrapper, repository=fake_repository, publisher=publisher
         )
 
         with pytest.raises(Exception):

@@ -4,6 +4,7 @@ from datetime import datetime
 from flask import Flask, request
 
 from constants import AVIANCA_URL
+from flights.domain.repositories.redis.redis_publisher import RedisPublisher
 from flights.domain.repositories.redis.redis_repository import RedisRepository
 from flights.domain.models import SearchParams
 from main import dependencies
@@ -18,6 +19,7 @@ def create_app():
     app = Flask(__name__)
     app.logger.setLevel(logging.INFO)
     cache_repo = RedisRepository(client=RedisClient())
+    publisher = RedisPublisher(client=RedisClient())
 
     @app.route("/get_flights", methods=['POST'])
     def get_flights():
@@ -42,7 +44,8 @@ def create_app():
             finder = dependencies['finders'].get(airline)(
                 url=dynamic_url,
                 scrapper=scrapper,
-                repository=cache_repo
+                repository=cache_repo,
+                publisher=publisher
             )
         except KeyError as e:
             return {'error': f'Airline dont available: {e}'}, 400

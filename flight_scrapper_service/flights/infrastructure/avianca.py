@@ -3,6 +3,7 @@ from typing import Optional
 
 from flights.application.search import FlightsFinder
 from flights.domain.repositories.base import FlightsRepository
+from flights.domain.repositories.base_publisher import SearchPublisher
 from flights.domain.scrappers.base import Scrapper
 from flights.domain.models import SearchParams, FlightResults
 from utils.flight_hash import create_search_params_hash
@@ -20,17 +21,20 @@ class FlightFinderAvianca(FlightsFinder):
         self,
         url: Optional[DynamicURL],
         scrapper: Scrapper,
-        repository: FlightsRepository
+        repository: FlightsRepository,
+        publisher: SearchPublisher
     ):
         self.url = url
         self._scrapper = scrapper
         self._repository = repository
+        self._publisher = publisher
 
     def get_flights(self, search_params: SearchParams) -> dict:
         logger.info(
             f'Start getting a response with origin {search_params.origin} '
             f'and destination {search_params.destination}'
         )
+        self._emit_message(search_params)
         results_id = create_search_params_hash(search_params)
         saved_results = self._repository.get_flight_results(results_id)
         if saved_results:
@@ -73,3 +77,6 @@ class FlightFinderAvianca(FlightsFinder):
                 "results": results
             }
         }
+
+    def _emit_message(self, search_params):
+        self._publisher.publish_search_params(search_params)

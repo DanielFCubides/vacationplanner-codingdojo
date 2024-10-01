@@ -6,7 +6,7 @@ class RedisClient:
     client = None
     initialize: bool = False
 
-    def __init__(self, host='redis-cache', port=6379):
+    def __init__(self, host='localhost', port=6379):
         self.host = host
         self.port = port
 
