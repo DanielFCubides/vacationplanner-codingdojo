@@ -1,12 +1,18 @@
 import express from 'express';
-import {GetSearchParams, readFromRedis} from "../repositories/SearchParamsRepository.js";
+import {GetSearchParams, GetSearchParams2, readFromRedis} from "../repositories/SearchParamsRepository.js";
 const app = express()
 const port = 3000
 
 export function InitializeRest() {
     app.get('/', (req, res) => {
-        res.send('Hello World!')
+        res.send('getting messages from queue')
         GetSearchParams().then(r => console.info(r));
+
+    })
+
+    app.get('/subscribe/', (req, res) => {
+        res.send('getting messages from subscription')
+        GetSearchParams2().then(r => console.info(r));
 
     })
 
