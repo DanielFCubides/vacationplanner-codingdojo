@@ -2,40 +2,92 @@ from decimal import Decimal
 from unittest.mock import Mock
 
 import pytest
-from flights.domain.scrappers.models import FlightResults, FlightResult
+from flights.domain.models import FlightResults, FlightResult, Flight
+from flights.domain.repositories.redis.repository import RedisRepository
 
 
 class TestGetFlightsAPI:
 
     endpoint = '/get_flights'
 
+    def _configure_redis_response(self, flights):
+        redis_side_effects = [
+            flight
+            for result in flights.results
+            for key, flight in result.to_dict().items()
+        ]
+        keys = []
+        for index, result in enumerate(flights.results, start=1):
+            for type_, flight in result.to_dict().items():
+                keys.append(f'simulated_hash:{type_}:{index}')
+        return keys, redis_side_effects
+
     @pytest.fixture
     def mock_flights_results(self):
-        return [FlightResults(
-            outbound=FlightResult(
-                price=Decimal('250.00'),
-                flight_time="2h 30m",
-                departure_time="08:00",
-                landing_time="10:30"
-            ),
-            return_in=FlightResult(
-                price=Decimal('200.00'),
-                flight_time="1h 45m",
-                departure_time="15:00"
-            )
-        )]
+        return FlightResults(
+            results=[
+                FlightResult(
+                    outbound=Flight(
+                        price=Decimal('250.00'),
+                        flight_time="2h 30m",
+                        departure_time="08:00",
+                        landing_time="10:30"
+                    ),
+                    return_in=Flight(
+                        price=Decimal('200.00'),
+                        flight_time="1h 45m",
+                        departure_time="15:00"
+                    )
+                )
+            ]
+        )
 
-    def test_get_flights_valid_request(
+    def test_get_flights_no_cached_results(
         self, test_client, mock_scrapper,
         mock_flights_results, bootstrap_fixture,
-        mock_create_driver_function
+        mock_create_driver_function, mock_redis
     ):
+        mock_redis.scan.return_value = 0, []
         bootstrap_fixture(
             'test_airline',
             scrappers=mock_scrapper(
                 create_driver=Mock(),
                 returned_value=mock_flights_results
-            )
+            ),
+            repositories={
+                'redis': RedisRepository(client_factory=Mock(return_value=mock_redis))
+            }
+        )
+        response = test_client.post(self.endpoint, json={
+            'airline': 'test_airline',
+            'search_params': {
+                'origin': 'origin',
+                'destination': 'destination',
+                'arrival_date': '2023-10-10',
+                'return_date': '2023-10-20'
+            }
+        })
+        assert response.status_code == 200
+        assert response.json['count'] == 1
+
+    def test_get_flights_cached_results(
+        self, test_client, mock_scrapper,
+        mock_flights_results, bootstrap_fixture, mock_create_driver_function,
+        mock_redis
+    ):
+        keys, redis_side_effects = self._configure_redis_response(mock_flights_results)
+        mock_redis.scan.return_value = len(keys), keys
+        mock_redis.hgetall.side_effect = redis_side_effects
+        bootstrap_fixture(
+            scrappers=mock_scrapper(
+                create_driver=Mock(),
+                returned_value=mock_flights_results
+            ),
+            repositories={
+                'redis': RedisRepository(
+                    client_factory=Mock(return_value=mock_redis)
+                )
+            }
         )
         response = test_client.post(self.endpoint, json={
             'airline': 'test_airline',
@@ -51,14 +103,16 @@ class TestGetFlightsAPI:
 
     def test_get_flights_empty_results(
         self, test_client, bootstrap_fixture, mock_scrapper,
-        mock_create_driver_function
+        mock_create_driver_function, mock_redis
     ):
+        mock_redis.scan.return_value = 0, []
         bootstrap_fixture(
             'test_airline',
             scrappers=mock_scrapper(
                 create_driver=Mock(),
-                returned_value=[]
-            )
+                returned_value=FlightResults(results=[])
+            ),
+            repositories={'redis': RedisRepository(Mock(return_value=mock_redis))}
         )
         response = test_client.post(self.endpoint, json={
             'airline': 'test_airline',
@@ -69,7 +123,6 @@ class TestGetFlightsAPI:
                 'return_date': '2023-10-20'
             }
         })
-
         assert response.status_code == 200
         assert response.json == {
             'count': 0,

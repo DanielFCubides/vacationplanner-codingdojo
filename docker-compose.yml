@@ -1,4 +1,18 @@
 services:
+  redis-cache:
+    image: redis
+    environment:
+      - REDIS_PASSWORD=secret
+      - REDIS_USER=secret
+    ports:
+      - "6379:6379"
+  redis-ui:
+    image: redis/redisinsight
+    ports:
+      - "5540:5540"
+    depends_on:
+      - redis-cache
+
   vacation-planner:
     build:
       context: ./vacation_stay_scrapper

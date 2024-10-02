@@ -2,8 +2,10 @@ import importlib
 import inspect
 import logging
 
-from flights.application.search import FlightsRepository
+from flights.application.search import FlightsFinder
+from flights.domain.repositories.redis.repository import RedisRepository
 from flights.domain.scrappers.base import Scrapper, create_driver
+from utils.connections.redis_client import get_redis_client
 
 logger = logging.Logger(__name__)
 
@@ -15,7 +17,8 @@ def bootstrap():
     dependencies = {
         'driver_factory': create_driver,
         'scrappers': get_available_scrappers(),
-        'finders': get_available_finders()
+        'finders': get_available_finders(),
+        'repositories': get_available_repositories(),
     }
     return dependencies
 
@@ -54,7 +57,7 @@ def get_available_finders():
             filter(
                 lambda mc: resource.stem in mc[0].lower()
                 and inspect.isclass(mc[1])
-                and issubclass(mc[1], FlightsRepository),
+                and issubclass(mc[1], FlightsFinder),
                 inspect.getmembers(module)
             ),
             (None, None)
@@ -62,3 +65,9 @@ def get_available_finders():
         logger.info(f'Scrapper found: {member}')
         classes[resource.stem] = class_
     return classes
+
+
+def get_available_repositories():
+    return {
+        'redis': RedisRepository(client_factory=get_redis_client),
+    }

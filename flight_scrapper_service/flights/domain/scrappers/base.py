@@ -5,9 +5,8 @@ from typing import Any, Union, Callable
 from selenium import webdriver
 from selenium.common import exceptions
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
-from selenium.webdriver.chrome.options import Options as ChromeOptions
 
-from flights.domain.scrappers.models import FlightResults
+from flights.domain.models import FlightResults
 from utils.urls import DynamicURL
 
 
@@ -61,5 +60,5 @@ class Scrapper(ABC):
             logger.error(f"Error while quitting WebDriver: {str(e)}")
 
     @abstractmethod
-    def get_flights(self, url: DynamicURL) -> list[FlightResults | None]:
+    def get_flights(self, url: DynamicURL) -> FlightResults | None:
         ...

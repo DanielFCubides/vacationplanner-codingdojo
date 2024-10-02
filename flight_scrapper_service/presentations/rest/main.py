@@ -1,11 +1,10 @@
 import logging
-from collections import OrderedDict
 from datetime import datetime
 
 from flask import Flask, request
 
 from constants import AVIANCA_URL
-from flights.domain.scrappers.models import SearchParams
+from flights.domain.models import SearchParams
 from main import dependencies
 from utils.urls import DynamicURL
 
@@ -37,21 +36,18 @@ def create_app():
 
         try:
             scrapper = dependencies['scrappers'][airline]
-            finder = dependencies['finders'].get(airline)(dynamic_url, scrapper)
+            repository = dependencies['repositories']['redis']
+            finder = dependencies['finders'].get(airline)(
+                url=dynamic_url,
+                scrapper=scrapper,
+                repository=repository
+            )
         except KeyError as e:
             return {'error': f'Airline dont available: {e}'}, 400
 
         try:
             results = finder.get_flights(search_data)
-            response = OrderedDict(
-                count=len(results),
-                flights={
-                    "arrival_date": search_data.arrival_date,
-                    "return_date": search_data.return_date,
-                    "results": results
-                }
-            )
-            return response, 200
+            return results, 200
         except Exception as e:
             logger.error(e)
             return {'message': 'Something went wrong'}, 400

@@ -1,5 +1,5 @@
 from typing import Any
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse, parse_qs
 
 from typing_extensions import Self
 
@@ -42,7 +42,13 @@ class DynamicURL(str):
 
     @property
     def get_query_params(self):
-        return self.query_params
+        parsed_url = urlparse(str(self))
+        query_params = {
+            k: v[0]
+            if len(v) == 1 else v
+            for k, v in parse_qs(parsed_url.query).items()
+        }
+        return query_params
 
     def get_query_param(self, key):
         return self.query_params.get(key)

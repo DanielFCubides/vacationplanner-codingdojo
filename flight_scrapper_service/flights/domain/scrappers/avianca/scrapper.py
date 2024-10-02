@@ -9,7 +9,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 from flights.domain.scrappers.base import Scrapper
-from flights.domain.scrappers.models import FlightResults, FlightResult
+from flights.domain.models import FlightResults, FlightResult, Flight
 from utils.urls import DynamicURL
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ class AviancaScrapper(Scrapper):
     ) -> None:
         self.create_driver = create_driver
 
-    def get_flights(self, url: DynamicURL) -> list[FlightResults | None]:
+    def get_flights(self, url: DynamicURL) -> FlightResults | list[None]:
         for driver in self._initialize_driver():
             try:
                 wait = WebDriverWait(driver, timeout=10)
@@ -45,7 +45,7 @@ class AviancaScrapper(Scrapper):
                     )
                 )
                 if not _outbound_flights:
-                    return []
+                    return FlightResults(results=[])
 
                 outbound_flights = self._process_flights(_outbound_flights)
                 # take first flight as an example for return flights
@@ -72,24 +72,26 @@ class AviancaScrapper(Scrapper):
                     )
                 )
                 if not _return_flights:
-                    return []
+                    return FlightResults(results=[])
 
                 return_flights = self._process_flights(_return_flights)
                 results = [
-                    FlightResults(outbound=outbound, return_in=inbound)
+                    FlightResult(
+                        outbound=outbound, return_in=inbound
+                    )
                     for outbound, inbound in zip(outbound_flights, return_flights)
                 ]
-                return results
+                return FlightResults(results=results)
             except exceptions.TimeoutException as e:
                 logger.exception(str(e))
             except exceptions.WebDriverException as e:
                 logger.exception(str(e))
 
-        return []
+        return FlightResults(results=[])
 
-    def _process_flights(self, flights: list[WebElement],) -> list[FlightResult]:
+    def _process_flights(self, flights: list[WebElement],) -> list[Flight]:
         results = [
-            FlightResult(
+            Flight(
                 price=Decimal(
                     flight.find_element(
                         By.XPATH, ".//span[@class='price text-space-gap']"
