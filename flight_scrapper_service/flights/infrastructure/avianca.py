@@ -5,8 +5,7 @@ from flights.application.search import FlightsFinder
 from flights.domain.repositories.base import FlightsRepository
 from flights.domain.repositories.base_publisher import SearchPublisher
 from flights.domain.scrappers.base import Scrapper
-from flights.domain.models import SearchParams, FlightResults, FlightResult, Flight
-from utils.flight_hash import create_search_params_hash
+from flights.domain.models import SearchParams, FlightResults
 from utils.urls import DynamicURL
 
 
@@ -34,9 +33,9 @@ class FlightFinderAvianca(FlightsFinder):
             f'Start getting a response with origin {search_params.origin} '
             f'and destination {search_params.destination}'
         )
+        # search params are the unique ID for a flight results
         self._emit_message(search_params)
-        results_id = create_search_params_hash(search_params)
-        saved_results = self._repository.get_flight_results(results_id)
+        saved_results = self._repository.get_flight_results(search_params)
         if saved_results:
             saved_results.search_params = search_params
             response = self._create_response(saved_results)
@@ -61,36 +60,12 @@ class FlightFinderAvianca(FlightsFinder):
             "posCode": "CO"
         }
         self.url.set_query_params(_search_params)
-        # results = self._scrapper.get_flights(self.url)
-        results = self.mock_flight_results()
+        results = self._scrapper.get_flights(self.url)
         results.search_params = search_params
         if results.results:
             self._repository.save_flight(results)
         response = self._create_response(results)
         return response
-
-    def mock_flight_results(self):
-        import uuid
-        from decimal import Decimal
-        return FlightResults(
-            id_=uuid.uuid4(),
-            results=[
-                FlightResult(
-                    id_=uuid.uuid4(),
-                    outbound=Flight(
-                        price=Decimal('250.00'),
-                        flight_time="2h 30m",
-                        departure_time="08:00",
-                        landing_time="10:30"
-                    ),
-                    return_in=Flight(
-                        price=Decimal('200.00'),
-                        flight_time="1h 45m",
-                        departure_time="15:00"
-                    )
-                )
-            ]
-        )
 
     def _create_response(self, results: FlightResults) -> dict:
         return {
@@ -98,7 +73,7 @@ class FlightFinderAvianca(FlightsFinder):
             'flights': {
                 "arrival_date": results.search_params.arrival_date,
                 "return_date": results.search_params.return_date,
-                "results": results
+                "results": results.results
             }
         }
 

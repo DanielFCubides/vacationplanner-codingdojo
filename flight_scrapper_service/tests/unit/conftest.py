@@ -1,54 +1,45 @@
 import pytest
 
 from flights.domain.repositories.base import FlightsRepository
-from flights.domain.models import FlightResult, FlightResults, Flight
+from flights.domain.models import FlightResult, FlightResults, Flight, SearchParams
 from utils.flight_hash import create_search_params_hash
 
 
 class FakeFlightsRepository(FlightsRepository):
     def __init__(self):
-        # Simulating a database with dictionaries for different databases
-        self.databases: dict[str, dict[str, dict]] = {
-            'return_in': {},
-            'outbound': {},
-        }
+        self.client = {}
+        self.search_params_list = []
 
-    def get_flight_results(self, results_id: str) -> FlightResults | list[None]:
+    def get_flight_results(
+        self, search_params: SearchParams
+    ) -> FlightResults | list[None]:
+        hash_ = create_search_params_hash(search_params)
         flights = {}
-        result_id = ""
-        for flight_type, database in self.databases.items():
-            keys = list(filter(lambda k: results_id in k, database.keys()))
-            if not keys:
-                return []
-            for key in keys:
-                _, id_, index = key.rsplit(':')
-                if not result_id:
-                    result_id = id_
-                data = database[key]
-                flight_id = data.pop('id_')
-                if not flights.get(index):
-                    flights[index] = {'id_': flight_id}
-                flights[index][flight_type] = Flight(**data)
+        keys = list(filter(lambda k: hash_ in k, self.client.keys()))
+        if not keys:
+            return []
+        for key in keys:
+            _, flight_type, index = key.rsplit(':')
+            data = self.client[key]
+            flights[index].update({flight_type: Flight(**data)})
 
         results = [
             FlightResult(
-                id_=flight.get('id_'),
                 outbound=flight.get('outbound'),
                 return_in=flight.get('return_in'),
             )
             for flight in flights.values()
         ]
-        return FlightResults(id_=result_id, results=results)
+        return FlightResults(results=results)
 
     def save_flight(self, flights: FlightResults) -> None:
         base_hash = create_search_params_hash(flights.search_params)
         for index, data in enumerate(flights.results, start=1):
-            for flight_type, database in self.databases.items():
-                key = f"{base_hash}:{flights.id_}:{index}"
-                database[key] = {
-                    'id_': getattr(data, 'id_'),
-                    **getattr(data, flight_type).to_dict()
-                }
+            for flight_type, flight in data.to_dict().items():
+                key = f"{base_hash}:{flight_type}:{index}"
+                self.client[key] = flight
+
+        self.search_params_list.append(flights.search_params)
 
 
 @pytest.fixture

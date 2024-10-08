@@ -1,14 +1,14 @@
 import redis
 
 
-class RedisClient:
-
-    client = None
-    initialize: bool = False
-
-    def __init__(self, host='localhost', port=6379):
-        self.host = host
-        self.port = port
-
-    def get_client(self, db=0):
-        return redis.Redis(host=self.host, port=self.port, db=db, decode_responses=True)
+def get_redis_client(
+    host: str = 'redis-cache',
+    port: int = 6379,
+    database: int = 0
+):
+    return redis.Redis(
+        host=host,
+        port=port,
+        db=database,
+        decode_responses=True
+    )

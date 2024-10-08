@@ -54,11 +54,9 @@ class Flight:
 class FlightResult:
     outbound: Flight
     return_in: Flight
-    id_: Optional[UUID] = field(default_factory=UUID)
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            'id': str(self.id_),
             'outbound': self.outbound.to_dict(),
             'return_in': self.return_in.to_dict()
         }
@@ -67,7 +65,6 @@ class FlightResult:
 @dataclass
 class FlightResults:
     results: Optional[list[FlightResult]] = None
-    id_: Optional[UUID] = field(default_factory=UUID)
     search_params: Optional[SearchParams] = None
 
     @cached_property

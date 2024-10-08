@@ -1,5 +1,4 @@
 import logging
-import uuid
 from decimal import Decimal
 from typing import Callable, Any, Union
 
@@ -46,7 +45,7 @@ class AviancaScrapper(Scrapper):
                     )
                 )
                 if not _outbound_flights:
-                    return FlightResults(id_=uuid.uuid4(), results=[])
+                    return FlightResults(results=[])
 
                 outbound_flights = self._process_flights(_outbound_flights)
                 # take first flight as an example for return flights
@@ -73,23 +72,22 @@ class AviancaScrapper(Scrapper):
                     )
                 )
                 if not _return_flights:
-                    return FlightResults(id_=uuid.uuid4(), results=[])
+                    return FlightResults(results=[])
 
                 return_flights = self._process_flights(_return_flights)
                 results = [
                     FlightResult(
-                        id_=uuid.uuid4(),
                         outbound=outbound, return_in=inbound
                     )
                     for outbound, inbound in zip(outbound_flights, return_flights)
                 ]
-                return FlightResults(id_=uuid.uuid4(), results=results)
+                return FlightResults(results=results)
             except exceptions.TimeoutException as e:
                 logger.exception(str(e))
             except exceptions.WebDriverException as e:
                 logger.exception(str(e))
 
-        return FlightResults(id_=uuid.uuid4(), results=[])
+        return FlightResults(results=[])
 
     def _process_flights(self, flights: list[WebElement],) -> list[Flight]:
         results = [

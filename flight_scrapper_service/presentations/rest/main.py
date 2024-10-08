@@ -5,10 +5,8 @@ from flask import Flask, request
 
 from constants import AVIANCA_URL
 from flights.domain.repositories.redis.redis_publisher import RedisPublisher
-from flights.domain.repositories.redis.redis_repository import RedisRepository
 from flights.domain.models import SearchParams
 from main import dependencies
-from utils.connections.redis_client import RedisClient
 from utils.urls import DynamicURL
 
 
@@ -18,8 +16,6 @@ logger = logging.getLogger(__name__)
 def create_app():
     app = Flask(__name__)
     app.logger.setLevel(logging.INFO)
-    cache_repo = RedisRepository(client=RedisClient())
-    publisher = RedisPublisher(client=RedisClient())
 
     @app.route("/get_flights", methods=['POST'])
     def get_flights():
@@ -41,10 +37,12 @@ def create_app():
 
         try:
             scrapper = dependencies['scrappers'][airline]
+            repository = dependencies['repositories']['redis']
+            publisher = dependencies['publishers']['redis']
             finder = dependencies['finders'].get(airline)(
                 url=dynamic_url,
                 scrapper=scrapper,
-                repository=cache_repo,
+                repository=repository,
                 publisher=publisher
             )
         except KeyError as e:

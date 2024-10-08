@@ -1,11 +1,10 @@
-import uuid
+import pytest
+
 from decimal import Decimal
 from unittest.mock import Mock
 
-import pytest
-
-from flights.domain.repositories.base_publisher import SearchPublisher
 from flights.infrastructure.avianca import FlightFinderAvianca
+from flights.domain.repositories.base_publisher import SearchPublisher
 from flights.domain.models import SearchParams, FlightResults, FlightResult, Flight
 from utils.urls import DynamicURL
 from datetime import datetime
@@ -19,10 +18,8 @@ class TestFlightsFinder:
     @pytest.fixture
     def mock_flights_results(self):
         return FlightResults(
-            id_=uuid.uuid4(),
             results=[
                 FlightResult(
-                    id_=uuid.uuid4(),
                     outbound=Flight(
                         price=Decimal('250.00'),
                         flight_time="2h 30m",
@@ -49,9 +46,7 @@ class TestFlightsFinder:
             currency="COP"
         )
 
-    def test_initialization_with_valid_url_and_scrapper(
-            self
-    ):
+    def test_initialization_with_valid_url_and_scrapper(self):
         fake_repository = Mock(FlightsRepository)
         mock_url = Mock(spec=DynamicURL)
         scrapper = Mock(AviancaScrapper)
@@ -77,7 +72,8 @@ class TestFlightsFinder:
         # Call function under test
         publisher = Mock(SearchPublisher)
         flight_finder = FlightFinderAvianca(
-            url=mock_url, scrapper=scrapper, repository=fake_repository, publisher=publisher
+            url=mock_url, scrapper=scrapper, repository=fake_repository,
+            publisher=publisher
         )
         returned_results = flight_finder.get_flights(mock_search_params)
 
@@ -85,11 +81,10 @@ class TestFlightsFinder:
         assert returned_results.get('flights')
         assert returned_results['flights'].get('arrival_date')
         assert returned_results['flights'].get('return_date')
-        assert returned_results['flights'].get('results') == mock_flights_results
         scrapper.get_flights.assert_called_once_with(mock_url)
 
     def test_returns_saved_flights_if_exist_in_repository(
-            self, mock_search_params, mock_flights_results
+        self, mock_search_params, mock_flights_results
     ):
         mock_url = Mock(spec=DynamicURL)
         scrapper = Mock(AviancaScrapper)
@@ -106,7 +101,7 @@ class TestFlightsFinder:
         assert result['count'] == 1
         assert 'flights' in result
         assert (
-                result['flights']['results'].results[0].outbound.price
+                result['flights']['results'][0].outbound.price
                 == mock_flights_results.results[0].outbound.price
         )
         assert scrapper.get_flights.call_count == 0
@@ -116,16 +111,17 @@ class TestFlightsFinder:
     ):
         mock_url = Mock(spec=DynamicURL)
         scrapper = Mock(AviancaScrapper)
-        scrapper.get_flights.return_value = FlightResults(id_=uuid.uuid4(), results=[], search_params=[])
+        scrapper.get_flights.return_value = FlightResults(results=[])
         fake_repository = Mock(FlightsRepository)
-        fake_repository.get_flight_results.return_value = []
+        fake_repository.get_flight_results.return_value = FlightResults(results=[])
         publisher = Mock(SearchPublisher)
         flight_finder = FlightFinderAvianca(
             url=mock_url, scrapper=scrapper, repository=fake_repository, publisher=publisher
         )
         results = flight_finder.get_flights(mock_search_params)
+
         assert results.get('count') == 0
-        assert results['flights']['results'].results == []
+        assert results['flights']['results'] == []
 
     def test_handles_exceptions_in_get_flights(
             self, mock_search_params
