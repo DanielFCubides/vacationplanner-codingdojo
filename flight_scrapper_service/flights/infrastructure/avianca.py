@@ -3,7 +3,7 @@ from typing import Optional
 
 from flights.application.search import FlightsFinder
 from flights.domain.repositories.base import FlightsRepository
-from flights.domain.repositories.base_publisher import SearchPublisher
+from flights.domain.publishers.base_publisher import SearchPublisher
 from flights.domain.scrappers.base import Scrapper
 from flights.domain.models import SearchParams, FlightResults
 from utils.urls import DynamicURL

@@ -4,7 +4,6 @@ from datetime import datetime
 from flask import Flask, request
 
 from constants import AVIANCA_URL
-from flights.domain.repositories.redis.redis_publisher import RedisPublisher
 from flights.domain.models import SearchParams
 from main import dependencies
 from utils.urls import DynamicURL

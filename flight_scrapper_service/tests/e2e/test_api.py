@@ -3,6 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 from flights.domain.models import FlightResults, FlightResult, Flight
+from flights.domain.publishers.redis.publisher import RedisPublisher
 from flights.domain.repositories.redis.repository import RedisRepository
 
 
@@ -56,6 +57,9 @@ class TestGetFlightsAPI:
             ),
             repositories={
                 'redis': RedisRepository(client_factory=Mock(return_value=mock_redis))
+            },
+            publishers={
+                'redis': RedisPublisher(client_factory=Mock(return_value=mock_redis))
             }
         )
         response = test_client.post(self.endpoint, json={
@@ -87,6 +91,9 @@ class TestGetFlightsAPI:
                 'redis': RedisRepository(
                     client_factory=Mock(return_value=mock_redis)
                 )
+            },
+            publishers={
+                'redis': RedisPublisher(client_factory=Mock(return_value=mock_redis))
             }
         )
         response = test_client.post(self.endpoint, json={
@@ -112,7 +119,8 @@ class TestGetFlightsAPI:
                 create_driver=Mock(),
                 returned_value=FlightResults(results=[])
             ),
-            repositories={'redis': RedisRepository(Mock(return_value=mock_redis))}
+            repositories={'redis': RedisRepository(Mock(return_value=mock_redis))},
+            publishers={'redis': RedisPublisher(Mock(return_value=mock_redis))}
         )
         response = test_client.post(self.endpoint, json={
             'airline': 'test_airline',

@@ -4,7 +4,7 @@ from decimal import Decimal
 from unittest.mock import Mock
 
 from flights.infrastructure.avianca import FlightFinderAvianca
-from flights.domain.repositories.base_publisher import SearchPublisher
+from flights.domain.publishers.base_publisher import SearchPublisher
 from flights.domain.models import SearchParams, FlightResults, FlightResult, Flight
 from utils.urls import DynamicURL
 from datetime import datetime
@@ -61,7 +61,6 @@ class TestFlightsFinder:
     def test_get_flights_returns_results(
             self, mock_flights_results, mock_search_params
     ):
-        # create Mocks
         fake_repository = Mock(FlightsRepository)
         fake_repository.get_flight_results.return_value = []
 
@@ -69,7 +68,6 @@ class TestFlightsFinder:
         scrapper = Mock(AviancaScrapper)
         scrapper.get_flights.return_value = mock_flights_results
 
-        # Call function under test
         publisher = Mock(SearchPublisher)
         flight_finder = FlightFinderAvianca(
             url=mock_url, scrapper=scrapper, repository=fake_repository,
