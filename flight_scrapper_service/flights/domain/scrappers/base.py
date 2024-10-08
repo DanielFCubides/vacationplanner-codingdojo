@@ -21,7 +21,7 @@ AVAILABLE_DRIVERS = {
 def create_driver(
     driver_name: str,
     capabilities: dict[str, Any],
-    selenium_hub: Union[str, None] = "http://selenium-hub:4444"
+    selenium_hub: Union[str, None] = "http://localhost:4444"
 ):
     options = AVAILABLE_DRIVERS.get(driver_name)
     if not options:

@@ -37,10 +37,12 @@ def create_app():
         try:
             scrapper = dependencies['scrappers'][airline]
             repository = dependencies['repositories']['redis']
+            publisher = dependencies['publishers']['redis']
             finder = dependencies['finders'].get(airline)(
                 url=dynamic_url,
                 scrapper=scrapper,
-                repository=repository
+                repository=repository,
+                publisher=publisher
             )
         except KeyError as e:
             return {'error': f'Airline dont available: {e}'}, 400

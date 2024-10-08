@@ -3,7 +3,7 @@ from unittest.mock import Mock, create_autospec
 import pytest
 from redis import Redis
 
-from flights.bootstrap import get_available_finders, get_available_scrappers
+from flights.bootstrap import get_available_finders, get_available_scrappers, get_available_publishers
 from flights.domain.scrappers.base import Scrapper
 from presentations.rest.main import create_app
 
@@ -33,16 +33,19 @@ def bootstrap_fixture(monkeypatch, mock_scrapper, mock_create_driver_function):
         airline: str = 'test_airline',
         scrappers=None,
         finders=None,
-        repositories=None
+        repositories=None,
+        publishers=None
     ):
         real_scrappers = {airline: get_available_scrappers().popitem()[1]}
         real_finders = {airline: get_available_finders().popitem()[1]}
         real_repositories = get_available_finders()
+        real_publishers = get_available_publishers()
         dependencies = {
             'driver_factory': mock_create_driver_function,
             'scrappers': {airline: scrappers} if scrappers else real_scrappers,
             'finders': {airline: finders} if finders else real_finders,
-            'repositories': repositories if repositories else real_repositories
+            'repositories': repositories if repositories else real_repositories,
+            'publishers': publishers if publishers else real_publishers
         }
         monkeypatch.setattr(
             'presentations.rest.main.dependencies',
