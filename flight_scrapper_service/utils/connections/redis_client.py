@@ -2,7 +2,7 @@ import redis
 
 
 def get_redis_client(
-    host: str = 'redis-cache',
+    host: str = 'localhost',
     port: int = 6379,
     database: int = 0
 ):

@@ -37,7 +37,7 @@ def create_app():
         try:
             scrapper = dependencies['scrappers'][airline]
             repository = dependencies['repositories']['redis']
-            publisher = dependencies['publishers']['redis']
+            publisher = dependencies['publishers']['kafka']
             finder = dependencies['finders'].get(airline)(
                 url=dynamic_url,
                 scrapper=scrapper,

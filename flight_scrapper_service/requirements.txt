@@ -52,4 +52,7 @@ selenium==4.17.2
 # Debug
 ipython
 pdbpp
+
+#communication
 redis
+confluent_kafka
