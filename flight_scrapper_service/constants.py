@@ -1,2 +1,4 @@
+import configparser
 
-AVIANCA_URL = 'https://www.avianca.com/es/booking/select/'
+config = configparser.ConfigParser()
+config.read('conf.ini')

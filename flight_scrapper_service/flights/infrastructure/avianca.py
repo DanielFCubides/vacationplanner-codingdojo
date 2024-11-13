@@ -1,12 +1,10 @@
 import logging
-from typing import Optional
 
 from flights.application.search import FlightsFinder
 from flights.domain.repositories.base import FlightsRepository
 from flights.domain.publishers.base_publisher import SearchPublisher
 from flights.domain.scrappers.base import Scrapper
 from flights.domain.models import SearchParams, FlightResults
-from utils.urls import DynamicURL
 
 
 logger = logging.getLogger(__name__)
@@ -18,12 +16,10 @@ class FlightFinderAvianca(FlightsFinder):
 
     def __init__(
         self,
-        url: Optional[DynamicURL],
         scrapper: Scrapper,
         repository: FlightsRepository,
         publisher: SearchPublisher
     ):
-        self.url = url
         self._scrapper = scrapper
         self._repository = repository
         self._publisher = publisher
@@ -59,8 +55,7 @@ class FlightFinderAvianca(FlightsFinder):
             "currency": search_params.currency,
             "posCode": "CO"
         }
-        self.url.set_query_params(_search_params)
-        results = self._scrapper.get_flights(self.url)
+        results = self._scrapper.get_flights(search_params)
         results.search_params = search_params
         if results.results:
             self._repository.save_flight(results)
@@ -71,8 +66,8 @@ class FlightFinderAvianca(FlightsFinder):
         return {
             'count': results.total,
             'flights': {
-                "arrival_date": results.search_params.arrival_date,
-                "return_date": results.search_params.return_date,
+                "arrival_date": results.search_params.arrival_date.strftime('%Y-%m-%d'),
+                "return_date": results.search_params.return_date.strftime('%Y-%m-%d'),
                 "results": results.results
             }
         }

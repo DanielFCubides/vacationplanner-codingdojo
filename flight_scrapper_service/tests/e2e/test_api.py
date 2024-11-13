@@ -2,6 +2,7 @@ from decimal import Decimal
 from unittest.mock import Mock
 
 import pytest
+from constants import config
 from flights.domain.models import FlightResults, FlightResult, Flight
 from flights.domain.publishers.redis.publisher import RedisPublisher
 from flights.domain.repositories.redis.repository import RedisRepository
@@ -46,24 +47,28 @@ class TestGetFlightsAPI:
     def test_get_flights_no_cached_results(
         self, test_client, mock_scrapper,
         mock_flights_results, bootstrap_fixture,
-        mock_create_driver_function, mock_redis
+        mock_create_driver_function, mock_redis,
+        mock_config
     ):
+        test_airline = mock_config['Default']['airline']
+        publisher = mock_config['Default']['publisher']
+        repository = mock_config['Default']['repository']
         mock_redis.scan.return_value = 0, []
         bootstrap_fixture(
-            'test_airline',
+            test_airline,
             scrappers=mock_scrapper(
                 create_driver=Mock(),
                 returned_value=mock_flights_results
             ),
             repositories={
-                'redis': RedisRepository(client_factory=Mock(return_value=mock_redis))
+                repository: RedisRepository(client_factory=Mock(return_value=mock_redis))
             },
             publishers={
-                'redis': RedisPublisher(client_factory=Mock(return_value=mock_redis))
+                publisher: RedisPublisher(client_factory=Mock(return_value=mock_redis))
             }
         )
         response = test_client.post(self.endpoint, json={
-            'airline': 'test_airline',
+            'airline': test_airline,
             'search_params': {
                 'origin': 'origin',
                 'destination': 'destination',
@@ -77,8 +82,11 @@ class TestGetFlightsAPI:
     def test_get_flights_cached_results(
         self, test_client, mock_scrapper,
         mock_flights_results, bootstrap_fixture, mock_create_driver_function,
-        mock_redis
+        mock_redis, mock_config
     ):
+        test_airline = mock_config['Default']['airline']
+        publisher = mock_config['Default']['publisher']
+        repository = mock_config['Default']['repository']
         keys, redis_side_effects = self._configure_redis_response(mock_flights_results)
         mock_redis.scan.return_value = len(keys), keys
         mock_redis.hgetall.side_effect = redis_side_effects
@@ -88,16 +96,16 @@ class TestGetFlightsAPI:
                 returned_value=mock_flights_results
             ),
             repositories={
-                'redis': RedisRepository(
+                repository: RedisRepository(
                     client_factory=Mock(return_value=mock_redis)
                 )
             },
             publishers={
-                'redis': RedisPublisher(client_factory=Mock(return_value=mock_redis))
+                publisher: RedisPublisher(client_factory=Mock(return_value=mock_redis))
             }
         )
         response = test_client.post(self.endpoint, json={
-            'airline': 'test_airline',
+            'airline': test_airline,
             'search_params': {
                 'origin': 'origin',
                 'destination': 'destination',
@@ -143,7 +151,7 @@ class TestGetFlightsAPI:
 
     def test_get_flights_unavailable_airline(
         self, test_client, bootstrap_fixture,
-        mock_create_driver_function
+        mock_create_driver_function, mock_config
     ):
         bootstrap_fixture()
         response = test_client.post(self.endpoint, json={
@@ -170,7 +178,7 @@ class TestGetFlightsAPI:
             }
         })
         assert response.status_code == 400
-        assert response.json['error'] == "Missing parameter: 'airline'"
+        assert response.json['errors']['airline'] == "Missing value"
 
     def test_get_flights_missing_required_search_params(
         self, test_client, mock_create_driver_function
@@ -183,7 +191,9 @@ class TestGetFlightsAPI:
             }
         })
         assert response.status_code == 400
-        assert response.json['error'] == "Missing search_params: arrival_date"
+        for error in response.json:
+            error['msg'] == 'Field Required'
+            error['type'] == 'missing'
 
     def test_get_flights_missing_search_params(
         self, test_client, mock_create_driver_function
@@ -192,4 +202,8 @@ class TestGetFlightsAPI:
             'airline': 'test_airline'
         })
         assert response.status_code == 400
-        assert response.json['error'] == 'Missing search_params'
+
+        assert len(response.json) > 2
+        for error in response.json:
+            error['msg'] == 'Field Required'
+            error['type'] == 'missing'

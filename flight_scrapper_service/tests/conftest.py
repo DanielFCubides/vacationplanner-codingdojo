@@ -1,4 +1,4 @@
-from unittest.mock import Mock, create_autospec
+from unittest.mock import Mock, create_autospec, patch
 
 import pytest
 from redis import Redis
@@ -55,7 +55,7 @@ def bootstrap_fixture(monkeypatch, mock_scrapper, mock_create_driver_function):
 
 
 @pytest.fixture
-def test_client(bootstrap_fixture):
+def test_client(bootstrap_fixture, mock_config):
     app_ = create_app()
     app_.testing = True
     client = app_.test_client()
@@ -67,3 +67,23 @@ def mock_redis(monkeypatch):
     mock = Mock(spec=Redis)
     return mock
 
+
+@pytest.fixture
+def mock_config(monkeypatch):
+    mock_config = {
+        'Default': {
+            'repository': 'redis',
+            'publisher': 'redis',
+            'airline': 'test_airline'
+        },
+        'Selenium': {
+            'host': 'localhost',
+            'port': '4444'
+        },
+        'Scrappers.test_airline': {
+            'base_url': 'http://test.com',
+            'timeout': '10',
+        }
+    }
+    monkeypatch.setattr('presentations.rest.main.config', mock_config)
+    return mock_config

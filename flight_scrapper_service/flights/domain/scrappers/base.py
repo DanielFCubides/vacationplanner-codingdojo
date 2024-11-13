@@ -6,9 +6,8 @@ from selenium import webdriver
 from selenium.common import exceptions
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 
-from flights.domain.models import FlightResults
-from utils.urls import DynamicURL
-
+from flights.domain.models import FlightResults, SearchParams
+from constants import config
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +20,7 @@ AVAILABLE_DRIVERS = {
 def create_driver(
     driver_name: str,
     capabilities: dict[str, Any],
-    selenium_hub: Union[str, None] = "http://localhost:4444"
+    selenium_hub: Union[str, None] = None
 ):
     options = AVAILABLE_DRIVERS.get(driver_name)
     if not options:
@@ -32,8 +31,9 @@ def create_driver(
     options.add_argument("--disable-extensions")
     options.add_argument("--disable-popup-blocking")
 
+    hub = selenium_hub or f"{config['Selenium']['host']}:{config['Selenium']['port']}"
     driver = webdriver.Remote(
-        options=options, command_executor=selenium_hub
+        options=options, command_executor=hub
     )
     return driver
 
@@ -42,6 +42,16 @@ class Scrapper(ABC):
 
     create_driver: Callable
     capabilities: dict[str, Any]
+    name: str
+
+    def _initialize_config(self):
+        assert self.name, 'Scrapper class needs name attribute'
+        self.config = type(
+            'Config',
+            (),
+            {**config[f'Scrappers.{self.name}']}
+        )
+        self.config()
 
     def _initialize_driver(self):
         for driver_name in AVAILABLE_DRIVERS.keys():
@@ -60,5 +70,5 @@ class Scrapper(ABC):
             logger.error(f"Error while quitting WebDriver: {str(e)}")
 
     @abstractmethod
-    def get_flights(self, url: DynamicURL) -> FlightResults | None:
+    def get_flights(self, search_params: SearchParams) -> FlightResults | None:
         ...
