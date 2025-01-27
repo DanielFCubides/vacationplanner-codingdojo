@@ -1,7 +1,7 @@
 import redis from 'redis';
 
 export {readFromRedis, GetSearchParams, GetSearchParams2};
-const redisClient = redis.createClient({url: "redis://redis-cache:6379", database: 1});
+const redisClient = redis.createClient({url: "redis://localhost:6379", database: 1});
 redisClient.on('error', err => console.log('Redis Client Error', err));
 
 async function GetSearchParams() {

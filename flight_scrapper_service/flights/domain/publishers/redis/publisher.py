@@ -1,11 +1,12 @@
 import logging
 from enum import Enum
 from typing import Callable
+
+from constants import config
 from flights.domain.models import SearchParams
 from flights.domain.publishers.base_publisher import SearchPublisher
 
 logger = logging.getLogger(__name__)
-CHANNEL_NAME = 'search_params'
 
 
 class PublishModes(str, Enum):
@@ -17,8 +18,8 @@ class RedisPublisher(SearchPublisher):
 
     def __init__(self, client_factory: Callable):
         self.client = client_factory()
-        self.mode = PublishModes.PUBLISH
-        self.channel = CHANNEL_NAME
+        self.mode = PublishModes(config['Default']['publish_mode'])
+        self.channel = config['Default']['publish_channel']
 
     def publish_search_params(self, search_params: SearchParams) -> None:
         params = str(search_params)

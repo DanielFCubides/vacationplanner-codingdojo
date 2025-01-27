@@ -1,9 +1,8 @@
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, fields
 from datetime import datetime
 from decimal import Decimal
 from functools import cached_property
 from typing import Optional, Any
-from uuid import UUID
 
 
 @dataclass
@@ -21,8 +20,8 @@ class SearchParams:
         return {
             'origin': self.origin,
             'destination': self.destination,
-            'arrival_date': self.arrival_date,
-            'return_date': self.return_date,
+            'arrival_date': self.arrival_date.strftime('%Y-%m-%d::%H:%M:%S'),
+            'return_date': self.return_date.strftime('%Y-%m-%d::%H:%M:%S'),
             'passengers': self.passengers,
             'checked_baggage': self.checked_baggage,
             'carry_on_baggage': self.carry_on_baggage,

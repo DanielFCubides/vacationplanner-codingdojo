@@ -24,6 +24,7 @@ outcome==1.3.0.post0
 packaging==23.2
 pluggy==1.3.0
 pycparser==2.21
+pydantic==2.9.2
 PySocks==1.7.1
 pytest==7.4.4
 pytest-cov==4.1.0
@@ -52,4 +53,7 @@ selenium==4.17.2
 # Debug
 ipython
 pdbpp
+
+#communication
 redis
+confluent_kafka

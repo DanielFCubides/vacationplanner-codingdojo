@@ -1,9 +1,10 @@
 import redis
+from constants import config
 
 
 def get_redis_client(
-    host: str = 'redis-cache',
-    port: int = 6379,
+    host: str = config['Redis']['host'],
+    port: int = config['Redis']['port'],
     database: int = 0
 ):
     return redis.Redis(
