@@ -126,7 +126,7 @@ func (ms *MazeSolver) PrintSolution(path []Position) {
 
 func SolveMaze() {
 	// Example maze
-	filename := "mazes/Maze1"
+	filename := "mazes/Maze7"
 	mazeStr := ReadMazeFile(filename)
 
 	// Create and solve maze

@@ -5,6 +5,7 @@ import "fmt"
 func main() {
 	fmt.Println("Hello Maze")
 
+	// Here we are calling out maze solver to solve a maze
 	SolveMaze()
 
 }
