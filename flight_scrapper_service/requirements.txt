@@ -57,3 +57,6 @@ pdbpp
 #communication
 redis
 confluent_kafka
+
+#faker
+faker
