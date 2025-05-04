@@ -1,9 +1,10 @@
+import os
 import pandas as pd
 import numpy as np
+from pandas import DataFrame
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
 import tensorflow as tf
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.layers import Dense, Dropout, Input, Concatenate
@@ -21,7 +22,7 @@ def convert_time_to_minutes(time_str):
         return np.nan
 
 
-def feature_engineering(df):
+def feature_engineering(df: DataFrame):
     """Create meaningful features for flight similarity comparison."""
     # Make a copy to avoid modifying the original
     df_copy = df.copy()
@@ -87,50 +88,53 @@ def build_similarity_model(input_dim):
         Dropout(0.3),
         Dense(32, activation='relu'),
         Dropout(0.3),
-        Dense(32, activation='relu'),
+        Dense(16, activation='relu'),
         Dropout(0.3),
-        Dense(32, activation='relu'),
+        Dense(16, activation='relu'),
         Dropout(0.3),
         Dense(1, activation='sigmoid')  # Output between -1-1 for similarity
     ])
 
-
     model.compile(
         optimizer='adam',
         loss='binary_crossentropy',
-        metrics=['accuracy', tf.keras.metrics.AUC(), tf.keras.metrics.Precision(), tf.keras.metrics.Recall()]
+        metrics=[
+            'accuracy',
+            tf.keras.metrics.AUC(),
+            tf.keras.metrics.Precision(),
+            tf.keras.metrics.Recall()
+        ]
     )
 
     return model
 
 
-def train_model(train_data_path):
+def train_model(training_data: DataFrame):
     """Train the flight similarity model."""
-    # Load data
-    print("Loading and preprocessing data...")
-    flight_data = pd.read_csv(train_data_path)
-
-    # Check if we have similarity values in the dataset
-    if 'similarity' not in flight_data.columns:
-        raise ValueError("Training data must include 'similarity' column")
 
     # Feature engineering
-    processed_data = feature_engineering(flight_data)
+    processed_data = feature_engineering(training_data)
 
     # Prepare features and target
-    X = processed_data.drop('similarity', axis=1)
+    x = processed_data.drop('similarity', axis=1)
     y = (processed_data['similarity'] >= 1).astype(int)  # Convert to binary
 
-    # Split the data
-    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
+    # Split the data 80% train, 20% test data
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
 
     # Create and fit the preprocessing pipeline
-    preprocessor = create_preprocessing_pipeline()
-    X_train_processed = preprocessor.fit_transform(X_train)
-    X_val_processed = preprocessor.transform(X_val)
+    import joblib
+    if os.path.exists('flight_preprocessor.joblib'):
+        preprocessor = joblib.load('flight_preprocessor.joblib')
+        x_train_processed = preprocessor.transform(x_train)
+    else:
+        preprocessor = create_preprocessing_pipeline()
+        x_train_processed = preprocessor.fit_transform(x_train)
+        joblib.dump(preprocessor, 'flight_preprocessor.joblib')
 
+    x_val_processed = preprocessor.transform(x_test)
     # Get input dimension after preprocessing
-    input_dim = X_train_processed.shape[1]
+    input_dim = x_train_processed.shape[1]
 
     # Build and train the model
     print(f"Building model with input dimension: {input_dim}")
@@ -145,23 +149,21 @@ def train_model(train_data_path):
     # Train the model
     print("Training model...")
     history = model.fit(
-        X_train_processed, y_train,
+        x_train_processed, y_train,
         epochs=100,
         batch_size=32,
-        validation_data=(X_val_processed, y_val),
+        validation_data=(x_val_processed, y_test),
         callbacks=callbacks,
         verbose=1
     )
 
     # Evaluate the model
     print("Evaluating model...")
-    evaluation = model.evaluate(X_val_processed, y_val)
+    evaluation = model.evaluate(x_val_processed, y_test)
     print(f"Validation metrics: {dict(zip(model.metrics_names, evaluation))}")
 
     # Save the model and preprocessor
     model.save('flight_similarity_model.keras')
-    import joblib
-    joblib.dump(preprocessor, 'flight_preprocessor.joblib')
 
     # Plot training history
     plt.figure(figsize=(12, 4))
@@ -239,7 +241,7 @@ def create_synthetic_training_data(csv_path, n_samples=1000):
 
     # Create a composite similarity score (0-1 range)
     processed_data['similarity'] = (
-        # Route similarity (highest weight)
+        # Route similarity (the highest weight)
             (processed_data['same_origin'] * 0.3) +
             (processed_data['same_destination'] * 0.3) +
             (processed_data['reversed_route'] * 0.2) +
@@ -274,45 +276,47 @@ def create_synthetic_training_data(csv_path, n_samples=1000):
     return synthetic_data
 
 
+def execute_training(
+    data_path: str = 'flights.csv', synthetic_path: str = 'flights_exp.csv'
+):
+    if os.path.exists(data_path):
+        df = pd.read_csv(data_path)
+        if 'similarity' not in df:
+            print("No `similarity` column; generating synthetic data.")
+            df = create_synthetic_training_data(synthetic_path, n_samples=1000)
+        elif df['similarity'].nunique() <= 1:
+            print("Insufficient `similarity` classes; generating synthetic data.")
+            df = create_synthetic_training_data(synthetic_path, n_samples=1000)
+        else:
+            flight_data = df
+    else:
+        print("No training data found; generating synthetic data.")
+        flight_data = create_synthetic_training_data(synthetic_path, n_samples=1000)
+
+    # Train the model
+    model, preprocessor = train_model(flight_data)
+    return model, preprocessor
+
+
 def main():
-    model, os, preprocessor = execute_trainning()
+    model, preprocessor = execute_training()
     print(f"Training summary: {model.summary()}")
     # Predict similarities for experimental data
-    if os.path.exists('flights_exp.csv'):
-        results = predict_similarity(model, preprocessor, 'flights_exp.csv')
-        print(f"Predicted similarities for {len(results)} flight pairs")
-        print(results[['flight_1_from', 'flight_1_to', 'flight_2_from', 'flight_2_to', 'similarity_score']].head(10))
-    else:
+    print("Executing predictions...")
+    if not os.path.exists('flights_exp.csv'):
         print("No experimental data found for predictions.")
+        exit(1)
 
-
-def execute_trainning():
-    import os
-
-    if os.path.exists('flights.csv'):
-        # Check if we need to create synthetic data
-        flight_data = pd.read_csv('flights.csv')
-
-        if 'similarity' in flight_data.columns:
-            similarity_values = flight_data['similarity'].unique()
-            if len(similarity_values) <= 1:
-                print("Training data has limited similarity values. Creating synthetic data...")
-                # Create synthetic data with varied similarity scores
-                create_synthetic_training_data('flights_exp.csv', n_samples=1000)
-                train_data_path = 'synthetic_training_data.csv'
-            else:
-                train_data_path = 'flights.csv'
-        else:
-            print("Training data missing similarity column. Creating synthetic data...")
-            create_synthetic_training_data('flights_exp.csv', n_samples=1000)
-            train_data_path = 'synthetic_training_data.csv'
-    else:
-        print("No training data found. Creating synthetic data...")
-        create_synthetic_training_data('flights_exp.csv', n_samples=1000)
-        train_data_path = 'synthetic_training_data.csv'
-    # Train the model
-    model, preprocessor = train_model(train_data_path)
-    return model, os, preprocessor
+    results = predict_similarity(model, preprocessor, 'flights_exp.csv')
+    print(f"Predicted similarities for {len(results)} flight pairs")
+    print(
+        results[
+            [
+                'flight_1_from', 'flight_1_to',
+                'flight_2_from', 'flight_2_to',
+                'similarity_score']
+        ].head(10)
+    )
 
 
 if __name__ == '__main__':
