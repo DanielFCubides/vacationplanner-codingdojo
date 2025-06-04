@@ -1,35 +1,80 @@
-# flight scrapper service
+# Flight Scrapper Service
 
-## how to run
+A flexible flight search service that supports multiple server configurations and provides flight data through various airline scrapers.
 
-Set up the env variable SERVER with the type of server you want to initialized:
-- rest
-- grpc
-- graphql
+## 🛠️ Quick Start
+
+### Using Docker Compose (Recommended)
+
+1. **Set the server type** you want to run:
+   ```shell
+   export SERVER=rest
+   ```
+   
+   Available options:
+   - `rest` - RESTful API server
+   - `grpc` - gRPC server  
+   - `graphql` - GraphQL server
+
+2. **Start the service** from the parent directory:
+   ```shell
+   docker compose up flight-scrapper --build
+   ```
+
+3. **Verify the service** is running:
+   ```shell
+   curl http://localhost:8001/
+   ```
+   
+   Expected response:
+   ```json
+   {
+     "status": "alive",
+     "timestamp": "Wed, 04 Jun 2025 01:48:17 GMT"
+   }
+   ```
+
+### Using Docker
+
+Alternatively, you can run the service directly with Docker:
 
 ```shell
-export SERVER=rest
-```
-### Docker compose
-
-Go the the parent folder and intialized the server
-
-```shell
-docker compose up flight-scrapper --build
-```
-Then you can go to localhost:8001/ and check that the project is alive, you should get a message like this one:
-
-```json
-{
-  "status": "alive",
-  "timestamp": "Wed, 04 Jun 2025 01:48:17 GMT"
-}
-```
-
-### Docker
-Then you can create the container 
-```shell
+# Build the container
 docker build . -t flight-scraper
-docker run -it -p 5000:5000 flight-scraper
+
+# Run the container
+docker run -it -p 5000:5000 -e SERVER=rest flight-scraper
 ```
 
+## 📖 API Documentation
+
+### REST API
+
+The REST API is fully documented using OpenAPI 3.0 specification. You can:
+
+- **View the specification**: Located at `presentations/rest/api.yaml`
+- **Interactive documentation**: Copy the content and paste it into [editor.swagger.io](https://editor.swagger.io) for an interactive API explorer
+- **Available endpoints**:
+  - `GET /` - Health check
+  - `POST /get_flights` - Search for flights
+
+### Example Flight Search Request
+
+```bash
+curl -X POST http://localhost:8001/get_flights \
+  -H "Content-Type: application/json" \
+  -d '{
+    "airline": "dummy",
+    "search_params": {
+      "origin": "NYC",
+      "destination": "LAX", 
+      "departure_date": "2024-07-15",
+      "return_date": "2024-07-20",
+      "passengers": 1
+    }
+  }'
+```
+
+## 🔧 Configuration
+
+The service uses configuration file `conf.ini` in the root.
