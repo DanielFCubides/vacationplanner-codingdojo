@@ -4,7 +4,9 @@ import logging
 
 from flights.application.search import FlightsFinder
 from flights.domain.publishers.kafka.publisher import KafkaPublisher
+from flights.domain.publishers.memory.publisher import MemoryPublisher
 from flights.domain.publishers.redis.publisher import RedisPublisher
+from flights.domain.repositories.memory.repository import FlightsMemoryRepository
 from flights.domain.repositories.redis.repository import RedisRepository
 from flights.domain.scrappers.base import Scrapper, create_driver
 from utils.connections.kafka_client import kafka_client
@@ -74,6 +76,7 @@ def get_available_finders():
 def get_available_repositories():
     return {
         'redis': RedisRepository(client_factory=get_redis_client),
+        'memory': FlightsMemoryRepository(),
     }
 
 
@@ -81,4 +84,5 @@ def get_available_publishers():
     return {
         'redis': RedisPublisher(client_factory=get_redis_client),
         'kafka': KafkaPublisher(producer=kafka_client()),
+        'memory': MemoryPublisher(),
     }
