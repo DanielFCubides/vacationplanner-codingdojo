@@ -1,5 +1,5 @@
 from abc import abstractmethod, ABC
-from flights.domain.models import FlightResults, SearchParams
+from domain.models import FlightResults, SearchParams
 
 
 class FlightsRepository(ABC):
@@ -13,7 +13,7 @@ class FlightsRepository(ABC):
         ...
 
     @abstractmethod
-    def save_flight(self, flight: FlightResults) -> str:
+    def save_flight(self, flight: FlightResults, search_params: SearchParams) -> str:
         """
         save a flight with all information
         """

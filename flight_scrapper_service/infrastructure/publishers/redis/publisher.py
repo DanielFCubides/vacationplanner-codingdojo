@@ -3,8 +3,8 @@ from enum import Enum
 from typing import Callable
 
 from constants import config
-from flights.domain.models import SearchParams
-from flights.domain.publishers.base_publisher import SearchPublisher
+from domain.models import SearchParams
+from infrastructure.publishers.base_publisher import SearchPublisher
 
 logger = logging.getLogger(__name__)
 

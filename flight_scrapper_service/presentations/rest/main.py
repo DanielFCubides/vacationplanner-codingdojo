@@ -5,7 +5,7 @@ from flask import Flask, request
 from pydantic import ValidationError
 
 from constants import config
-from flights.domain.models import SearchParams
+from domain.models import SearchParams
 from main import dependencies
 from presentations.rest.models.inputs import Inputs, SearchParamsInputModel
 
@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 def create_app():
     app = Flask(__name__)
-    app.logger.setLevel(logging.INFO)
     repository_name = config['Default']['repository']
     publisher_name = config['Default']['publisher']
 
@@ -51,7 +50,7 @@ def create_app():
                     **params.search_params.model_dump()
                 )
             )
-            return results, 200
+            return [result.to_dict() for result in results.results], 200
         except Exception as e:
             logger.error(e)
             return {'message': 'Something went wrong'}, 400
@@ -66,6 +65,7 @@ def create_app():
 def main():
     app = create_app()
     app.run(debug=True, host='0.0.0.0', port=8080)
+    app.logger.setLevel(logging.INFO)
 
 
 if __name__ == "__main__":

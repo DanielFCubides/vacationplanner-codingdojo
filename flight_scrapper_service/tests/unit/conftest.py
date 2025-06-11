@@ -1,7 +1,7 @@
 import pytest
 
-from flights.domain.repositories.base import FlightsRepository
-from flights.domain.models import FlightResult, FlightResults, Flight, SearchParams
+from infrastructure.repositories.base import FlightsRepository
+from domain.models import FlightResult, FlightResults, Flight, SearchParams
 from utils.flight_hash import create_search_params_hash
 
 
