@@ -4,7 +4,9 @@ import logging
 
 from domain.search.base import FlightsFinder
 from infrastructure.publishers.kafka.publisher import KafkaPublisher
+from infrastructure.publishers.memory.publisher import MemoryPublisher
 from infrastructure.publishers.redis.publisher import RedisPublisher
+from infrastructure.repositories.memory.repository import FlightsMemoryRepository
 from infrastructure.repositories.redis.repository import RedisRepository
 from infrastructure.scrappers.base import Scrapper, DriverFactory
 from utils.connections.kafka_client import kafka_client
