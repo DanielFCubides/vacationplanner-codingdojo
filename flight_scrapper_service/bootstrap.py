@@ -106,6 +106,7 @@ def get_available_finders():
 def get_available_repositories():
     return {
         'redis': RedisRepository(client_factory=get_redis_client),
+        'memory': FlightsMemoryRepository(),
     }
 
 
@@ -113,4 +114,5 @@ def get_available_publishers():
     return {
         'redis': RedisPublisher(client_factory=get_redis_client),
         'kafka': KafkaPublisher(producer=kafka_client()),
+        'memory': MemoryPublisher(),
     }
