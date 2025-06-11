@@ -1,10 +1,10 @@
-from unittest.mock import Mock, create_autospec, patch
+from unittest.mock import Mock, create_autospec
 
 import pytest
 from redis import Redis
 
-from flights.bootstrap import get_available_finders, get_available_scrappers, get_available_publishers
-from flights.domain.scrappers.base import Scrapper
+from bootstrap import get_available_finders, get_available_scrappers, get_available_publishers
+from infrastructure.scrappers import Scrapper
 from presentations.rest.main import create_app
 
 

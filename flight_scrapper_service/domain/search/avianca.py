@@ -1,16 +1,18 @@
+import json
 import logging
+from dataclasses import asdict
 
-from flights.application.search import FlightsFinder
-from flights.domain.repositories.base import FlightsRepository
-from flights.domain.publishers.base_publisher import SearchPublisher
-from flights.domain.scrappers.base import Scrapper
-from flights.domain.models import SearchParams, FlightResults
-
+from domain.search.base import FlightsFinder
+from infrastructure.repositories.base import FlightsRepository
+from infrastructure.publishers.base_publisher import SearchPublisher
+from infrastructure.scrappers.base import Scrapper
+from domain.models import SearchParams, FlightResults
+from utils.json_decoders import FlightsJSONEncoder
 
 logger = logging.getLogger(__name__)
 
 
-class FlightFinderAvianca(FlightsFinder):
+class AviancaFlightsFinder(FlightsFinder):
 
     _flight_types = ('outbound', 'return_in')
 
@@ -29,8 +31,8 @@ class FlightFinderAvianca(FlightsFinder):
             f'Start getting a response with origin {search_params.origin} '
             f'and destination {search_params.destination}'
         )
-        # search params are the unique ID for a flight results
-        self._emit_message(search_params)
+        # search params are the unique ID for a flight result
+        #self._emit_message(search_params)
         saved_results = self._repository.get_flight_results(search_params)
         if saved_results:
             saved_results.search_params = search_params
@@ -40,7 +42,7 @@ class FlightFinderAvianca(FlightsFinder):
         _search_params = {
             "origin1": search_params.origin,
             "destination1": search_params.destination,
-            "departure1": search_params.arrival_date,
+            "departure1": search_params.departure,
             "adt1": search_params.passengers,
             "tng1": 0,
             "chd1": 0,
@@ -64,12 +66,8 @@ class FlightFinderAvianca(FlightsFinder):
 
     def _create_response(self, results: FlightResults) -> dict:
         return {
-            'count': results.total,
-            'flights': {
-                "arrival_date": results.search_params.arrival_date.strftime('%Y-%m-%d'),
-                "return_date": results.search_params.return_date.strftime('%Y-%m-%d'),
-                "results": results.results
-            }
+            'count': len(results.results),
+            'flights': json.dumps(asdict(results.results), cls=FlightsJSONEncoder, indent=2)
         }
 
     def _emit_message(self, search_params):

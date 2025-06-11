@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 class SearchParamsInputModel(BaseModel):
     origin: str
     destination: str
-    arrival_date: datetime
+    departure: datetime
     return_date: datetime
     passengers: Optional[int] = Field(default=1)
     checked_baggage: Optional[int] = Field(default=0)

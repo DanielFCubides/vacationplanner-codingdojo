@@ -16,8 +16,6 @@ COPY . $WORKDIR
 COPY --from=builder /opt/app/env /opt/app/env
 ENV PATH=/opt/app/env:$PATH
 
-EXPOSE 8001
-
 CMD ["python3", "main.py"]
 
 

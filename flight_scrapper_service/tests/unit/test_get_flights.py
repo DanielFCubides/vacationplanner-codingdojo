@@ -3,13 +3,13 @@ import pytest
 from decimal import Decimal
 from unittest.mock import Mock
 
-from flights.infrastructure.avianca import FlightFinderAvianca
-from flights.domain.publishers.base_publisher import SearchPublisher
-from flights.domain.models import SearchParams, FlightResults, FlightResult, Flight
+from infrastructure import FlightFinderAvianca
+from infrastructure.publishers import SearchPublisher
+from domain.models import SearchParams, FlightResults, FlightResult, Flight
 from datetime import datetime
 
-from flights.domain.repositories.base import FlightsRepository
-from flights.domain.scrappers.avianca.scrapper import AviancaScrapper
+from infrastructure.repositories.base import FlightsRepository
+from infrastructure.scrappers.avianca.scrapper import AviancaScrapper
 
 
 class TestFlightsFinder:

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from flights.domain.models import SearchParams
+from domain.models import SearchParams
 
 
 class SearchPublisher(ABC):

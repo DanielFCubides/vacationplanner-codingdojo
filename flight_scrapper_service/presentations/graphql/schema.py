@@ -2,9 +2,6 @@ from typing import Any
 
 from graphene import Schema, ObjectType, String, Float, List, Field, Int
 
-from flights.domain.scrappers.base import create_driver
-from flights.infrastructure.avianca import FlightFinderAvianca
-from utils.urls import DynamicURL
 
 #flight_repo = FlightFinderAvianca(
 #    url=DynamicURL.from_url('https://www.avianca.com/es/booking/select/'),

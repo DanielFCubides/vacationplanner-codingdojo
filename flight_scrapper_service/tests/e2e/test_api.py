@@ -2,10 +2,9 @@ from decimal import Decimal
 from unittest.mock import Mock
 
 import pytest
-from constants import config
-from flights.domain.models import FlightResults, FlightResult, Flight
-from flights.domain.publishers.redis.publisher import RedisPublisher
-from flights.domain.repositories.redis.repository import RedisRepository
+from domain.models import FlightResults, FlightResult, Flight
+from infrastructure.publishers.redis.publisher import RedisPublisher
+from infrastructure.repositories.redis.repository import RedisRepository
 
 
 class TestGetFlightsAPI:

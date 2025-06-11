@@ -5,7 +5,7 @@ import sys
 from enum import Enum
 from typing import Callable, Union
 
-from flights.bootstrap import bootstrap
+from bootstrap import bootstrap
 
 
 logger = logging.getLogger(__name__)
