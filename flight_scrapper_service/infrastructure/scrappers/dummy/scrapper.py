@@ -13,7 +13,7 @@ class DummyScrapper(Scrapper):
 
     def __init__(
         self,
-        create_driver: Callable[[str, dict, Union[str, None]], Any]
+        create_driver: Callable[[str, dict, Union[str, None]], Any],
     ) -> None:
         self.create_driver = create_driver
 

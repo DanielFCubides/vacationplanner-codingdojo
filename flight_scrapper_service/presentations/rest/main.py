@@ -6,6 +6,8 @@ from pydantic import ValidationError
 
 from constants import config
 from domain.models import SearchParams
+from infrastructure.feature_flag.flags import feature_flag_client
+from infrastructure.feature_flag.memory_provider import WELCOME_MESSAGE_FLAG
 from main import dependencies
 from presentations.rest.models.inputs import Inputs, SearchParamsInputModel
 
@@ -57,7 +59,8 @@ def create_app():
 
     @app.route("/")
     def hello_world():
-        return {"status": "alive", "timestamp": datetime.now()}
+        is_message_on = feature_flag_client.get_boolean_value(WELCOME_MESSAGE_FLAG, False)
+        return {"status": "alive" if is_message_on else "running", "timestamp": datetime.now()}
 
     return app
 

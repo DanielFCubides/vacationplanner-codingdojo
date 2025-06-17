@@ -61,3 +61,6 @@ confluent_kafka
 
 #faker
 faker
+
+#openfeature
+openfeature-sdk==0.8.1
