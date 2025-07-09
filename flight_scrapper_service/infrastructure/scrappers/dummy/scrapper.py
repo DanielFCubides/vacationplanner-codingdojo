@@ -1,7 +1,6 @@
 import logging
 from datetime import time, datetime, timedelta
 from decimal import Decimal
-from typing import Callable, Union, Any
 
 from domain.models import SearchParams, FlightResults, Flight, Flights
 from infrastructure.scrappers.base import Scrapper, DriverFactory
