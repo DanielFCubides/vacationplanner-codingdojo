@@ -4,14 +4,14 @@ import pytest
 from redis import Redis
 
 from bootstrap import get_available_finders, get_available_scrappers, get_available_publishers
-from infrastructure.scrappers import Scrapper
+from infrastructure.scrappers.base import Scrapper
 from presentations.rest.main import create_app
 
 
 @pytest.fixture
 def mock_create_driver_function(monkeypatch):
     mock = Mock()
-    monkeypatch.setattr('flights.domain.scrappers.base.create_driver', mock)
+    monkeypatch.setattr('infrastructure.scrappers.base.DriverFactory.create_driver', mock)
     return mock
 
 

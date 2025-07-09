@@ -32,7 +32,7 @@ class AviancaFlightsFinder(FlightsFinder):
         # search params are the unique ID for a flight result
         self._emit_message(search_params)
         saved_results = self._repository.get_flight_results(search_params)
-        if saved_results.results:
+        if saved_results:
             return saved_results
 
         _search_params = {
