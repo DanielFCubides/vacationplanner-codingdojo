@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Callable, Union, Any
 
 from domain.models import SearchParams, FlightResults, Flight, Flights
-from infrastructure.scrappers.base import Scrapper
+from infrastructure.scrappers.base import Scrapper, DriverFactory
 
 logger = logging.getLogger(__name__)
 
@@ -13,9 +13,9 @@ class DummyScrapper(Scrapper):
 
     def __init__(
         self,
-        create_driver: Callable[[str, dict, Union[str, None]], Any]
+        drivers_factory: DriverFactory
     ) -> None:
-        self.create_driver = create_driver
+        self.drivers_factory = drivers_factory
 
     def get_flights(self, search_params: SearchParams) -> FlightResults | None:
         logger.info(f"Getting flights for {search_params}")

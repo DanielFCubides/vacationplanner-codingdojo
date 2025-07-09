@@ -46,3 +46,13 @@ class RedisRepository(FlightsRepository):
         # put search params into a list
         self.client.lpush('search_params', hash_)
         logger.info(f'Flights {hash_} saved')
+
+
+def create_redis_repository(
+    client_factory: Callable = None,
+) -> RedisRepository:
+    if client_factory is None:
+        from utils.connections.redis_client import get_redis_client
+        client_factory = get_redis_client
+
+    return RedisRepository(client_factory=client_factory)

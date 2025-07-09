@@ -22,7 +22,7 @@ def create_app():
     def get_flights():
         try:
             params = Inputs(
-                airline=request.json['airline'],
+                airline=request.json.get('airline', config['Default']['airline']),
                 search_params=SearchParamsInputModel(**request.json.get('search_params', {}))
             )
         except ValidationError as e:
@@ -34,15 +34,15 @@ def create_app():
 
         try:
             scrapper = dependencies['scrappers'][params.airline]
-            repository = dependencies['repositories'][repository_name]
-            publisher = dependencies['publishers'][publisher_name]
+            repository = dependencies['repositories'][repository_name]()
+            publisher = dependencies['publishers'][publisher_name]()
             finder = dependencies['finders'].get(params.airline)(
                 scrapper=scrapper,
                 repository=repository,
                 publisher=publisher
             )
         except KeyError as e:
-            return {'error': f'Airline {e} dont available'}, 400
+            return {'error': f'Dependency {e} dont available'}, 400
 
         try:
             results = finder.get_flights(

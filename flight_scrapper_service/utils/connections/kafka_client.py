@@ -8,7 +8,7 @@ from constants import config
 logger = logging.getLogger(__name__)
 
 
-def kafka_client() -> Producer:
+def kafka_client_factory() -> Producer:
     hostname = socket.gethostname()
     servers = f"{config['Kafka']['host']}:{config['Kafka']['port']}"
     logger.info(f"Connecting to Kafka server with the following information: {hostname} - {servers}")

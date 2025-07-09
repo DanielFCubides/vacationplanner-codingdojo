@@ -29,7 +29,6 @@ class GoogleFlightsScrapper(Scrapper):
         self,
         drivers_factory: DriverFactory
     ) -> None:
-
         self.drivers_factory = drivers_factory
         self._initialize_config()
 
@@ -37,7 +36,6 @@ class GoogleFlightsScrapper(Scrapper):
     def get_flights(self, search_params: SearchParams) -> FlightResults | None:
         for driver in self._initialize_driver():
             wait = WebDriverWait(driver, timeout=10)
-            breakpoint()
             driver.get('https://www.google.com/travel/flights')
             self.select_region(driver)
             origin = wait.until(
@@ -97,7 +95,6 @@ class GoogleFlightsScrapper(Scrapper):
             search_button.click()
 
             flights = self.get_outbound_flights(driver, search_params)
-            print(flights)
             if not flights:
                 raise ValueError("No flights found")
             return FlightResults(results=flights)

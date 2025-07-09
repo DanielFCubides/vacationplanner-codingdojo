@@ -7,8 +7,8 @@ from typing import Callable, Union
 
 from bootstrap import bootstrap
 
-
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('flight_scrapper')
 
 
 class ServerTypes(Enum):

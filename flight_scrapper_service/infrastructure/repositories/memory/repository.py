@@ -32,3 +32,7 @@ class FlightsMemoryRepository(FlightsRepository):
 
     def save_flight(self, flight: FlightResults, search_params: SearchParams) -> str:
         pass
+
+
+def create_memory_repository() -> FlightsMemoryRepository:
+    return FlightsMemoryRepository()

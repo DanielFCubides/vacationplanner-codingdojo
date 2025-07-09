@@ -3,14 +3,11 @@ import inspect
 import logging
 
 from domain.search.base import FlightsFinder
-from infrastructure.publishers.kafka.publisher import KafkaPublisher
-from infrastructure.publishers.memory.publisher import MemoryPublisher
-from infrastructure.publishers.redis.publisher import RedisPublisher
-from infrastructure.repositories.memory.repository import FlightsMemoryRepository
-from infrastructure.repositories.redis.repository import RedisRepository
+from infrastructure.publishers.kafka.publisher import  create_kafka_publisher
+from infrastructure.publishers.redis.publisher import  create_redis_publisher
+from infrastructure.repositories.memory.repository import  create_memory_repository
+from infrastructure.repositories.redis.repository import create_redis_repository
 from infrastructure.scrappers.base import Scrapper, DriverFactory
-from utils.connections.kafka_client import kafka_client
-from utils.connections.redis_client import get_redis_client
 
 logger = logging.Logger(__name__)
 
@@ -34,7 +31,7 @@ def get_available_scrappers():
 
     base_module = importlib.resources.files(SCRAPPER_BASE_MODULE)
     for resource in base_module.iterdir():
-        if not resource.is_dir() and resource.name == '__pycache__':
+        if not resource.is_dir() or resource.name == '__pycache__':
             continue
 
         module_name = resource / scrapper_file_name
@@ -107,14 +104,14 @@ def get_available_finders():
 
 def get_available_repositories():
     return {
-        'redis': RedisRepository(client_factory=get_redis_client),
-        'memory': FlightsMemoryRepository(),
+        'redis': create_redis_repository,
+        'memory': create_memory_repository,
     }
 
 
 def get_available_publishers():
     return {
-        'redis': RedisPublisher(client_factory=get_redis_client),
-        'kafka': KafkaPublisher(producer=kafka_client()),
-        'memory': MemoryPublisher(),
+        'redis': create_redis_publisher,
+        'kafka': create_kafka_publisher,
+        'memory': create_redis_publisher,
     }

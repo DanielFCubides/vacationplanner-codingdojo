@@ -1,13 +1,11 @@
-import json
 import logging
-from dataclasses import asdict
+from typing import Optional
 
 from domain.search.base import FlightsFinder
 from infrastructure.repositories.base import FlightsRepository
 from infrastructure.publishers.base_publisher import SearchPublisher
 from infrastructure.scrappers.base import Scrapper
 from domain.models import SearchParams, FlightResults
-from utils.json_decoders import FlightsJSONEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -26,18 +24,16 @@ class AviancaFlightsFinder(FlightsFinder):
         self._repository = repository
         self._publisher = publisher
 
-    def get_flights(self, search_params: SearchParams) -> dict:
+    def get_flights(self, search_params: SearchParams) -> Optional[FlightResults]:
         logger.info(
             f'Start getting a response with origin {search_params.origin} '
             f'and destination {search_params.destination}'
         )
         # search params are the unique ID for a flight result
-        #self._emit_message(search_params)
+        self._emit_message(search_params)
         saved_results = self._repository.get_flight_results(search_params)
-        if saved_results:
-            saved_results.search_params = search_params
-            response = self._create_response(saved_results)
-            return response
+        if saved_results.results:
+            return saved_results
 
         _search_params = {
             "origin1": search_params.origin,
@@ -57,18 +53,11 @@ class AviancaFlightsFinder(FlightsFinder):
             "currency": search_params.currency,
             "posCode": "CO"
         }
-        results = self._scrapper.get_flights(search_params)
-        results.search_params = search_params
-        if results.results:
-            self._repository.save_flight(results)
-        response = self._create_response(results)
-        return response
-
-    def _create_response(self, results: FlightResults) -> dict:
-        return {
-            'count': len(results.results),
-            'flights': json.dumps(asdict(results.results), cls=FlightsJSONEncoder, indent=2)
-        }
+        flights = self._scrapper.get_flights(search_params)
+        if flights.results:
+            self._repository.save_flight(flights, search_params)
+        return flights
 
     def _emit_message(self, search_params):
-        self._publisher.publish_search_params(search_params)
+        #self._publisher.publish_search_params(search_params)
+        ...

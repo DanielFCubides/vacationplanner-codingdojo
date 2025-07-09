@@ -10,3 +10,7 @@ class MemoryPublisher(SearchPublisher):
 
     def publish_search_params(self, search_params: SearchParams) -> None:
         logger.info(f"Publishing search params: {search_params}")
+
+
+def create_memory_publisher() -> MemoryPublisher:
+    return MemoryPublisher()

@@ -33,3 +33,10 @@ class RedisPublisher(SearchPublisher):
 
     def publish_message(self, search_params: str):
         self.client.publish(self.channel, search_params)
+
+
+def create_redis_publisher(client_factory: Callable = None) -> RedisPublisher:
+    if not client_factory:
+        from utils.connections.redis_client import get_redis_client
+        client_factory = get_redis_client
+    return RedisPublisher(client_factory=client_factory)
