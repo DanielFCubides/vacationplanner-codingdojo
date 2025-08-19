@@ -1,8 +1,5 @@
 """
-Domain layer - Core business logic and rules.
+Domain layer package.
 
-This package contains:
-- models: Domain entities and value objects
-- repositories: Data access interfaces
-- services: Domain service interfaces
+Contains core business logic and entities.
 """

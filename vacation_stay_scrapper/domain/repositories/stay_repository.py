@@ -6,7 +6,7 @@ Defines contract for stay data access.
 from abc import ABC, abstractmethod
 from typing import List
 
-from domain.models.stay import Stay, StaySearchCriteria
+from domain.models.stay import Stay
 
 
 class StayRepository(ABC):
@@ -17,41 +17,11 @@ class StayRepository(ABC):
     """
     
     @abstractmethod
-    async def search(self, criteria: StaySearchCriteria) -> List[Stay]:
-        """
-        Search for stays based on criteria.
-        
-        Args:
-            criteria: Search criteria for stays
-            
-        Returns:
-            List of stays matching the criteria
-        """
+    async def search_by_location(self, location: str, max_guests: int) -> List[Stay]:
+        """Search for stays in a location that can accommodate guests."""
         pass
     
     @abstractmethod
-    async def find_by_location(self, location: str, limit: int = 20) -> List[Stay]:
-        """
-        Find stays by location.
-        
-        Args:
-            location: Location to search in
-            limit: Maximum number of results
-            
-        Returns:
-            List of stays in the location
-        """
-        pass
-    
-    @abstractmethod
-    async def get_featured_stays(self, limit: int = 10) -> List[Stay]:
-        """
-        Get featured/popular stays.
-        
-        Args:
-            limit: Maximum number of results
-            
-        Returns:
-            List of featured stays
-        """
+    async def find_by_id(self, stay_id) -> Stay:
+        """Find stay by ID."""
         pass
