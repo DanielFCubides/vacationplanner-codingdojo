@@ -73,7 +73,7 @@ const LoginPage = () => {
                     </div>
 
                     <h1 className="text-3xl font-semibold text-gray-900 mb-2">Sign in</h1>
-                    <p className="text-gray-600">to continue to your System account.</p>
+                    <p className="text-gray-600">to continue to your Vacation Planner account.</p>
                 </div>
 
                 {/* Error message */}

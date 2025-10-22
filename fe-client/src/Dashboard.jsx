@@ -1,6 +1,8 @@
 import React from 'react';
 import {useAuth} from "./useAuth.js";
 import {useNavigate} from "react-router-dom";
+import UserProfile from "./components/UserProfile.jsx";
+import TripPlansList from "./components/TripPlansList.jsx";
 
 const Dashboard = () => {
     const {user, logout, tokens} = useAuth();
@@ -15,10 +17,10 @@ const Dashboard = () => {
 
     return (
         <div className="min-h-screen bg-gray-100 p-8">
-            <div className="max-w-4xl mx-auto">
-                <div className="bg-white rounded-lg shadow p-6">
+            <div className="max-w-6xl mx-auto">
+                <div className="bg-white rounded-lg shadow p-6 mb-6">
                     <div className="flex justify-between items-center mb-6">
-                        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+                        <h1 className="text-3xl font-bold text-gray-900">Vacation Planner Dashboard</h1>
                         <button
                             onClick={handleLogout}
                             className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
@@ -26,20 +28,13 @@ const Dashboard = () => {
                             Logout
                         </button>
                     </div>
-
-                    <div className="bg-green-50 border border-green-200 rounded-md p-4">
-                        <h2 className="text-lg font-semibold text-green-800 mb-2">Welcome!</h2>
-                        <p className="text-green-700">
-                            You are successfully logged in as: <strong>{user?.email}</strong>
-                        </p>
-                        <p className="text-green-700 mt-1">
-                            User ID: {user?.id}
-                        </p>
-                        <p className="text-green-700 mt-1 justify-between items-center mb-6">
-                            Token: {tokens?.accessToken}
-                        </p>
-                    </div>
                 </div>
+
+                {/* User Profile Section */}
+                <UserProfile user={user} />
+
+                {/* Trip Plans Section */}
+                <TripPlansList />
             </div>
         </div>
     );

@@ -1,10 +1,10 @@
-# Habit Tracker UI - Keycloak Authentication
+# Vacation Planner UI - Keycloak Authentication
 
-A React application with dual authentication flows integrated with Keycloak for secure user authentication.
+A React application for vacation planning with dual authentication flows integrated with Keycloak for secure user authentication.
 
 ## 🔐 Authentication Flows
 
-This application supports two different OAuth 2.0 authentication flows with Keycloak:
+This vacation planning application supports two different OAuth 2.0 authentication flows with Keycloak:
 
 ### 1. **Direct Flow (Resource Owner Password Credentials)**
 - Users enter username and password directly in the application
@@ -120,7 +120,7 @@ src/
 │       └── standardFlow.js      # OAuth redirect flow
 ├── App.jsx                      # Main app with routing
 ├── LoginPage.jsx                # Login UI with both flow options
-├── Dashboard.jsx                # Protected dashboard page
+├── Dashboard.jsx                # Protected vacation planning dashboard
 └── authContext.jsx              # React context for auth state
 ```
 
