@@ -9,3 +9,9 @@ tenacity
 # debugging
 ipython
 pdbpp
+
+#auth
+python-jose
+pyjwt
+cryptography
+pydantic_settings
