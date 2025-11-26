@@ -10,7 +10,7 @@ import { FEATURE_FLAGS } from './featureFlags.js';
 /**
  * Base Keycloak configuration from environment variables
  */
-const getBaseConfig = () => ({
+export const getBaseConfig = () => ({
   url: import.meta.env.VITE_KEYCLOAK_URL || 'https://keycloack.dfcubidesc.com',
   realm: import.meta.env.VITE_KEYCLOAK_REALM || 'habit-tracker',
   clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'habit-tracker-frontend',
