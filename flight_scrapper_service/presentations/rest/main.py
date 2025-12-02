@@ -15,6 +15,32 @@ from presentations.rest.models.inputs import Inputs, SearchParamsInputModel
 logger = logging.getLogger(__name__)
 
 
+def validate(token):
+
+    # RcH2bDSulD_EMPAPNBc8Nl-JKcFttcX2wFOdkPXEc7g
+    token_kid = "RcH2bDSulD_EMPAPNBc8Nl-JKcFttcX2wFOdkPXEc7g"
+    print(token)
+
+    # decode the jwt, get the KID.
+
+
+    import requests
+    url = "https://keycloack.dfcubidesc.com/realms/habit-tracker/protocol/openid-connect/certs"
+
+    payload = {}
+    headers = {}
+
+    response = requests.request("GET", url, headers=headers, data=payload)
+
+    kids = response.json()["keys"]
+    print("KID:", kids)
+    kids.find(token_kid)
+
+
+
+    return True
+
+
 def create_app():
     app = Flask(__name__)
     repository_name = config['Default']['repository']
