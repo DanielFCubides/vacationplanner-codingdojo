@@ -2,6 +2,7 @@ import './App.css'
 import Dashboard from "./Dashboard.jsx";
 import LoginPage from "./LoginPage.jsx";
 import LandingPage from "./LandingPage.jsx";
+import FlightDetailsView from "./flightDetailsView";
 import {AuthProvider} from "./authContext.jsx";
 import React, { useEffect } from 'react';
 import {useAuth} from "./useAuth.js";
@@ -164,6 +165,7 @@ const App = () => {
                         </ProtectedRoute>
                     } 
                 />
+                <Route path="/trips/:tripId" element={<FlightDetailsView />} />
                 
                 {/* Catch all - redirect to landing page */}
                 <Route path="*" element={<Navigate to="/" replace />} />
