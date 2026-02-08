@@ -100,12 +100,13 @@ export class DirectFlow {
    * @param {Object} tokens - Token response from Keycloak
    */
   _storeTokens(tokens) {
-    localStorage.setItem('accessToken', tokens.access_token);
-    
+    // IMPORTANT: Use 'authToken' key to match authService.getToken()
+    localStorage.setItem('authToken', tokens.access_token);
+
     if (tokens.refresh_token) {
       localStorage.setItem('refreshToken', tokens.refresh_token);
     }
-    
+
     if (tokens.id_token) {
       localStorage.setItem('idToken', tokens.id_token);
     }
