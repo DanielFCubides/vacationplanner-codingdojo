@@ -1,8 +1,7 @@
 """
 Vacation Planner API - Main Entry Point
 
-This is a temporary main.py that uses the new shared infrastructure
-while we complete the full migration to clean architecture.
+FastAPI application with clean architecture integration.
 """
 from datetime import date
 from typing import Optional, Annotated
@@ -16,6 +15,9 @@ from src.shared.infrastructure.auth.dependencies import get_current_user
 from src.shared.presentation.middleware import setup_middleware
 from src.shared.infrastructure.http.http_connector import HTTPConnector
 
+# Import trips router from clean architecture
+from src.trips.presentation.api.routes import router as trips_router
+
 # Old imports (will be migrated in next steps)
 from services.flight_scrapper import FlightScrapper
 
@@ -28,6 +30,9 @@ app = FastAPI(
 
 # Setup middleware (CORS, logging, exception handling)
 setup_middleware(app)
+
+# Register clean architecture routers
+app.include_router(trips_router)
 
 # Initialize services (temporary - will be moved to DI container)
 FLIGHT_SCRAPPER_SERVICE = 'localhost:8000/'
@@ -51,7 +56,8 @@ class SearchParams(BaseModel):
     return_date: Optional[date] = None
 
 
-# Routes
+# Legacy Routes (will be migrated to clean architecture)
+
 @app.get(
     '/',
     tags=["Health"],
@@ -68,6 +74,7 @@ def index(
     return {
         'message': 'Vacation Planner API is running',
         'status': 'healthy',
+        'version': '1.0.0',
         'user': user.get('preferred_username', 'unknown')
     }
 
@@ -75,8 +82,8 @@ def index(
 @app.post(
     '/vacation-plan',
     status_code=status.HTTP_200_OK,
-    tags=["Vacation Plans"],
-    summary="Search for vacation plans"
+    tags=["Vacation Plans (Legacy)"],
+    summary="Search for vacation plans (Legacy endpoint)"
 )
 def get_vacation_plan(
     search_params: SearchParams,
@@ -84,6 +91,8 @@ def get_vacation_plan(
 ):
     """
     Search for vacation plans based on search criteria
+    
+    **Note:** This is a legacy endpoint. For new development, use /api/trips endpoints.
     
     Requires authentication.
     
@@ -105,9 +114,6 @@ def get_vacation_plan(
         }
     ]
 
-
-# Additional routes can be added here
-# In the future, these will be organized into domain-specific routers
 
 if __name__ == "__main__":
     import uvicorn
