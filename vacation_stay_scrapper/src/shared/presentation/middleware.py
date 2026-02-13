@@ -9,8 +9,8 @@ from fastapi.responses import JSONResponse
 from typing import Callable
 import time
 
-from ..infrastructure.logging.logger import setup_logger
-from ..domain.exceptions import (
+from src.shared.infrastructure.logging.logger import setup_logger
+from src.shared.domain.exceptions import (
     DomainException,
     EntityNotFound,
     ValidationError,

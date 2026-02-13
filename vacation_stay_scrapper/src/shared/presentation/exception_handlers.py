@@ -7,7 +7,7 @@ import functools
 import inspect
 from typing import Callable, Optional, Dict, Type, Any
 
-from ...domain.exceptions import (
+from src.shared.domain.exceptions import (
     ServiceUnavailable,
     DomainException,
     HTTPException as DomainHTTPException,
@@ -15,7 +15,7 @@ from ...domain.exceptions import (
     ValidationError,
     BusinessRuleViolation
 )
-from ..logging.logger import setup_logger
+from src.shared.infrastructure.logging.logger import setup_logger
 
 _logger = setup_logger(logger_name=__name__)
 

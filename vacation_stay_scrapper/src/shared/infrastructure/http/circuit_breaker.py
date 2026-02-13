@@ -9,12 +9,12 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Callable, Union, Tuple, Type
 
-from ...domain.exceptions import (
+from src.shared.domain.exceptions import (
     HTTPException,
     UnknownException,
     ServiceUnavailable
 )
-from ..logging.logger import setup_logger
+from src.shared.infrastructure.logging.logger import setup_logger
 
 logger = setup_logger(logger_name=__name__)
 

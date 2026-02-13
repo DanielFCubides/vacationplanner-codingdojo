@@ -1,28 +1,10 @@
-import logging
-import os
-from typing import Optional
+"""
+Backward compatibility layer for old imports
 
+This module re-exports from the new clean architecture location.
+TODO: Remove this file once all imports are updated.
+"""
+# Re-export from new location
+from src.shared.infrastructure.logging.logger import setup_logger
 
-def setup_logger(
-    logger_name: str,
-    level=logging.INFO,
-    log_file: Optional[str] = None,
-    formatter: Optional[logging.Formatter] = None
-) -> logging.Logger:
-    """Set up a logger instance with a specific formatter and logger names"""
-
-    logger = logging.getLogger(logger_name)
-    logger.setLevel(level)
-
-    formatter = formatter or logging.Formatter(
-        '%(asctime)s - %(pathname)s - %(levelname)s - %(message)s'
-    )
-
-    if log_file:
-        log_path = os.path.join(os.getcwd(), log_file)
-        file_handler = logging.FileHandler(log_path)
-        file_handler.setLevel(level)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
-
-    return logger
+__all__ = ['setup_logger']

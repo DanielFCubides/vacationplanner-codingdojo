@@ -1,23 +1,47 @@
+"""
+Vacation Planner API - Main Entry Point
+
+This is a temporary main.py that uses the new shared infrastructure
+while we complete the full migration to clean architecture.
+"""
 from datetime import date
 from typing import Optional, Annotated
 
-import jwt
-from fastapi import FastAPI, Request, HTTPException, Header
-from fastapi.params import Depends
-from jwcrypto import jwk
-from jwt import ExpiredSignatureError, InvalidTokenError
+from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 from starlette import status
-from services.flight_scrapper import FlightScrapper
-from utils.connector import HTTPConnector
 
-app = FastAPI()
+# Import from new shared infrastructure
+from src.shared.infrastructure.auth.dependencies import get_current_user
+from src.shared.presentation.middleware import setup_middleware
+from src.shared.infrastructure.http.http_connector import HTTPConnector
+
+# Old imports (will be migrated in next steps)
+from services.flight_scrapper import FlightScrapper
+
+# Create FastAPI app
+app = FastAPI(
+    title="Vacation Planner API",
+    description="API for managing vacation plans, flights, and stays",
+    version="1.0.0"
+)
+
+# Setup middleware (CORS, logging, exception handling)
+setup_middleware(app)
+
+# Initialize services (temporary - will be moved to DI container)
 FLIGHT_SCRAPPER_SERVICE = 'localhost:8000/'
-http_connector = HTTPConnector(FLIGHT_SCRAPPER_SERVICE)
+http_connector = HTTPConnector(
+    url=FLIGHT_SCRAPPER_SERVICE,
+    failure_attempts=3,
+    delay=60
+)
 flight_services = FlightScrapper(http_connector)
 
 
+# Request/Response Models
 class SearchParams(BaseModel):
+    """Flight search parameters"""
     origin: str
     destination: str
     arrival_date: date
@@ -27,88 +51,46 @@ class SearchParams(BaseModel):
     return_date: Optional[date] = None
 
 
-def validate_token(authorization):
-    print(authorization)
-    if authorization.startswith("Bearer ") is False:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid Token"
-        )
-    token = authorization[7:]  # Remove "Bearer " prefix
-    if not token:
-        raise HTTPException(
-            status_code=401,
-            detail="No token provided"
-        )
-
-    unverified_token = jwt.get_unverified_header(token)
-    print("unverified_token: ", unverified_token)
-    try:
-        import requests
-        url = "https://keycloack.dfcubidesc.com/realms/habit-tracker/protocol/openid-connect/certs"
-
-        payload = {}
-        headers = {}
-
-        response = requests.request("GET", url, headers=headers, data=payload)
-
-        kids = response.json()
-        print("KIDS:", kids)
-        if "keys" not in kids or len(kids["keys"]) == 0:
-            raise HTTPException(
-                status_code=500,
-                detail="Keycloak JWKS endpoint returned no keys"
-            )
-        public_key_jwk = kids["keys"][0]
-        print("PUBLIC KEY:", public_key_jwk)
-        public_key = jwk.JWK(**public_key_jwk)
-        public_key_pem = public_key.export_to_pem(private_key=False)
-        print("PUBLIC KEY PEM:", public_key_pem)
-
-        decoded = jwt.decode(
-            token,
-            public_key_pem,
-            algorithms=["RS256"],
-            audience='account',
-            issuer='https://keycloack.dfcubidesc.com/realms/habit-tracker'
-        )
-        print("DECODED:", decoded)
-        return decoded
-
-    except ExpiredSignatureError:
-        raise HTTPException(
-            status_code=401,
-            detail="Token has expired"
-        )
-    except Exception or InvalidTokenError as e:
-        print(e)
-        raise HTTPException(
-            status_code=401,
-            detail=f"Unauthorized !! {e}"
-        )
+# Routes
+@app.get(
+    '/',
+    tags=["Health"],
+    summary="Health check endpoint"
+)
+def index(
+    user: Annotated[dict, Depends(get_current_user)]
+):
+    """
+    Health check endpoint
+    
+    Requires authentication.
+    """
+    return {
+        'message': 'Vacation Planner API is running',
+        'status': 'healthy',
+        'user': user.get('preferred_username', 'unknown')
+    }
 
 
-async def authenticate(authorization: Annotated[str, Header()]):
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Invalid authorization token")
-    return validate_token(authorization)
-
-
-@app.get('/')
-def index(claims: Annotated[dict, Depends(authenticate)]) -> tuple[dict[
-    str, str], int] | dict:
-    if not claims:
-        return {'message': 'Unauthorized'}, status.HTTP_401_UNAUTHORIZED
-    print(claims)
-    return {'message': 'health-check'}, status.HTTP_200_OK
-
-
-@app.post('/vacation-plan', status_code=status.HTTP_200_OK, )
-def get_vacation_plan(search_params: SearchParams, claims: Annotated[dict, Depends(authenticate)]):
-    if not claims:
-        return {'message': 'Unauthorized'}, status.HTTP_401_UNAUTHORIZED
-    print(claims)
-    print(search_params)
+@app.post(
+    '/vacation-plan',
+    status_code=status.HTTP_200_OK,
+    tags=["Vacation Plans"],
+    summary="Search for vacation plans"
+)
+def get_vacation_plan(
+    search_params: SearchParams,
+    user: Annotated[dict, Depends(get_current_user)]
+):
+    """
+    Search for vacation plans based on search criteria
+    
+    Requires authentication.
+    
+    Returns a list of available vacation plans matching the search parameters.
+    """
+    # TODO: Replace with actual service call
+    # For now, return mock data
     return [
         {
             "id": 1,
@@ -116,9 +98,22 @@ def get_vacation_plan(search_params: SearchParams, claims: Annotated[dict, Depen
             "origin": search_params.origin,
             "destination": search_params.destination,
             "departureDate": search_params.arrival_date.isoformat(),
-            "returnDate": search_params.return_date.isoformat(),
-            "passengers": 2,
+            "returnDate": search_params.return_date.isoformat() if search_params.return_date else None,
+            "passengers": search_params.passengers,
             "flightPrice": 925.30,
             "status": "confirmed"
         }
     ]
+
+
+# Additional routes can be added here
+# In the future, these will be organized into domain-specific routers
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True
+    )

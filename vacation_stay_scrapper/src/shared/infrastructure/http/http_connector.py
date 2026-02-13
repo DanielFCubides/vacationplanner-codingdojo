@@ -13,9 +13,9 @@ import requests
 from requests import RequestException
 from requests.models import Response
 
-from ...domain.exceptions import HTTPException as DomainHTTPException
+from src.shared.domain.exceptions import HTTPException as DomainHTTPException
 from .circuit_breaker import CircuitBreaker
-from ..logging.logger import setup_logger
+from src.shared.infrastructure.logging.logger import setup_logger
 
 
 class Connector(ABC):
