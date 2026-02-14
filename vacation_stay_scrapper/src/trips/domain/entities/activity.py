@@ -17,12 +17,15 @@ class Activity:
     
     Represents a planned activity during the trip.
     """
+    # Required fields (no defaults)
     id: str
     name: str
     date: date
     cost: Money
     category: str
-    status: str = "pending"
+    
+    # Optional fields (with defaults)
+    status: str = "pending"  # booked, pending, cancelled
     description: Optional[str] = None
     
     def __post_init__(self):
@@ -31,6 +34,8 @@ class Activity:
             raise ValueError("Activity name cannot be empty")
         if not self.category or not self.category.strip():
             raise ValueError("Activity category cannot be empty")
+        if self.status not in ["booked", "pending", "cancelled"]:
+            raise ValueError(f"Invalid activity status: {self.status}")
     
     def is_booked(self) -> bool:
         """Check if activity is booked"""
