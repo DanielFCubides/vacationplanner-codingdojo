@@ -3,8 +3,10 @@ Trip Mappers
 
 Convert between domain entities and API schemas.
 Ensures compatibility with frontend Models.ts
+Supports creating trips with nested objects (flights, accommodations, etc.)
 """
 from datetime import date as date_type
+from uuid import uuid4
 
 from ...domain.entities.trip import Trip
 from ...domain.entities.flight import Flight
@@ -15,6 +17,7 @@ from ...domain.value_objects.trip_id import TripId
 from ...domain.value_objects.trip_status import TripStatus
 from ...domain.value_objects.budget import Budget, BudgetCategory
 from ...domain.value_objects.money import Money
+from ...domain.value_objects.airport import Airport
 from ..api.schemas import (
     TripResponse,
     TripCreateRequest,
@@ -25,7 +28,13 @@ from ..api.schemas import (
     ActivityResponse,
     AccommodationResponse,
     BudgetResponse,
-    BudgetCategoryResponse
+    BudgetCategoryResponse,
+    TravelerCreateRequest,
+    FlightCreateRequest,
+    AccommodationCreateRequest,
+    ActivityCreateRequest,
+    BudgetRequest,
+    BudgetCategoryRequest
 )
 
 
@@ -70,14 +79,45 @@ class TripMapper:
     @staticmethod
     def from_create_request(request: TripCreateRequest) -> Trip:
         """
-        Convert create request to Trip entity
+        Convert create request to Trip entity with nested objects
         
         Args:
-            request: TripCreateRequest schema
+            request: TripCreateRequest schema with optional nested objects
             
         Returns:
-            Trip domain entity
+            Trip domain entity with all nested objects created
         """
+        # Create travelers from request
+        travelers = [
+            TripMapper._traveler_from_request(t) 
+            for t in (request.travelers or [])
+        ]
+        
+        # Create flights from request
+        flights = [
+            TripMapper._flight_from_request(f) 
+            for f in (request.flights or [])
+        ]
+        
+        # Create accommodations from request
+        accommodations = [
+            TripMapper._accommodation_from_request(a) 
+            for a in (request.accommodations or [])
+        ]
+        
+        # Create activities from request
+        activities = [
+            TripMapper._activity_from_request(a) 
+            for a in (request.activities or [])
+        ]
+        
+        # Create budget from request
+        budget = TripMapper._budget_from_request(request.budget) if request.budget else Budget(
+            total=Money(0, "USD"),
+            spent=Money(0, "USD"),
+            categories=[]
+        )
+        
         return Trip(
             id=TripId.generate(),
             name=request.name,
@@ -85,15 +125,11 @@ class TripMapper:
             start_date=request.start_date,
             end_date=request.end_date,
             status=TripStatus.from_string(request.status or "planning"),
-            travelers=[],
-            flights=[],
-            accommodations=[],
-            activities=[],
-            budget=Budget(
-                total=Money(0, "USD"),
-                spent=Money(0, "USD"),
-                categories=[]
-            ),
+            travelers=travelers,
+            flights=flights,
+            accommodations=accommodations,
+            activities=activities,
+            budget=budget,
             created_at=date_type.today()
         )
     
@@ -109,6 +145,7 @@ class TripMapper:
         Returns:
             Updated trip entity
         """
+        # Update basic fields
         if request.name is not None:
             trip.name = request.name
         if request.destination is not None:
@@ -120,10 +157,36 @@ class TripMapper:
         if request.status is not None:
             trip.status = TripStatus.from_string(request.status)
         
+        # Update nested collections (replace if provided)
+        if request.travelers is not None:
+            trip.travelers = [
+                TripMapper._traveler_from_request(t) for t in request.travelers
+            ]
+        
+        if request.flights is not None:
+            trip.flights = [
+                TripMapper._flight_from_request(f) for f in request.flights
+            ]
+        
+        if request.accommodations is not None:
+            trip.accommodations = [
+                TripMapper._accommodation_from_request(a) for a in request.accommodations
+            ]
+        
+        if request.activities is not None:
+            trip.activities = [
+                TripMapper._activity_from_request(a) for a in request.activities
+            ]
+        
+        if request.budget is not None:
+            trip.budget = TripMapper._budget_from_request(request.budget)
+        
         trip.updated_at = date_type.today()
         return trip
     
-    # Helper methods for nested objects
+    # ========================================================================
+    # RESPONSE CONVERTERS (Domain → API Response)
+    # ========================================================================
     
     @staticmethod
     def _traveler_to_response(traveler: Traveler) -> TravelerResponse:
@@ -206,4 +269,93 @@ class TripMapper:
                 )
                 for cat in budget.categories
             ]
+        )
+    
+    # ========================================================================
+    # REQUEST CONVERTERS (API Request → Domain Entity)
+    # ========================================================================
+    
+    @staticmethod
+    def _traveler_from_request(request: TravelerCreateRequest) -> Traveler:
+        """Convert traveler request to Traveler entity"""
+        return Traveler(
+            id=str(uuid4()),
+            name=request.name,
+            email=request.email,
+            role=request.role,
+            avatar=request.avatar
+        )
+    
+    @staticmethod
+    def _flight_from_request(request: FlightCreateRequest) -> Flight:
+        """Convert flight request to Flight entity"""
+        return Flight(
+            id=str(uuid4()),
+            airline=request.airline,
+            flight_number=request.flight_number,
+            departure_airport=Airport(
+                code=request.departure.airport,
+                city=request.departure.city
+            ),
+            departure_time=request.departure.time,
+            arrival_airport=Airport(
+                code=request.arrival.airport,
+                city=request.arrival.city
+            ),
+            arrival_time=request.arrival.time,
+            duration=request.duration,
+            price=Money(request.price, "USD"),
+            stops=request.stops,
+            cabin_class=request.cabin_class,
+            status=request.status
+        )
+    
+    @staticmethod
+    def _accommodation_from_request(
+        request: AccommodationCreateRequest
+    ) -> Accommodation:
+        """Convert accommodation request to Accommodation entity"""
+        return Accommodation(
+            id=str(uuid4()),
+            name=request.name,
+            type=request.type,
+            check_in=request.check_in,
+            check_out=request.check_out,
+            price_per_night=Money(request.price_per_night, "USD"),
+            total_price=Money(request.total_price, "USD"),
+            rating=request.rating,
+            amenities=request.amenities,
+            status=request.status,
+            image=request.image
+        )
+    
+    @staticmethod
+    def _activity_from_request(request: ActivityCreateRequest) -> Activity:
+        """Convert activity request to Activity entity"""
+        return Activity(
+            id=str(uuid4()),
+            name=request.name,
+            date=request.date,
+            cost=Money(request.cost, "USD"),
+            category=request.category,
+            status=request.status,
+            description=request.description
+        )
+    
+    @staticmethod
+    def _budget_from_request(request: BudgetRequest) -> Budget:
+        """Convert budget request to Budget value object"""
+        categories = [
+            BudgetCategory(
+                category=cat.category,
+                planned=Money(cat.planned, "USD"),
+                spent=Money(cat.spent, "USD")
+            )
+            for cat in request.categories
+        ]
+        
+        return Budget(
+            total=Money(request.total, "USD"),
+            spent=Money(request.spent, "USD"),
+            categories=categories
         )
