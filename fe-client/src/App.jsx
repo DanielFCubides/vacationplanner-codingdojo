@@ -2,6 +2,8 @@ import './App.css'
 import Dashboard from "./Dashboard.jsx";
 import LoginPage from "./LoginPage.jsx";
 import LandingPage from "./LandingPage.jsx";
+import TripDetailsView from "./tripDetailsView.tsx";
+import NewTripWizard from "./components/NewTripWizard.tsx";
 import {AuthProvider} from "./authContext.jsx";
 import React, { useEffect } from 'react';
 import {useAuth} from "./useAuth.js";
@@ -161,6 +163,26 @@ const App = () => {
                     element={
                         <ProtectedRoute>
                             <Dashboard />
+                        </ProtectedRoute>
+                    } 
+                />
+                
+                {/* New Trip Wizard - Protected */}
+                <Route 
+                    path="/trips/new" 
+                    element={
+                        <ProtectedRoute>
+                            <NewTripWizard />
+                        </ProtectedRoute>
+                    } 
+                />
+                
+                {/* Trip Details - Protected */}
+                <Route 
+                    path="/trips/:tripId" 
+                    element={
+                        <ProtectedRoute>
+                            <TripDetailsView />
                         </ProtectedRoute>
                     } 
                 />

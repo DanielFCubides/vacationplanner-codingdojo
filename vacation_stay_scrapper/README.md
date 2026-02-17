@@ -3,6 +3,13 @@
 
 ## How to run
 
+Directly
+
+```shell
+ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+
 ```shell
 docker build . -t vacation_planner
 docker run --rm -p 80:80 -t vacation_planner

@@ -3,6 +3,7 @@ import {useAuth} from "./useAuth.js";
 import {useNavigate} from "react-router-dom";
 import UserProfile from "./components/UserProfile.jsx";
 import TripPlansList from "./components/TripPlansList.jsx";
+import AddTripContainer from "./components/AddTripContainer.tsx";
 
 const Dashboard = () => {
     const {user, logout, tokens} = useAuth();
@@ -32,6 +33,8 @@ const Dashboard = () => {
 
                 {/* User Profile Section */}
                 <UserProfile user={user} />
+
+                <AddTripContainer/>
 
                 {/* Trip Plans Section */}
                 <TripPlansList />
