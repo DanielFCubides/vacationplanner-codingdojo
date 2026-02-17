@@ -1,6 +1,6 @@
 import express from 'express';
-import {GetSearchParams, GetSearchParams2, readFromRedis} from "../repositories/SearchParamsRepository.js";
-import {init} from "../repositories/KafkaConsumer.js";
+import { GetSearchParams, GetSearchParams2, readFromRedis } from "../repositories/SearchParamsRepository.js";
+import { init } from "../repositories/KafkaConsumer.js";
 const app = express()
 const port = 3000
 
