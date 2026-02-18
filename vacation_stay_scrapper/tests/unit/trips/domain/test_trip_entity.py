@@ -11,7 +11,6 @@ from datetime import date, datetime
 from src.trips.domain.entities.trip import Trip
 from src.trips.domain.entities.traveler import Traveler
 from src.trips.domain.entities.flight import Flight
-from src.trips.domain.value_objects.trip_id import TripId
 from src.trips.domain.value_objects.trip_status import TripStatus
 from src.trips.domain.value_objects.airport import Airport
 from src.trips.domain.value_objects.money import Money
@@ -24,7 +23,7 @@ from src.trips.domain.value_objects.money import Money
 def make_trip(**overrides) -> Trip:
     """Return a minimal valid Trip, allowing field overrides."""
     defaults = dict(
-        id=TripId.generate(),
+        id=1,
         name="Summer Holiday",
         destination="Barcelona",
         start_date=date(2025, 7, 1),

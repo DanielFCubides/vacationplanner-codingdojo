@@ -24,7 +24,6 @@ from src.trips.application.use_cases.delete_trip import DeleteTripUseCase
 from src.trips.application.use_cases.get_trip import GetAllTripsUseCase, GetTripUseCase
 from src.trips.application.use_cases.update_trip import UpdateTripUseCase
 from src.trips.domain.entities.trip import Trip
-from src.trips.domain.value_objects.trip_id import TripId
 from src.trips.domain.value_objects.trip_status import TripStatus
 
 
@@ -32,10 +31,10 @@ from src.trips.domain.value_objects.trip_status import TripStatus
 # Shared helpers
 # ---------------------------------------------------------------------------
 
-def make_trip(trip_id: TripId = None) -> Trip:
+def make_trip(trip_id: int = 1) -> Trip:
     """Return a minimal valid Trip for use in tests."""
     return Trip(
-        id=trip_id or TripId.generate(),
+        id=trip_id,
         name="Summer Holiday",
         destination="Barcelona",
         start_date=date(2025, 7, 1),
@@ -87,10 +86,10 @@ class TestCreateTripUseCase:
 class TestGetTripUseCase:
 
     def test_returns_trip_when_found(self):
-        trip = make_trip()
+        trip = make_trip(trip_id=1)
         repo = make_repo(find_by_id=trip)
 
-        result = asyncio.run(GetTripUseCase(repo).execute(str(trip.id)))
+        result = asyncio.run(GetTripUseCase(repo).execute("1"))
 
         assert result == trip
 
@@ -98,16 +97,16 @@ class TestGetTripUseCase:
         repo = make_repo(find_by_id=None)
 
         with pytest.raises(EntityNotFound):
-            asyncio.run(GetTripUseCase(repo).execute("non-existent-id"))
+            asyncio.run(GetTripUseCase(repo).execute("999"))
 
     def test_passes_correct_trip_id_to_repository(self):
-        trip = make_trip(trip_id=TripId.from_string("abc-123"))
+        trip = make_trip(trip_id=1)
         repo = make_repo(find_by_id=trip)
 
-        asyncio.run(GetTripUseCase(repo).execute("abc-123"))
+        asyncio.run(GetTripUseCase(repo).execute("1"))
 
         called_with = repo.find_by_id.call_args[0][0]
-        assert str(called_with) == "abc-123"
+        assert called_with == 1
 
 
 # ---------------------------------------------------------------------------
@@ -141,14 +140,14 @@ class TestDeleteTripUseCase:
     def test_returns_true_when_trip_is_deleted(self):
         repo = make_repo(exists=True, delete=True)
 
-        result = asyncio.run(DeleteTripUseCase(repo).execute("some-id"))
+        result = asyncio.run(DeleteTripUseCase(repo).execute("42"))
 
         assert result is True
 
     def test_calls_delete_on_the_repository(self):
         repo = make_repo(exists=True, delete=True)
 
-        asyncio.run(DeleteTripUseCase(repo).execute("some-id"))
+        asyncio.run(DeleteTripUseCase(repo).execute("42"))
 
         repo.delete.assert_called_once()
 
@@ -156,13 +155,13 @@ class TestDeleteTripUseCase:
         repo = make_repo(exists=False)
 
         with pytest.raises(EntityNotFound):
-            asyncio.run(DeleteTripUseCase(repo).execute("ghost-id"))
+            asyncio.run(DeleteTripUseCase(repo).execute("999"))
 
     def test_does_not_call_delete_when_trip_does_not_exist(self):
         repo = make_repo(exists=False)
 
         with pytest.raises(EntityNotFound):
-            asyncio.run(DeleteTripUseCase(repo).execute("ghost-id"))
+            asyncio.run(DeleteTripUseCase(repo).execute("999"))
 
         repo.delete.assert_not_called()
 
@@ -174,21 +173,23 @@ class TestDeleteTripUseCase:
 class TestUpdateTripUseCase:
 
     def test_returns_updated_trip(self):
-        existing = make_trip(trip_id=TripId.from_string("id-1"))
-        updated = make_trip(trip_id=TripId.from_string("id-1"))
+        existing = make_trip(trip_id=1)
+        updated = make_trip(trip_id=1)
         updated.name = "Updated Name"
         repo = make_repo(find_by_id=existing, save=updated)
 
-        result = asyncio.run(UpdateTripUseCase(repo).execute("id-1", updated))
+        result = asyncio.run(UpdateTripUseCase(repo).execute("1", updated))
 
         assert result == updated
 
     def test_saves_the_updated_trip_to_repository(self):
-        existing = make_trip(trip_id=TripId.from_string("id-1"))
-        updated = make_trip(trip_id=TripId.from_string("id-1"))
+        existing = make_trip(trip_id=1)
+        updated = make_trip(trip_id=1)
         repo = make_repo(find_by_id=existing, save=updated)
 
-        asyncio.run(UpdateTripUseCase(repo).execute("id-1", updated))
+        asyncio.run(UpdateTripUseCase(repo).execute("1", updated))
+
+        repo.save.assert_called_once_with(updated)
 
         repo.save.assert_called_once_with(updated)
 
@@ -197,13 +198,13 @@ class TestUpdateTripUseCase:
         repo = make_repo(find_by_id=None)
 
         with pytest.raises(EntityNotFound):
-            asyncio.run(UpdateTripUseCase(repo).execute("ghost-id", updated))
+            asyncio.run(UpdateTripUseCase(repo).execute("999", updated))
 
     def test_does_not_save_when_trip_does_not_exist(self):
         updated = make_trip()
         repo = make_repo(find_by_id=None)
 
         with pytest.raises(EntityNotFound):
-            asyncio.run(UpdateTripUseCase(repo).execute("ghost-id", updated))
+            asyncio.run(UpdateTripUseCase(repo).execute("999", updated))
 
         repo.save.assert_not_called()

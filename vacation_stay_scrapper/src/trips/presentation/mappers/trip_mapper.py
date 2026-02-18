@@ -13,7 +13,6 @@ from ...domain.entities.flight import Flight
 from ...domain.entities.traveler import Traveler
 from ...domain.entities.activity import Activity
 from ...domain.entities.accommodation import Accommodation
-from ...domain.value_objects.trip_id import TripId
 from ...domain.value_objects.trip_status import TripStatus
 from ...domain.value_objects.budget import Budget, BudgetCategory
 from ...domain.value_objects.money import Money
@@ -53,7 +52,7 @@ class TripMapper:
             TripResponse schema matching frontend Trip interface
         """
         return TripResponse(
-            id=str(trip.id),
+            id=str(trip.id) if trip.id is not None else "",
             name=trip.name,
             destination=trip.destination,
             startDate=trip.start_date,
@@ -119,7 +118,7 @@ class TripMapper:
         )
         
         return Trip(
-            id=TripId.generate(),
+            id=None,
             name=request.name,
             destination=request.destination,
             start_date=request.start_date,
