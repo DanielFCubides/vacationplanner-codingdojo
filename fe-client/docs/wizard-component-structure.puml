@@ -1,0 +1,65 @@
+@startuml Wizard Component Structure
+
+!theme plain
+skinparam componentStyle rectangle
+
+package "Dashboard Page" {
+    [Dashboard.jsx]
+    [AddTripContainer.tsx]
+}
+
+package "Wizard Page" {
+    [NewTripWizard.tsx] as Wizard
+    
+    package "wizard-steps/" {
+        [OverviewStep.tsx] as Overview
+        [FlightsStep.tsx] as Flights
+        [StaysStep.tsx] as Stays
+        [ActivitiesStep.tsx] as Activities
+        [BudgetStep.tsx] as Budget
+        [TeamStep.tsx] as Team
+    }
+}
+
+package "Services" {
+    [TripService.ts]
+}
+
+package "Models" {
+    [Models.ts]
+}
+
+[Dashboard.jsx] --> [AddTripContainer.tsx] : renders
+[AddTripContainer.tsx] ..> Wizard : navigate to\n/trips/new
+
+Wizard --> Overview : renders step 1
+Wizard --> Flights : renders step 2
+Wizard --> Stays : renders step 3
+Wizard --> Activities : renders step 4
+Wizard --> Budget : renders step 5
+Wizard --> Team : renders step 6
+
+Wizard --> [TripService.ts] : createTrip()
+[TripService.ts] --> [Models.ts] : uses Trip interface
+
+note right of Wizard
+  **State Management**
+  - Tracks current step (0-5)
+  - Stores form data for all steps
+  - Handles navigation (next/prev)
+  - Calls TripService on save
+end note
+
+note right of Overview
+  **Only Active Step**
+  Has actual form fields:
+  - Trip Name
+  - Destination  
+  - Start Date
+  - End Date
+  
+  All other steps are
+  placeholders for now
+end note
+
+@enduml

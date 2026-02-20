@@ -1,0 +1,44 @@
+@startuml Trip Creation Wizard Flow
+
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontSize 12
+
+title Trip Creation Wizard - User Flow
+
+actor User
+participant Dashboard
+participant AddTripContainer
+participant NewTripWizard
+participant OverviewStep
+participant "Other Steps\n(Placeholders)" as OtherSteps
+participant TripService
+database "In-Memory\nStorage" as Storage
+
+User -> Dashboard: Views dashboard
+Dashboard -> AddTripContainer: Renders "Add Trip" card
+User -> AddTripContainer: Clicks card
+AddTripContainer -> NewTripWizard: Navigate to /trips/new
+
+NewTripWizard -> OverviewStep: Render step 1/6
+User -> OverviewStep: Fills in:\n- Trip name\n- Destination\n- Start date\n- End date
+User -> NewTripWizard: Clicks "Next"
+
+NewTripWizard -> OtherSteps: Render steps 2-6\n(Flights, Stays, Activities,\nBudget, Team)
+User -> OtherSteps: Views placeholders
+User -> NewTripWizard: Clicks "Next" through steps
+
+User -> NewTripWizard: On step 6, clicks "Save Trip"
+NewTripWizard -> TripService: createTrip(formData)
+TripService -> Storage: Store trip
+Storage --> TripService: Trip created
+TripService --> NewTripWizard: Success
+NewTripWizard -> Dashboard: Navigate to /dashboard
+
+Dashboard -> TripService: getAllTrips()
+TripService -> Storage: Fetch all trips
+Storage --> TripService: Return trips (including new one)
+TripService --> Dashboard: Display trips
+Dashboard -> User: Shows new trip in list
+
+@enduml
