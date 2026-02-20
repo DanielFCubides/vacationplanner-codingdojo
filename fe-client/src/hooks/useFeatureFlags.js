@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { FEATURE_FLAGS, FeatureFlagUtils } from '../config/featureFlags.js';
-import { KEYCLOAK_CONFIG, DEMO_CONFIG } from '../config/environment.js';
+import { KEYCLOAK_CONFIG, DEMO_CONFIG } from '../config/keycloakConfig.js';
 
 export const useFeatureFlags = () => {
   const [currentFlow, setCurrentFlow] = useState(() => FeatureFlagUtils.getDefaultFlow());
