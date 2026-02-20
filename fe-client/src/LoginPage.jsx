@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {useAuth} from "./useAuth.js";
+import {useAuth} from "./hooks/useAuth.js";
 import {useNavigate} from "react-router-dom";
 import lockLogo from './assets/LockLogo.png';
 import authService from "./services/authService.js";

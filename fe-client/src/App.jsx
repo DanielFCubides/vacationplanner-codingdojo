@@ -6,7 +6,7 @@ import TripDetailsView from "./tripDetailsView.tsx";
 import NewTripWizard from "./components/NewTripWizard.tsx";
 import {AuthProvider} from "./authContext.jsx";
 import React, { useEffect } from 'react';
-import {useAuth} from "./useAuth.js";
+import {useAuth} from "./hooks/useAuth.js";
 import authService from "./services/authService.js";
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 
