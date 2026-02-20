@@ -196,6 +196,38 @@ if (import.meta.env.DEV && FEATURE_FLAGS.ENABLE_DEBUG_INFO) {
   console.groupEnd();
 }
 
+/**
+ * Named export — single source of truth for Keycloak base values.
+ * Replaces the duplicate KEYCLOAK_CONFIG that used to live in environment.js.
+ */
+export const KEYCLOAK_CONFIG = getBaseConfig();
+
+/**
+ * Demo user credentials and mock delays.
+ * Moved here from environment.js to keep all Keycloak-related config in one place.
+ */
+export const DEMO_CONFIG = {
+  demoUsers: {
+    direct: {
+      username: import.meta.env.VITE_DEMO_DIRECT_USERNAME || 'demo-direct',
+      password: import.meta.env.VITE_DEMO_DIRECT_PASSWORD || 'demo123',
+      email: 'direct-user@demo.com',
+      name: 'Direct Flow Demo User'
+    },
+    standard: {
+      username: import.meta.env.VITE_DEMO_STANDARD_USERNAME || 'demo-oauth',
+      password: import.meta.env.VITE_DEMO_STANDARD_PASSWORD || 'demo123',
+      email: 'oauth-user@demo.com',
+      name: 'Standard Flow Demo User'
+    }
+  },
+  mockDelays: {
+    login: parseInt(import.meta.env.VITE_MOCK_LOGIN_DELAY || '1000'),
+    tokenExchange: parseInt(import.meta.env.VITE_MOCK_TOKEN_DELAY || '800'),
+    logout: parseInt(import.meta.env.VITE_MOCK_LOGOUT_DELAY || '500')
+  }
+};
+
 export default {
   getKeycloakConfig,
   getAllKeycloakConfigs,

@@ -7,7 +7,6 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 
 from ..entities.trip import Trip
-from ..value_objects.trip_id import TripId
 
 
 class ITripRepository(ABC):
@@ -32,7 +31,7 @@ class ITripRepository(ABC):
         pass
     
     @abstractmethod
-    async def find_by_id(self, trip_id: TripId) -> Optional[Trip]:
+    async def find_by_id(self, trip_id: int) -> Optional[Trip]:
         """
         Find trip by ID
         
@@ -55,7 +54,7 @@ class ITripRepository(ABC):
         pass
     
     @abstractmethod
-    async def delete(self, trip_id: TripId) -> bool:
+    async def delete(self, trip_id: int) -> bool:
         """
         Delete a trip
         
@@ -68,7 +67,7 @@ class ITripRepository(ABC):
         pass
     
     @abstractmethod
-    async def exists(self, trip_id: TripId) -> bool:
+    async def exists(self, trip_id: int) -> bool:
         """
         Check if trip exists
         

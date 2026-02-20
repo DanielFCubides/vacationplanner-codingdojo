@@ -8,7 +8,6 @@ from dataclasses import dataclass, field
 from datetime import date
 from typing import List, Optional
 
-from ..value_objects.trip_id import TripId
 from ..value_objects.trip_status import TripStatus
 from ..value_objects.budget import Budget
 from .flight import Flight
@@ -26,7 +25,7 @@ class Trip:
     Matches the frontend Trip interface for seamless integration.
     """
     # Core properties
-    id: TripId
+    id: Optional[int]
     name: str
     destination: str
     start_date: date

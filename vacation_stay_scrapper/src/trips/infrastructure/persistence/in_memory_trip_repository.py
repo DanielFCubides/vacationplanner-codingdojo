@@ -7,7 +7,6 @@ from typing import List, Optional, Dict
 from datetime import date
 
 from ...domain.entities.trip import Trip
-from ...domain.value_objects.trip_id import TripId
 from ...domain.repositories.trip_repository import ITripRepository
 
 
@@ -20,7 +19,8 @@ class InMemoryTripRepository(ITripRepository):
     
     def __init__(self):
         """Initialize repository with empty storage"""
-        self._storage: Dict[str, Trip] = {}
+        self._storage: Dict[int, Trip] = {}
+        self._next_id: int = 1
     
     async def save(self, trip: Trip) -> Trip:
         """
@@ -32,26 +32,31 @@ class InMemoryTripRepository(ITripRepository):
         Returns:
             Saved trip
         """
+        # Assign ID if not yet persisted
+        if trip.id is None:
+            trip.id = self._next_id
+            self._next_id += 1
+
         # Update timestamps
         if trip.created_at is None:
             trip.created_at = date.today()
         trip.updated_at = date.today()
-        
+
         # Store trip
-        self._storage[str(trip.id)] = trip
+        self._storage[trip.id] = trip
         return trip
     
-    async def find_by_id(self, trip_id: TripId) -> Optional[Trip]:
+    async def find_by_id(self, trip_id: int) -> Optional[Trip]:
         """
         Find trip by ID
-        
+
         Args:
-            trip_id: Trip identifier
-            
+            trip_id: Trip integer identifier
+
         Returns:
             Trip if found, None otherwise
         """
-        return self._storage.get(str(trip_id))
+        return self._storage.get(trip_id)
     
     async def find_all(self) -> List[Trip]:
         """
@@ -62,33 +67,32 @@ class InMemoryTripRepository(ITripRepository):
         """
         return list(self._storage.values())
     
-    async def delete(self, trip_id: TripId) -> bool:
+    async def delete(self, trip_id: int) -> bool:
         """
         Delete trip from memory
-        
+
         Args:
-            trip_id: Trip identifier
-            
+            trip_id: Trip integer identifier
+
         Returns:
             True if deleted, False if not found
         """
-        key = str(trip_id)
-        if key in self._storage:
-            del self._storage[key]
+        if trip_id in self._storage:
+            del self._storage[trip_id]
             return True
         return False
-    
-    async def exists(self, trip_id: TripId) -> bool:
+
+    async def exists(self, trip_id: int) -> bool:
         """
         Check if trip exists
-        
+
         Args:
-            trip_id: Trip identifier
-            
+            trip_id: Trip integer identifier
+
         Returns:
             True if exists, False otherwise
         """
-        return str(trip_id) in self._storage
+        return trip_id in self._storage
     
     def count(self) -> int:
         """Get total number of trips"""

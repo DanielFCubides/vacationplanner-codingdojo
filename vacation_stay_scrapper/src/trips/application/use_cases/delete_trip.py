@@ -3,7 +3,6 @@ Delete Trip Use Case
 
 Handles trip deletion.
 """
-from ...domain.value_objects.trip_id import TripId
 from ...domain.repositories.trip_repository import ITripRepository
 from ....shared.domain.exceptions import EntityNotFound
 
@@ -33,12 +32,12 @@ class DeleteTripUseCase:
         Raises:
             EntityNotFound: If trip doesn't exist
         """
-        trip_id_obj = TripId.from_string(trip_id)
-        
+        trip_id_int = int(trip_id)
+
         # Check if trip exists
-        exists = await self._repository.exists(trip_id_obj)
+        exists = await self._repository.exists(trip_id_int)
         if not exists:
             raise EntityNotFound(entity_type="Trip", entity_id=trip_id)
-        
+
         # Delete trip
-        return await self._repository.delete(trip_id_obj)
+        return await self._repository.delete(trip_id_int)

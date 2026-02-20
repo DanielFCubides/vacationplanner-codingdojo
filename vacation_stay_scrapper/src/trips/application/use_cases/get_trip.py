@@ -6,7 +6,6 @@ Handles retrieval of trips.
 from typing import List, Optional
 
 from ...domain.entities.trip import Trip
-from ...domain.value_objects.trip_id import TripId
 from ...domain.repositories.trip_repository import ITripRepository
 from ....shared.domain.exceptions import EntityNotFound
 
@@ -36,9 +35,9 @@ class GetTripUseCase:
         Raises:
             EntityNotFound: If trip doesn't exist
         """
-        trip_id_obj = TripId.from_string(trip_id)
-        trip = await self._repository.find_by_id(trip_id_obj)
-        
+        trip_id_int = int(trip_id)
+        trip = await self._repository.find_by_id(trip_id_int)
+
         if trip is None:
             raise EntityNotFound(entity_type="Trip", entity_id=trip_id)
         
