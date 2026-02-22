@@ -1,5 +1,6 @@
 import React, {createContext, useState, useEffect} from 'react';
 import authService from "./services/authService.js";
+import {tripService} from "./services/TripService.ts";
 
 const AuthContext = createContext();
 
@@ -19,8 +20,8 @@ const AuthProvider = ({children}) => {
                     const currentUser = authService.getCurrentUser();
                     setUser(currentUser);
                     const currentToken = authService.getCurrentToken();
-                    console.log('tokens: ',currentToken);
                     setTokens({"accessToken": currentToken});
+                    tripService.setToken(currentToken);
                 }
 
 
@@ -39,7 +40,6 @@ const AuthProvider = ({children}) => {
 
     const login = async (username, password) => {
         try {
-            console.log("loging user" + user);
             setLoading(true);
             setError(null);
             const response = await authService.loginWithCredentials(username, password);
@@ -47,6 +47,7 @@ const AuthProvider = ({children}) => {
             if (response.success) {
                 setUser(response.user);
                 setTokens(response.tokens);
+                tripService.setToken(response.tokens.accessToken);
             }
             return response;
         } catch (err) {
@@ -58,28 +59,30 @@ const AuthProvider = ({children}) => {
     };
 
     const loginWithOAuth = async (result) => {
-        console.log("Setting user from OAuth flow result:", result);
+        // console.log("Setting user from OAuth flow result:", result);
         try {
             setLoading(true);
             setError(null);
 
             // If we're passed just a code string, handle it
             if (typeof result === 'string') {
-                console.log("⚠️ Received code string, but should receive result object");
+                // console.log("⚠️ Received code string, but should receive result object");
                 const response = await authService.handleOAuthCallback(window.location.href);
                 if (response.success) {
-                    console.log("✅ OAuth successful, setting user:", response.user);
+                    // console.log("✅ OAuth successful, setting user:", response.user);
                     setUser(response.user);
                     setTokens(response.tokens);
+                    tripService.setToken(response.tokens.accessToken);
                 }
                 return response;
             }
             
             // If we're passed the result object from handleOAuthCallback
             if (result && result.user) {
-                console.log("✅ Setting user from OAuth result:", result.user);
+                // console.log("✅ Setting user from OAuth result:", result.user);
                 setUser(result.user);
                 setTokens(result.tokens);
+                tripService.setToken(result.tokens.accessToken);
                 return result;
             }
             

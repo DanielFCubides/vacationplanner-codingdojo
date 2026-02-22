@@ -1,14 +1,17 @@
-import { Trip } from "../Models";
-
+import {Trip} from "../Models";
 // ============================================
 // INTERFACE - Contract for trip operations
 // ============================================
 
 export interface ITripService {
     getAllTrips(): Promise<Trip[]>;
+
     getTripById(id: string): Promise<Trip | null>;
+
     createTrip(trip: Partial<Trip>): Promise<Trip>;
+
     updateTrip(id: string, updates: Partial<Trip>): Promise<Trip>;
+
     deleteTrip(id: string): Promise<boolean>;
 }
 
@@ -44,7 +47,7 @@ class SimpleTripService implements ITripService {
 
         // Generate ID if not provided
         const newId = tripData.id || `trip_${Date.now()}`;
-        
+
         // Create full trip object with defaults
         const newTrip: Trip = {
             id: newId,
@@ -65,10 +68,10 @@ class SimpleTripService implements ITripService {
         };
 
         this.trips.push(newTrip);
-        
+
         console.log('✅ Trip created:', newTrip);
         console.log('📋 Total trips:', this.trips.length);
-        
+
         return newTrip;
     }
 
@@ -92,9 +95,9 @@ class SimpleTripService implements ITripService {
         };
 
         this.trips[index] = updatedTrip;
-        
+
         console.log('✅ Trip updated:', updatedTrip);
-        
+
         return updatedTrip;
     }
 
@@ -110,10 +113,10 @@ class SimpleTripService implements ITripService {
         }
 
         this.trips.splice(index, 1);
-        
+
         console.log('🗑️ Trip deleted:', id);
         console.log('📋 Remaining trips:', this.trips.length);
-        
+
         return true;
     }
 
@@ -128,22 +131,34 @@ class SimpleTripService implements ITripService {
 // ============================================
 // API IMPLEMENTATION (for future use)
 // ============================================
-
 class ApiTripService implements ITripService {
+    private host: string;
     private baseUrl: string;
+    private token: string;
 
-    constructor(baseUrl: string = '/api/trips') {
+    constructor(baseUrl: string = 'http://127.0.0.1:8000/api/trips') {
         this.baseUrl = baseUrl;
     }
 
     async getAllTrips(): Promise<Trip[]> {
-        const response = await fetch(this.baseUrl);
-        if (!response.ok) throw new Error('Failed to fetch trips');
+        const response = await fetch(this.baseUrl, {
+                method: 'GET',
+                headers: this.setHeaders(),
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch trips');
+        }
+
         return response.json();
     }
 
     async getTripById(id: string): Promise<Trip | null> {
-        const response = await fetch(`${this.baseUrl}/${id}`);
+        const response = await fetch(`${this.baseUrl}/${id}`, {
+            method: 'GET',
+            headers: this.setHeaders(),
+        });
         if (response.status === 404) return null;
         if (!response.ok) throw new Error('Failed to fetch trip');
         return response.json();
@@ -152,7 +167,7 @@ class ApiTripService implements ITripService {
     async createTrip(tripData: Partial<Trip>): Promise<Trip> {
         const response = await fetch(this.baseUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: this.setHeaders(),
             body: JSON.stringify(tripData),
         });
         if (!response.ok) throw new Error('Failed to create trip');
@@ -162,12 +177,13 @@ class ApiTripService implements ITripService {
     async updateTrip(id: string, updates: Partial<Trip>): Promise<Trip> {
         const response = await fetch(`${this.baseUrl}/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: this.setHeaders(),
             body: JSON.stringify(updates),
         });
         if (!response.ok) throw new Error('Failed to update trip');
         return response.json();
     }
+
 
     async deleteTrip(id: string): Promise<boolean> {
         const response = await fetch(`${this.baseUrl}/${id}`, {
@@ -175,6 +191,18 @@ class ApiTripService implements ITripService {
         });
         return response.ok;
     }
+
+    private setHeaders() {
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.token}`
+        };
+    }
+
+    public setToken(token: string){
+        this.token = token
+    }
+
 }
 
 // ============================================
@@ -185,7 +213,7 @@ function createTripService(): ITripService {
     // For now, always use simple in-memory service
     // Later: can switch based on environment variable
     console.log('🔧 Using Simple In-Memory Trip Service');
-    return new SimpleTripService();
+    return new ApiTripService();
 }
 
 // ============================================

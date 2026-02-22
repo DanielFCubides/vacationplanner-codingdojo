@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { tripService } from '../services/TripService';
+import React, {useEffect, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {tripService} from '../services/TripService';
 
 const TripPlansList = () => {
     const navigate = useNavigate();
@@ -16,8 +16,8 @@ const TripPlansList = () => {
         try {
             setLoading(true);
             setError(null);
-            const data = await tripService.getAllTrips();
-            setTrips(data);
+            const {trips} = await tripService.getAllTrips();
+            setTrips(trips);
         } catch (err) {
             console.error('Failed to load trips:', err);
             setError('Failed to load trips. Please try again.');
@@ -28,10 +28,14 @@ const TripPlansList = () => {
 
     const getStatusColor = (status) => {
         switch (status.toLowerCase()) {
-            case 'confirmed': return 'bg-green-100 text-green-800 border-green-200';
-            case 'planning': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-            case 'completed': return 'bg-gray-100 text-gray-800 border-gray-200';
-            default: return 'bg-gray-100 text-gray-800 border-gray-200';
+            case 'confirmed':
+                return 'bg-green-100 text-green-800 border-green-200';
+            case 'planning':
+                return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+            case 'completed':
+                return 'bg-gray-100 text-gray-800 border-gray-200';
+            default:
+                return 'bg-gray-100 text-gray-800 border-gray-200';
         }
     };
 
@@ -108,7 +112,8 @@ const TripPlansList = () => {
                             <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
                                 {trip.name}
                             </h3>
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(trip.status)} capitalize`}>
+                            <span
+                                className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(trip.status)} capitalize`}>
                                 {trip.status}
                             </span>
                         </div>

@@ -36,7 +36,7 @@ class JWTValidator:
         self.issuer = issuer
         self._public_key_cache = None
     
-    def validate_token(self, authorization: str) -> Dict[str, Any]:
+    def validate_token(self, authorization: dict) -> Dict[str, Any]:
         """
         Validate JWT token from Authorization header
         
@@ -50,14 +50,14 @@ class JWTValidator:
             HTTPException: If token is invalid, expired, or malformed
         """
         # Validate Authorization header format
-        if not authorization or not authorization.startswith("Bearer "):
+        if not authorization.credentials or not authorization.scheme == "Bearer":
             raise HTTPException(
                 status_code=401,
                 detail="Invalid Token - must start with 'Bearer '"
             )
         
         # Extract token
-        token = authorization[7:]  # Remove "Bearer " prefix
+        token = authorization.credentials  # Remove "Bearer " prefix
         if not token:
             raise HTTPException(
                 status_code=401,

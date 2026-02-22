@@ -5,12 +5,15 @@ Provides dependency injection for authentication in FastAPI routes.
 """
 from typing import Annotated, Dict, Any
 from fastapi import Header, Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
 from .jwt_validator import JWTValidator
 from .keycloak_config import KeycloakConfig
 
 
 # Initialize Keycloak configuration
 keycloak_config = KeycloakConfig.from_env()
+security = HTTPBearer()
 
 # Initialize JWT validator
 jwt_validator = JWTValidator(
@@ -22,7 +25,7 @@ jwt_validator = JWTValidator(
 
 
 async def get_current_user(
-    authorization: Annotated[str, Header()]
+    authorization: HTTPAuthorizationCredentials = Depends(security)
 ) -> Dict[str, Any]:
     """
     FastAPI dependency to validate JWT token and extract user claims

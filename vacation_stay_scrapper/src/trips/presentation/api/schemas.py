@@ -16,7 +16,7 @@ from typing import List, Optional, Literal
 class TravelerCreateRequest(BaseModel):
     """Request schema for creating a traveler"""
     name: str = Field(..., min_length=1)
-    email: str = Field(..., pattern=r'^[^@]+@[^@]+\.[^@]+$')
+    email: str = Field(..., pattern=r'^[^@]+@[^@]+\.[^@]+$', examples=["user@example.com"])
     role: Literal["owner", "editor", "viewer"] = "viewer"
     avatar: Optional[str] = None
     

@@ -14,8 +14,6 @@ const Dashboard = () => {
         navigate('/');
     };
 
-    console.log("user", user);
-
     return (
         <div className="min-h-screen bg-gray-100 p-8">
             <div className="max-w-6xl mx-auto">
