@@ -115,7 +115,7 @@ const NewTripWizard = () => {
                             ? new Date(formData.flights.arrivalTime) 
                             : new Date(),
                     },
-                    duration: '',
+                    duration: '1',
                     stops: 0,
                     price: 0,
                     cabinClass: 'Economy',
