@@ -1,5 +1,5 @@
 import React from 'react';
-import {useAuth} from "./useAuth.js";
+import {useAuth} from "./hooks/useAuth.js";
 import {useNavigate} from "react-router-dom";
 import UserProfile from "./components/UserProfile.jsx";
 import TripPlansList from "./components/TripPlansList.jsx";
@@ -13,8 +13,6 @@ const Dashboard = () => {
         await logout();
         navigate('/');
     };
-
-    console.log("user", user);
 
     return (
         <div className="min-h-screen bg-gray-100 p-8">
