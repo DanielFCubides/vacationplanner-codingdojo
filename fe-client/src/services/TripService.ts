@@ -165,6 +165,8 @@ class ApiTripService implements ITripService {
     }
 
     async createTrip(tripData: Partial<Trip>): Promise<Trip> {
+        // Note: owner_id is never sent in the request body.
+        // The backend derives it automatically from the JWT token (sub claim).
         const response = await fetch(this.baseUrl, {
             method: 'POST',
             headers: this.setHeaders(),
@@ -188,6 +190,7 @@ class ApiTripService implements ITripService {
     async deleteTrip(id: string): Promise<boolean> {
         const response = await fetch(`${this.baseUrl}/${id}`, {
             method: 'DELETE',
+            headers: this.setHeaders(),
         });
         return response.ok;
     }
