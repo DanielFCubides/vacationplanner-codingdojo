@@ -42,25 +42,27 @@ router = APIRouter(prefix="/api/trips", tags=["trips"])
 async def create_trip(
         request: TripCreateRequest,
         use_case: CreateTripUseCase = Depends(get_create_trip_use_case),
-        token: str = Depends(get_current_user)
+        current_user: dict = Depends(get_current_user)
 ) -> TripResponse:
     """
     Create a new trip
 
+    The owner of the trip is automatically set to the authenticated user.
+
     Args:
         request: Trip creation request
         use_case: Create trip use case (injected)
+        current_user: Decoded JWT claims from the authenticated user
 
     Returns:
         Created trip details
     """
-    # Convert request to domain entity
-    trip = TripMapper.from_create_request(request)
+    owner_id = current_user["sub"]
 
-    # Execute use case
+    trip = TripMapper.from_create_request(request, owner_id=owner_id)
+
     created_trip = await use_case.execute(trip)
 
-    # Convert to response
     return TripMapper.to_response(created_trip)
 
 
