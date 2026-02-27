@@ -73,18 +73,20 @@ async def create_trip(
 )
 async def get_all_trips(
         use_case: GetAllTripsUseCase = Depends(get_get_all_trips_use_case),
-        token: str = Depends(get_current_user)
+        current_user: dict = Depends(get_current_user)
 ) -> TripListResponse:
     """
-    Get all trips
-    
+    Get all trips belonging to the authenticated user.
+
     Args:
         use_case: Get all trips use case (injected)
-        
+        current_user: Decoded JWT claims from the authenticated user
+
     Returns:
-        List of all trips
+        List of trips owned by the current user
     """
-    trips = await use_case.execute()
+    owner_id = current_user["sub"]
+    trips = await use_case.execute(owner_id=owner_id)
 
     return TripListResponse(
         trips=[TripMapper.to_response(trip) for trip in trips],
@@ -100,19 +102,21 @@ async def get_all_trips(
 async def get_trip(
         trip_id: str,
         use_case: GetTripUseCase = Depends(get_get_trip_use_case),
-        token: str = Depends(get_current_user)
+        current_user: dict = Depends(get_current_user)
 ) -> TripResponse:
     """
-    Get trip by ID
-    
+    Get a trip by ID. Only returns the trip if it belongs to the authenticated user.
+
     Args:
         trip_id: Trip identifier
         use_case: Get trip use case (injected)
-        
+        current_user: Decoded JWT claims from the authenticated user
+
     Returns:
         Trip details
     """
-    trip = await use_case.execute(trip_id)
+    owner_id = current_user["sub"]
+    trip = await use_case.execute(trip_id, owner_id=owner_id)
     return TripMapper.to_response(trip)
 
 
@@ -126,28 +130,31 @@ async def update_trip(
         request: TripUpdateRequest,
         use_case: UpdateTripUseCase = Depends(get_update_trip_use_case),
         get_use_case: GetTripUseCase = Depends(get_get_trip_use_case),
-        token: str = Depends(get_current_user)
+        current_user: dict = Depends(get_current_user)
 ) -> TripResponse:
     """
-    Update an existing trip
-    
+    Update an existing trip. Only the owner can update their trip.
+
     Args:
         trip_id: Trip identifier
         request: Trip update request
         use_case: Update trip use case (injected)
         get_use_case: Get trip use case (injected)
-        
+        current_user: Decoded JWT claims from the authenticated user
+
     Returns:
         Updated trip details
     """
-    # Get existing trip
-    existing_trip = await get_use_case.execute(trip_id)
+    owner_id = current_user["sub"]
 
-    # Update trip with request data
+    # Fetch existing trip scoped to owner
+    existing_trip = await get_use_case.execute(trip_id, owner_id=owner_id)
+
+    # Apply changes from request onto the existing entity
     updated_trip = TripMapper.update_from_request(existing_trip, request)
 
-    # Execute update
-    result = await use_case.execute(trip_id, updated_trip)
+    # Persist update, scoped to owner
+    result = await use_case.execute(trip_id, updated_trip, owner_id=owner_id)
 
     return TripMapper.to_response(result)
 
@@ -160,19 +167,21 @@ async def update_trip(
 async def delete_trip(
         trip_id: str,
         use_case: DeleteTripUseCase = Depends(get_delete_trip_use_case),
-        token: str = Depends(get_current_user)
+        current_user: dict = Depends(get_current_user)
 ) -> MessageResponse:
     """
-    Delete a trip
-    
+    Delete a trip. Only the owner can delete their trip.
+
     Args:
         trip_id: Trip identifier
         use_case: Delete trip use case (injected)
-        
+        current_user: Decoded JWT claims from the authenticated user
+
     Returns:
         Success message
     """
-    await use_case.execute(trip_id)
+    owner_id = current_user["sub"]
+    await use_case.execute(trip_id, owner_id=owner_id)
 
     return MessageResponse(
         message=f"Trip {trip_id} deleted successfully"
