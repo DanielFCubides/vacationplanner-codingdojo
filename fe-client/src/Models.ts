@@ -24,6 +24,15 @@ export interface Traveler {
     avatar: string;
 }
 
+export interface FlightFormData {
+    airline: string;
+    flightNumber: string;
+    departureAirport: string;
+    departureTime: string;
+    arrivalAirport: string;
+    arrivalTime: string;
+}
+
 export interface Flight {
     id: string;
     airline: string;
