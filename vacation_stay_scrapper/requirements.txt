@@ -5,6 +5,7 @@ requests
 uvicorn
 httpx
 tenacity
+faker>=20.0.0
 
 # debugging
 ipython
