@@ -1,7 +1,7 @@
 services:
   redis-cache:
     image: redis
-    profiles: [full]
+    profiles: [ full ]
     environment:
       - REDIS_PASSWORD=secret
       - REDIS_USER=secret
@@ -10,7 +10,7 @@ services:
 
   redis-ui:
     image: redis/redisinsight
-    profiles: [full]
+    profiles: [ full ]
     ports:
       - "5540:5540"
     depends_on:
@@ -19,7 +19,7 @@ services:
   broker:
     image: apache/kafka:latest
     container_name: broker
-    profiles: [full]
+    profiles: [ full ]
     environment:
       KAFKA_PROCESS_ROLES: controller,broker
       KAFKA_NODE_ID: 1
@@ -41,7 +41,7 @@ services:
   selenium-hub:
     image: selenium/hub:latest
     platform: linux/amd64
-    profiles: [full]
+    profiles: [ full ]
     environment:
       - log-level=FINE
     ports:
@@ -51,7 +51,7 @@ services:
 
   node-1:
     image: selenium/node-firefox:latest
-    profiles: [full]
+    profiles: [ full ]
     ports:
       - "5555:5555"
     environment:
@@ -64,7 +64,7 @@ services:
   node-2:
     image: selenium/node-chrome:latest
     platform: linux/amd64
-    profiles: [full]
+    profiles: [ full ]
     ports:
       - "5556:5555"
     depends_on:
@@ -77,11 +77,29 @@ services:
       - log-level=FINE
     shm_size: 2g
 
+  auth-service:
+    build:
+      context: ./auth_service
+      target: dev
+    ports:
+      - "8002:8000"
+    environment:
+      - KEYCLOAK_SERVER_URL=https://keycloack.dfcubidesc.com
+      - KEYCLOAK_CLIENT_ID=auth-service
+      - KEYCLOAK_REALM_NAME=habit-tracker
+      - KEYCLOAK_CLIENT_SECRET_KEY=DF4sNVjM7YqB31S7gYyGhhcvDxBNeC2j
+      - REDIS_HOST=redis-cache
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - REDIS_PASSWORD=secret
+    volumes:
+      - ./auth_service:/auth_service
+
   vacation-planner:
     build:
       context: ./vacation_stay_scrapper
       target: primary
-    profiles: [full, app, frontend]
+    profiles: [ full, app, frontend ]
     ports:
       - "8000:8000"
     volumes:
@@ -91,7 +109,7 @@ services:
     build:
       context: ./flight_scrapper_service
       target: primary
-    profiles: [full, app]
+    profiles: [ full, app ]
     environment:
       - SERVER=${SERVER:-rest}
     ports:
@@ -102,13 +120,13 @@ services:
   recommendations:
     build:
       context: ./recommendations
-    profiles: [full, app]
+    profiles: [ full, app ]
 
   fe-client:
     build:
       context: ./fe-client
       target: dev
-    profiles: [full, frontend]
+    profiles: [ full, frontend ]
     ports:
       - "3001:3001"
     volumes:
