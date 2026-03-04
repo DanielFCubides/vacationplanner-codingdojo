@@ -137,3 +137,6 @@ node_modules/
 
 # Keys
 *.pem
+
+# Volumes
+postgres/
