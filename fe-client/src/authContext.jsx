@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import authService from "./services/authService.js";
-import {tripService} from "./services/TripService.ts";
+import { tripService } from "./services/TripService.ts";
 
 const AuthContext = createContext();
 
@@ -17,12 +17,6 @@ const AuthProvider = ({ children }) => {
                 const currentUser = await authService.checkSession();
                 if (currentUser) {
                     setUser(currentUser);
-<<<<<<< Updated upstream
-                    const currentToken = authService.getCurrentToken();
-                    setTokens({"accessToken": currentToken});
-                    tripService.setToken(currentToken);
-=======
->>>>>>> Stashed changes
                 }
             } catch (err) {
                 console.error('Session check failed:', err);
@@ -46,11 +40,6 @@ const AuthProvider = ({ children }) => {
 
             if (response.success) {
                 setUser(response.user);
-<<<<<<< Updated upstream
-                setTokens(response.tokens);
-                tripService.setToken(response.tokens.accessToken);
-=======
->>>>>>> Stashed changes
             }
             return response;
         } catch (err) {
@@ -70,15 +59,10 @@ const AuthProvider = ({ children }) => {
      * @param {Object} result - Result from authService.handleOAuthCallback()
      */
     const loginWithOAuth = async (result) => {
-<<<<<<< Updated upstream
-        // console.log("Setting user from OAuth flow result:", result);
-=======
->>>>>>> Stashed changes
         try {
             setLoading(true);
             setError(null);
 
-<<<<<<< Updated upstream
             // If we're passed just a code string, handle it
             if (typeof result === 'string') {
                 // console.log("⚠️ Received code string, but should receive result object");
@@ -91,18 +75,13 @@ const AuthProvider = ({ children }) => {
                 }
                 return response;
             }
-            
+
             // If we're passed the result object from handleOAuthCallback
             if (result && result.user) {
                 // console.log("✅ Setting user from OAuth result:", result.user);
                 setUser(result.user);
                 setTokens(result.tokens);
                 tripService.setToken(result.tokens.accessToken);
-=======
-            if (result && result.user) {
-                console.log('🔵 Setting user:', result.user);
-                setUser(result.user);
->>>>>>> Stashed changes
                 return result;
             }
 

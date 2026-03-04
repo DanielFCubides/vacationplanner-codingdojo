@@ -6,14 +6,9 @@ import TripDetailsView from "./tripDetailsView.tsx";
 import NewTripWizard from "./components/NewTripWizard.tsx";
 import { AuthProvider } from "./authContext.jsx";
 import React, { useEffect } from 'react';
-<<<<<<< Updated upstream
-import {useAuth} from "./hooks/useAuth.js";
+import { useAuth } from "./hooks/useAuth.js";
 import authService from "./services/authService.js";
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-=======
-import { useAuth } from "./useAuth.js";
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
->>>>>>> Stashed changes
 
 // Loading component for OAuth callback processing
 const CallbackLoader = () => {

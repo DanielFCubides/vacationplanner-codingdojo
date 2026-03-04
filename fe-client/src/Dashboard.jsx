@@ -1,11 +1,6 @@
 import React from 'react';
-<<<<<<< Updated upstream
-import {useAuth} from "./hooks/useAuth.js";
-import {useNavigate} from "react-router-dom";
-=======
 import { useAuth } from "./useAuth.js";
 import { useNavigate } from "react-router-dom";
->>>>>>> Stashed changes
 import UserProfile from "./components/UserProfile.jsx";
 import TripPlansList from "./components/TripPlansList.jsx";
 import AddTripContainer from "./components/AddTripContainer.tsx";
