@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tripService } from '../services/TripService';
+import { useAuth } from '../hooks/useAuth';
 
 // Import step components
 import OverviewStep from './wizard-steps/OverviewStep';
@@ -12,6 +13,7 @@ import TeamStep from './wizard-steps/TeamStep';
 
 const NewTripWizard = () => {
     const navigate = useNavigate();
+    const { isAuthenticated } = useAuth();
     const [currentStep, setCurrentStep] = useState(0);
     const [formData, setFormData] = useState({
         overview: {
@@ -88,6 +90,14 @@ const NewTripWizard = () => {
 
     // Save trip
     const handleSaveTrip = async () => {
+        // Guard: user must be authenticated — the backend assigns ownership
+        // from the JWT token, so we should never reach this point unauthenticated.
+        if (!isAuthenticated) {
+            alert('You must be logged in to create a trip.');
+            navigate('/login');
+            return;
+        }
+
         try {
             // Parse budget value
             const totalBudget = formData.budget.totalBudget 
@@ -115,7 +125,7 @@ const NewTripWizard = () => {
                             ? new Date(formData.flights.arrivalTime) 
                             : new Date(),
                     },
-                    duration: '',
+                    duration: '1',
                     stops: 0,
                     price: 0,
                     cabinClass: 'Economy',

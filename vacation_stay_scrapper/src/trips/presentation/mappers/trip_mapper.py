@@ -76,13 +76,17 @@ class TripMapper:
         )
     
     @staticmethod
-    def from_create_request(request: TripCreateRequest) -> Trip:
+    def from_create_request(request: TripCreateRequest, owner_id: str) -> Trip:
         """
-        Convert create request to Trip entity with nested objects
-        
+        Convert create request to Trip entity with nested objects.
+
+        The owner_id must be provided by the caller (extracted from the JWT token).
+        It is never read from the request body.
+
         Args:
             request: TripCreateRequest schema with optional nested objects
-            
+            owner_id: Authenticated user ID (JWT sub claim) — mandatory
+
         Returns:
             Trip domain entity with all nested objects created
         """
@@ -119,6 +123,7 @@ class TripMapper:
         
         return Trip(
             id=None,
+            owner_id=owner_id,
             name=request.name,
             destination=request.destination,
             start_date=request.start_date,

@@ -44,12 +44,29 @@ class ITripRepository(ABC):
         pass
     
     @abstractmethod
-    async def find_all(self) -> List[Trip]:
+    async def find_by_owner(self, trip_id: int, owner_id: str) -> Optional[Trip]:
         """
-        Get all trips
-        
+        Find a trip by ID scoped to a specific owner.
+
+        Args:
+            trip_id: Trip identifier
+            owner_id: Owner user ID
+
         Returns:
-            List of all trips
+            Trip if found and owned by the given user, None otherwise
+        """
+        pass
+
+    @abstractmethod
+    async def find_all_by_owner(self, owner_id: str) -> List[Trip]:
+        """
+        Get all trips belonging to a specific owner.
+
+        Args:
+            owner_id: Owner user ID
+
+        Returns:
+            List of trips owned by the user
         """
         pass
     

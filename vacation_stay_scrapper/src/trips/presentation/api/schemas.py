@@ -39,7 +39,7 @@ class FlightCreateRequest(BaseModel):
     arrival: FlightLocationRequest
     duration: str = Field(..., min_length=1)  # e.g., "2h 30m"
     stops: int = Field(0, ge=0)
-    price: float = Field(..., gt=0)
+    price: float = Field(..., ge=0)
     cabin_class: str = Field("Economy", alias="cabinClass")
     status: Literal["confirmed", "pending", "cancelled"] = "pending"
     

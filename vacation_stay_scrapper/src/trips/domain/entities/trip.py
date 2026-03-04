@@ -26,6 +26,7 @@ class Trip:
     """
     # Core properties
     id: Optional[int]
+    owner_id: str
     name: str
     destination: str
     start_date: date
@@ -47,6 +48,8 @@ class Trip:
     
     def __post_init__(self):
         """Validate trip data"""
+        if not self.owner_id or not self.owner_id.strip():
+            raise ValueError("Trip owner_id cannot be empty")
         if not self.name or not self.name.strip():
             raise ValueError("Trip name cannot be empty")
         if not self.destination or not self.destination.strip():

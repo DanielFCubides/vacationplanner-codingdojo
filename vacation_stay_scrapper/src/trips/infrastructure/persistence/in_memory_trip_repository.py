@@ -58,14 +58,33 @@ class InMemoryTripRepository(ITripRepository):
         """
         return self._storage.get(trip_id)
     
-    async def find_all(self) -> List[Trip]:
+    async def find_by_owner(self, trip_id: int, owner_id: str) -> Optional[Trip]:
         """
-        Get all trips
-        
+        Find a trip by ID scoped to a specific owner.
+
+        Args:
+            trip_id: Trip identifier
+            owner_id: Owner user ID
+
         Returns:
-            List of all trips
+            Trip if found and owned by the given user, None otherwise
         """
-        return list(self._storage.values())
+        trip = self._storage.get(trip_id)
+        if trip is None or trip.owner_id != owner_id:
+            return None
+        return trip
+
+    async def find_all_by_owner(self, owner_id: str) -> List[Trip]:
+        """
+        Get all trips belonging to a specific owner.
+
+        Args:
+            owner_id: Owner user ID
+
+        Returns:
+            List of trips owned by the user
+        """
+        return [trip for trip in self._storage.values() if trip.owner_id == owner_id]
     
     async def delete(self, trip_id: int) -> bool:
         """
