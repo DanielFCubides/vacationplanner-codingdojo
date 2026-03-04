@@ -1,42 +1,43 @@
 /**
  * Standard Flow (Authorization Code Grant) Implementation
- * 
- * This flow implements the OAuth 2.0 Authorization Code Grant with PKCE.
- * Users are redirected to Keycloak for authentication, then redirected back
- * with an authorization code that is exchanged for tokens.
+ *
+ * This flow initiates the OAuth 2.0 Authorization Code Grant.
+ * The browser is redirected to Keycloak, which then redirects to the
+ * BACKEND callback URI. The backend exchanges the code for tokens,
+ * sets an HTTPOnly session cookie, and redirects back to the frontend.
+ *
+ * The frontend never sees nor stores any tokens.
  */
 
-import { extractUserFromToken } from '../../utils/tokenUtils.js';
-import { 
-  generateAuthorizationUrl, 
-  generateState, 
+import {
+  generateAuthorizationUrl,
+  generateState,
   storeOAuthState,
-  validateOAuthState,
-  parseCallbackUrl,
   cleanOAuthUrl
 } from '../../utils/urlUtils.js';
 
 export class StandardFlow {
-  constructor(keycloakConfig) {
+  constructor(keycloakConfig, backendBaseUrl) {
     this.keycloakUrl = keycloakConfig.url;
     this.realm = keycloakConfig.realm;
     this.clientId = keycloakConfig.clientId;
     this.redirectUri = keycloakConfig.redirectUri;
     this.scopes = keycloakConfig.scopes || 'openid profile email';
+    this.backendBaseUrl = backendBaseUrl || import.meta.env.VITE_AUTH_BACKEND_URL || 'http://localhost:8002';
   }
 
   /**
-   * Initiate the authorization code flow by redirecting to Keycloak
+   * Initiate the authorization code flow by redirecting to Keycloak.
+   * The redirect_uri sent to Keycloak is the BACKEND endpoint that will
+   * receive the code from Keycloak, exchange it, set the HTTPOnly cookie,
+   * and then redirect the browser back to the frontend.
    * @returns {Promise<Object>} - Flow initiation result
    */
   async initiateFlow() {
     try {
-
-      // Generate state for security
       const state = generateState();
       storeOAuthState(state);
 
-      // Generate authorization URL
       const authUrl = generateAuthorizationUrl({
         keycloakUrl: this.keycloakUrl,
         realm: this.realm,
@@ -46,9 +47,8 @@ export class StandardFlow {
         state: state
       });
 
-      console.log("auth url generated" + authUrl);
+      console.log('🔵 StandardFlow: Authorization URL generated', authUrl);
 
-      // Store flow initiation info
       sessionStorage.setItem('authFlow', 'standard');
       sessionStorage.setItem('authFlowInitiated', Date.now().toString());
 
@@ -62,7 +62,6 @@ export class StandardFlow {
 
     } catch (error) {
       console.error('Standard flow initiation failed:', error);
-      
       return {
         success: false,
         flow: 'standard',
@@ -73,56 +72,45 @@ export class StandardFlow {
   }
 
   /**
-   * Handle the authorization callback and exchange code for tokens
-   * @param {string} callbackUrl - The callback URL with authorization code
-   * @returns {Promise<Object>} - Authentication result
+   * Handle the frontend callback after the backend has already completed
+   * the token exchange and set the HTTPOnly session cookie.
+   *
+   * At this point there is NO ?code= in the URL — the backend consumed it.
+   * We simply call the backend session endpoint to verify the cookie and
+   * retrieve the authenticated user's info.
+   *
+   * @returns {Promise<Object>} - Authentication result with user info
    */
-  async handleCallback(callbackUrl = window.location.href) {
+  async handleCallback() {
     try {
-      console.log('🔵 StandardFlow.handleCallback called with URL:', callbackUrl);
-      
-      // Parse callback parameters
-      const { code, state, error, errorDescription } = parseCallbackUrl(callbackUrl);
+      console.log('🔵 StandardFlow.handleCallback: verifying session with backend');
 
-      console.log('🔵 Parsed callback params:', { 
-        hasCode: !!code, 
-        hasState: !!state, 
-        hasError: !!error 
-      });
-
-      // Handle OAuth errors
-      if (error) {
-        throw new Error(errorDescription || error);
-      }
-
-      // Check if we have an authorization code
-      if (!code) {
-        throw new Error('No authorization code received');
-      }
-
-      // Validate state parameter
-      console.log('🔵 Validating state parameter...');
-      const isValidState = validateOAuthState(state);
-      console.log('🔵 State validation result:', isValidState);
-      
-      if (!isValidState) {
-        throw new Error('Invalid state parameter - possible CSRF attack');
-      }
-
-      // Exchange authorization code for tokens
-      const tokenResult = await this._exchangeCodeForTokens(code);
-      
-      // Clean URL from OAuth parameters
+      // Clean any leftover OAuth params from the URL (should be none, but be safe)
       cleanOAuthUrl();
 
-      return tokenResult;
+      // Verify the session cookie by calling the backend
+      const user = await this._checkSession();
+
+      if (!user) {
+        throw new Error('No valid session found after OAuth callback');
+      }
+
+      // Clean up session storage state tracking
+      sessionStorage.removeItem('authFlow');
+      sessionStorage.removeItem('authFlowInitiated');
+
+      return {
+        success: true,
+        flow: 'standard',
+        user: {
+          ...user,
+          flow: 'standard'
+        }
+      };
 
     } catch (error) {
       console.error('Standard flow callback handling failed:', error);
-      
-      // Clean URL even on error
       cleanOAuthUrl();
-      
       return {
         success: false,
         flow: 'standard',
@@ -133,95 +121,34 @@ export class StandardFlow {
   }
 
   /**
-   * Exchange authorization code for access tokens
-   * @param {string} code - Authorization code from callback
-   * @returns {Promise<Object>} - Token exchange result
+   * Call the backend session/me endpoint to verify the HTTPOnly cookie
+   * and retrieve current user info. The browser automatically sends the
+   * cookie because credentials: 'include' is set.
+   *
+   * @returns {Promise<Object|null>} - User info object or null if not authenticated
    */
-  async _exchangeCodeForTokens(code) {
-    const tokenUrl = `${this.keycloakUrl}/realms/${this.realm}/protocol/openid-connect/token`;
+  async _checkSession() {
+    const url = `${this.backendBaseUrl}/auth/silent_check`;
 
-    const requestBody = new URLSearchParams({
-      grant_type: 'authorization_code',
-      code: code,
-      redirect_uri: this.redirectUri,
-      client_id: this.clientId
-    });
-
-    const response = await fetch(tokenUrl, {
-      method: 'POST',
+    const response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: requestBody
+        'Accept': 'application/json'
+      }
     });
+
+    if (response.status === 401 || response.status === 403) {
+      return null;
+    }
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.error_description || 
-        errorData.error || 
-        `Token exchange failed (${response.status})`
-      );
+      throw new Error(`Session check failed (${response.status})`);
     }
 
-    const tokens = await response.json();
-
-    // Extract user information
-    const user = extractUserFromToken(tokens.access_token);
-    if (!user) {
-      throw new Error('Failed to extract user information from token');
-    }
-
-    // Store tokens
-    this._storeTokens(tokens);
-
-    return {
-      success: true,
-      flow: 'standard',
-      user: {
-        ...user,
-        flow: 'standard'
-      },
-      tokens: {
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
-        idToken: tokens.id_token,
-        tokenType: tokens.token_type || 'Bearer',
-        expiresIn: tokens.expires_in
-      }
-    };
-  }
-
-  /**
-   * Store authentication tokens
-   * @param {Object} tokens - Token response from Keycloak
-   */
-  _storeTokens(tokens) {
-    localStorage.setItem('authToken', tokens.access_token);
-    
-    if (tokens.refresh_token) {
-      localStorage.setItem('refreshToken', tokens.refresh_token);
-    }
-    
-    if (tokens.id_token) {
-      localStorage.setItem('idToken', tokens.id_token);
-    }
-
-    // Store flow type for debugging
-    localStorage.setItem('authFlow', 'standard');
-    
-    // Clean up session storage
-    sessionStorage.removeItem('authFlowInitiated');
-  }
-
-  /**
-   * Check if we're currently handling a callback
-   * @returns {boolean} - True if this appears to be a callback
-   */
-  isCallback(url = window.location.href) {
-    const { isCallback } = parseCallbackUrl(url);
-    return isCallback;
-  }
+    const data = await response.json();
+    return data.userinfo
+  };
 
   /**
    * Categorize error for better handling
@@ -230,27 +157,20 @@ export class StandardFlow {
    */
   _categorizeError(errorMessage) {
     const message = errorMessage.toLowerCase();
-    
-    if (message.includes('state') || message.includes('csrf')) {
-      return 'security_error';
+
+    if (message.includes('session') || message.includes('cookie')) {
+      return 'session_error';
     }
-    
-    if (message.includes('code')) {
-      return 'authorization_failed';
+    if (message.includes('401') || message.includes('403')) {
+      return 'unauthorized';
     }
-    
-    if (message.includes('access_denied')) {
-      return 'access_denied';
-    }
-    
     if (message.includes('network') || message.includes('fetch')) {
       return 'network_error';
     }
-    
     if (message.includes('timeout')) {
       return 'timeout';
     }
-    
+
     return 'unknown_error';
   }
 }

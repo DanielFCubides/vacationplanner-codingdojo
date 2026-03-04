@@ -139,4 +139,8 @@ node_modules/
 *.pem
 
 # Volumes
+<<<<<<< Updated upstream
 postgres/
+=======
+/postgres
+>>>>>>> Stashed changes

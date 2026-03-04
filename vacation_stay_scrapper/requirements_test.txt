@@ -1,6 +1,0 @@
-#principal
-
-pytest
-pytest-cov
-ipython
-pdbpp

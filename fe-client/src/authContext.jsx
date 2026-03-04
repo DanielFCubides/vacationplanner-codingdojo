@@ -1,43 +1,43 @@
-import React, {createContext, useState, useEffect} from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import authService from "./services/authService.js";
 import {tripService} from "./services/TripService.ts";
 
 const AuthContext = createContext();
 
-
-
-const AuthProvider = ({children}) => {
-    const [tokens, setTokens] = useState(null);
+const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Check if user is already logged in on app start
+    // On app start, verify session with the backend via the HTTPOnly cookie.
+    // No localStorage involved — the cookie is sent automatically by the browser.
     useEffect(() => {
-        const checkExistingAuth = () => {
+        const checkExistingSession = async () => {
             try {
-                if (authService.isAuthenticated()) {
-                    const currentUser = authService.getCurrentUser();
+                const currentUser = await authService.checkSession();
+                if (currentUser) {
                     setUser(currentUser);
+<<<<<<< Updated upstream
                     const currentToken = authService.getCurrentToken();
                     setTokens({"accessToken": currentToken});
                     tripService.setToken(currentToken);
+=======
+>>>>>>> Stashed changes
                 }
-
-
-
-            } catch (error) {
-                console.error('Auth check failed:', error);
-                // Clear any invalid tokens
-                authService.removeToken();
+            } catch (err) {
+                console.error('Session check failed:', err);
             } finally {
                 setLoading(false);
             }
         };
 
-        checkExistingAuth();
+        checkExistingSession();
     }, []);
 
+    /**
+     * Direct Flow login (username + password).
+     * The backend is NOT involved in this flow; Keycloak is called directly.
+     */
     const login = async (username, password) => {
         try {
             setLoading(true);
@@ -46,8 +46,11 @@ const AuthProvider = ({children}) => {
 
             if (response.success) {
                 setUser(response.user);
+<<<<<<< Updated upstream
                 setTokens(response.tokens);
                 tripService.setToken(response.tokens.accessToken);
+=======
+>>>>>>> Stashed changes
             }
             return response;
         } catch (err) {
@@ -58,12 +61,24 @@ const AuthProvider = ({children}) => {
         }
     };
 
+    /**
+     * Called after the backend has set the HTTPOnly cookie and redirected
+     * the browser to the frontend /auth/callback route.
+     * Accepts the result from authService.handleOAuthCallback() which
+     * already contains the verified user info from the backend.
+     *
+     * @param {Object} result - Result from authService.handleOAuthCallback()
+     */
     const loginWithOAuth = async (result) => {
+<<<<<<< Updated upstream
         // console.log("Setting user from OAuth flow result:", result);
+=======
+>>>>>>> Stashed changes
         try {
             setLoading(true);
             setError(null);
 
+<<<<<<< Updated upstream
             // If we're passed just a code string, handle it
             if (typeof result === 'string') {
                 // console.log("⚠️ Received code string, but should receive result object");
@@ -83,11 +98,15 @@ const AuthProvider = ({children}) => {
                 setUser(result.user);
                 setTokens(result.tokens);
                 tripService.setToken(result.tokens.accessToken);
+=======
+            if (result && result.user) {
+                console.log('🔵 Setting user:', result.user);
+                setUser(result.user);
+>>>>>>> Stashed changes
                 return result;
             }
-            
-            // Fallback
-            return { success: false, error: 'Invalid OAuth result' };
+
+            return { success: false, error: 'Invalid OAuth result — no user info received' };
         } catch (err) {
             setError(err.message);
             throw err;
@@ -96,12 +115,15 @@ const AuthProvider = ({children}) => {
         }
     };
 
+    /**
+     * Logout: calls the backend to invalidate the session cookie,
+     * then clears local user state.
+     */
     const logout = async () => {
         try {
             setLoading(true);
             await authService.logout();
             setUser(null);
-            setTokens(null);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -119,8 +141,7 @@ const AuthProvider = ({children}) => {
         loginWithOAuth,
         logout,
         clearError,
-        isAuthenticated: !!user && authService.isAuthenticated(),
-        tokens,
+        isAuthenticated: !!user,
     };
 
     return (
@@ -130,4 +151,4 @@ const AuthProvider = ({children}) => {
     );
 };
 
-export {AuthContext, AuthProvider};
+export { AuthContext, AuthProvider };

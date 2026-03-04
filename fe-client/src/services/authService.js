@@ -1,26 +1,38 @@
 /**
  * Enhanced Authentication Service with Flow Detection
  *
- * This service orchestrates different Keycloak authentication flows based on
- * feature flags and provides a unified interface for authentication operations.
+ * This service orchestrates different Keycloak authentication flows.
+ *
+ * For the Standard Flow (Authorization Code Grant):
+ *   - The backend handles the Keycloak callback, exchanges the code for tokens,
+ *     and sets an HTTPOnly session cookie.
+ *   - The frontend NEVER sees or stores any tokens.
+ *   - Authentication state is determined by calling the backend session endpoint.
+ *
+ * For the Direct Flow (Resource Owner Password Credentials):
+ *   - Username/password are sent to Keycloak directly from the frontend.
+ *   - This flow can also be migrated to go through the backend if desired.
  */
 
-import {FEATURE_FLAGS, FeatureFlagUtils} from '../config/featureFlags.js';
-import {DirectFlow} from './keycloakFlows/directFlow.js';
-import {StandardFlow} from './keycloakFlows/standardFlow.js';
+import { FEATURE_FLAGS, FeatureFlagUtils } from '../config/featureFlags.js';
+import { DirectFlow } from './keycloakFlows/directFlow.js';
+import { StandardFlow } from './keycloakFlows/standardFlow.js';
 import mockKeycloakService from './mockKeycloakService.js';
-import {extractUserFromToken, getTokenDebugInfo, isMockToken, isTokenExpired} from '../utils/tokenUtils.js';
-import {cleanOAuthUrl, isOAuthCallback} from '../utils/urlUtils.js';
-import {getBaseConfig} from '../config/keycloakConfig.js'
+import { cleanOAuthUrl } from '../utils/urlUtils.js';
+import { getBaseConfig } from '../config/keycloakConfig.js';
 
 class EnhancedAuthService {
     constructor() {
         this.keycloakConfig = this._getKeycloakConfig();
+        this.backendBaseUrl = import.meta.env.VITE_AUTH_BACKEND_URL || 'http://localhost:8002';
         this.currentFlow = null;
+
+        // In-memory user cache — never persisted to localStorage
+        this._cachedUser = null;
 
         // Initialize flow handlers
         this.directFlow = new DirectFlow(this.keycloakConfig);
-        this.standardFlow = new StandardFlow(this.keycloakConfig);
+        this.standardFlow = new StandardFlow(this.keycloakConfig, this.backendBaseUrl);
 
         // Auto-detect current flow on initialization
         this._detectCurrentFlow();
@@ -35,6 +47,10 @@ class EnhancedAuthService {
         }
     }
 
+    // ---------------------------------------------------------------------------
+    // Public API
+    // ---------------------------------------------------------------------------
+
     /**
      * Authenticate using the specified flow
      * @param {string} flow - Authentication flow ('direct' | 'standard' | 'auto')
@@ -43,7 +59,6 @@ class EnhancedAuthService {
      */
     async loginWithFlow(flow = 'auto', credentials = {}) {
         try {
-            // Determine actual flow to use
             const actualFlow = this._resolveFlow(flow);
 
             if (!FeatureFlagUtils.isFlowEnabled(actualFlow)) {
@@ -62,7 +77,6 @@ class EnhancedAuthService {
                 default:
                     throw new Error(`Unsupported flow: ${actualFlow}`);
             }
-
         } catch (error) {
             console.error('Login failed:', error);
             throw error;
@@ -71,38 +85,36 @@ class EnhancedAuthService {
 
     /**
      * Legacy method: Login with username/password (Direct Flow)
-     * @param {string} username - Username
-     * @param {string} password - Password
-     * @returns {Promise<Object>} - Authentication result
      */
     async loginWithCredentials(username, password) {
-        return this.loginWithFlow('direct', {username, password});
+        return this.loginWithFlow('direct', { username, password });
     }
 
     /**
-     * Handle OAuth callback (Standard Flow)
-     * @param {string} callbackUrl - Optional callback URL
-     * @returns {Promise<Object>} - Authentication result
+     * Handle the frontend side of the OAuth callback.
+     * By the time the browser lands here, the backend has already consumed the
+     * authorization code, set the HTTPOnly cookie, and redirected the browser
+     * to the frontend. This method simply verifies the session with the backend.
+     *
+     * @returns {Promise<Object>} - Authentication result with user info
      */
-    async handleOAuthCallback(callbackUrl) {
+    async handleOAuthCallback() {
         if (!FeatureFlagUtils.isFlowEnabled('standard')) {
             throw new Error('Standard flow is not enabled');
         }
 
         this.currentFlow = 'standard';
-        return await this.standardFlow.handleCallback(callbackUrl);
+        const result = await this.standardFlow.handleCallback();
+        console.log('🔵 Standard flow result:', result);
+        if (result.success && result.user) {
+            this._cachedUser = result.user;
+        }
+
+        return result;
     }
 
     /**
-     * Check if current URL is an OAuth callback
-     * @returns {boolean} - True if current URL is a callback
-     */
-    isOAuthCallback() {
-        return isOAuthCallback();
-    }
-
-    /**
-     * Initiate Standard Flow (OAuth redirect)
+     * Initiate Standard Flow (OAuth redirect to Keycloak)
      * @returns {Promise<Object>} - Flow initiation result
      */
     async initiateStandardFlow() {
@@ -111,19 +123,124 @@ class EnhancedAuthService {
         }
 
         this.currentFlow = 'standard';
-        console.log("initating flow");
+        console.log('🔵 Initiating standard flow...');
         const result = await this.standardFlow.initiateFlow();
-        console.log("result", result);
-        // Return the result immediately - let the caller handle the redirect
-        // This preserves the user interaction chain
+        console.log('🔵 Standard flow result:', result);
         return result;
     }
 
     /**
-     * Legacy OAuth methods (now use mock service)
-     * @param {string} provider - OAuth provider name
-     * @returns {Promise<Object>} - Authentication result
+     * Check if an active session exists by calling the backend.
+     * The HTTPOnly cookie is sent automatically by the browser.
+     * Returns the user object on success, or null if not authenticated.
+     *
+     * @returns {Promise<Object|null>} - User info or null
      */
+    async checkSession() {
+        try {
+            const response = await fetch(`${this.backendBaseUrl}/auth/silent_check`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'Accept': 'application/json' },
+            });
+
+            if (response.status === 401 || response.status === 403) {
+                this._cachedUser = null;
+                return null;
+            }
+
+            if (!response.ok) {
+                console.warn(`Session check returned ${response.status}`);
+                this._cachedUser = null;
+                return null;
+            }
+
+            const data = await response.json();
+            const user = data.userinfo || data;
+            this._cachedUser = user;
+            return user;
+
+        } catch (error) {
+            console.error('Session check failed:', error);
+            this._cachedUser = null;
+            return null;
+        }
+    }
+
+    /**
+     * Logout: calls the backend to invalidate the session cookie,
+     * then clears all in-memory and sessionStorage state.
+     * @returns {Promise<Object>} - Logout result
+     */
+    async logout() {
+        try {
+            // Handle mock logout
+            if (FEATURE_FLAGS.MOCK_KEYCLOAK_RESPONSES) {
+                const result = await mockKeycloakService.mockLogout();
+                this._clearState();
+                return result;
+            }
+
+            // Call backend to invalidate the cookie
+            await fetch(`${this.backendBaseUrl}/auth/logout`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Accept': 'application/json' }
+            });
+
+        } catch (logoutError) {
+            console.warn('Backend logout request failed:', logoutError);
+        } finally {
+            this._clearState();
+        }
+
+        return { success: true };
+    }
+
+    /**
+     * Check if user is authenticated.
+     * Uses the in-memory cached user to avoid an extra network request.
+     * For a fresh check call checkSession() directly.
+     * @returns {boolean}
+     */
+    isAuthenticated() {
+        return !!this._cachedUser;
+    }
+
+    /**
+     * Get current user information from memory cache.
+     * @returns {Object|null}
+     */
+    getCurrentUser() {
+        return this._cachedUser || null;
+    }
+
+    /**
+     * Get current authentication flow
+     * @returns {string|null}
+     */
+    getCurrentFlow() {
+        return this.currentFlow || sessionStorage.getItem('authFlow') || null;
+    }
+
+    /**
+     * Get available authentication flows
+     * @returns {Array<string>}
+     */
+    getAvailableFlows() {
+        return FeatureFlagUtils.getAvailableFlows();
+    }
+
+    /**
+     * Check if a specific flow is enabled
+     * @param {string} flow
+     * @returns {boolean}
+     */
+    isFlowEnabled(flow) {
+        return FeatureFlagUtils.isFlowEnabled(flow);
+    }
+
+    // Legacy OAuth social login mocks
     async loginWithGoogle() {
         return await mockKeycloakService.mockOAuthProvider('google');
     }
@@ -132,271 +249,73 @@ class EnhancedAuthService {
         return await mockKeycloakService.mockOAuthProvider('apple');
     }
 
-    /**
-     * Logout from current session
-     * @returns {Promise<Object>} - Logout result
-     */
-    async logout() {
-        try {
-            const token = this.getToken();
+    // ---------------------------------------------------------------------------
+    // Private helpers
+    // ---------------------------------------------------------------------------
 
-            // Handle mock logout
-            if (FEATURE_FLAGS.MOCK_KEYCLOAK_RESPONSES || isMockToken(token)) {
-                const result = await mockKeycloakService.mockLogout();
-                this._clearTokens();
-                this.currentFlow = null;
-                return result;
-            }
-
-            // Handle real Keycloak logout
-            if (token && !isMockToken(token)) {
-                try {
-                    const logoutUrl = `${this.keycloakConfig.url}/realms/${this.keycloakConfig.realm}/protocol/openid-connect/logout`;
-
-                    await fetch(logoutUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: new URLSearchParams({
-                            client_id: this.keycloakConfig.clientId,
-                            refresh_token: localStorage.getItem('refreshToken') || ''
-                        })
-                    });
-                } catch (logoutError) {
-                    console.warn('Keycloak logout request failed:', logoutError);
-                }
-            }
-
-            this._clearTokens();
-            this.currentFlow = null;
-
-            return {success: true};
-
-        } catch (error) {
-            console.error('Logout failed:', error);
-
-            // Always clear tokens even if logout fails
-            this._clearTokens();
-            this.currentFlow = null;
-
-            throw error;
-        }
-    }
-
-    /**
-     * Check if user is authenticated
-     * @returns {boolean} - True if user is authenticated
-     */
-    isAuthenticated() {
-        const token = this.getToken();
-        if (!token) return false;
-
-        return !isTokenExpired(token);
-    }
-
-    /**
-     * Get current user information
-     * @returns {Object|null} - Current user or null
-     */
-    getCurrentUser() {
-        const token = this.getToken();
-        if (!token) return null;
-
-        return extractUserFromToken(token);
-    }
-
-
-    getCurrentToken() {
-        const token = this.getToken();
-        if (!token) return null;
-
-        return token;
-    }
-
-    /**
-     * Get stored authentication token
-     * @returns {string|null} - Authentication token or null
-     */
-    getToken() {
-        return localStorage.getItem('authToken');
-    }
-
-    /**
-     * Get current authentication flow
-     * @returns {string|null} - Current flow or null
-     */
-    getCurrentFlow() {
-        return this.currentFlow || localStorage.getItem('authFlow') || null;
-    }
-
-    /**
-     * Get available authentication flows
-     * @returns {Array<string>} - Available flows
-     */
-    getAvailableFlows() {
-        return FeatureFlagUtils.getAvailableFlows();
-    }
-
-    /**
-     * Check if a specific flow is enabled
-     * @param {string} flow - Flow name
-     * @returns {boolean} - True if flow is enabled
-     */
-    isFlowEnabled(flow) {
-        return FeatureFlagUtils.isFlowEnabled(flow);
-    }
-
-    /**
-     * Get debug information about current auth state
-     * @returns {Object} - Debug information
-     */
-    getDebugInfo() {
-        const token = this.getToken();
-
-        return {
-            authService: {
-                currentFlow: this.currentFlow,
-                availableFlows: this.getAvailableFlows(),
-                isAuthenticated: this.isAuthenticated(),
-                currentUser: this.getCurrentUser()
-            },
-            token: token ? getTokenDebugInfo(token) : null,
-            featureFlags: FeatureFlagUtils.getDebugInfo(),
-            mockService: FEATURE_FLAGS.MOCK_KEYCLOAK_RESPONSES ?
-                mockKeycloakService.getDebugInfo() : null,
-            keycloakConfig: this.keycloakConfig
-        };
-    }
-
-    /**
-     * Handle Direct Flow authentication
-     * @param {Object} credentials - Username and password
-     * @returns {Promise<Object>} - Authentication result
-     */
-    async _handleDirectLogin(credentials) {
-        const {username, password} = credentials;
-
+    async _handleDirectLogin({ username, password }) {
         if (!username || !password) {
             throw new Error('Username and password are required for direct flow');
         }
-
-        return await this.directFlow.authenticate(username, password);
+        const result = await this.directFlow.authenticate(username, password);
+        if (result.success && result.user) {
+            this._cachedUser = result.user;
+        }
+        return result;
     }
 
-    /**
-     * Handle Standard Flow authentication
-     * @param {Object} credentials - Optional parameters
-     * @returns {Promise<Object>} - Authentication result
-     */
-    async _handleStandardLogin(credentials = {}) {
-        // Check if we're handling a callback
-        if (this.isOAuthCallback()) {
-            return await this.handleOAuthCallback();
-        }
-
-        // Otherwise initiate the flow
+    async _handleStandardLogin() {
+        // Standard flow only initiates the redirect; callback is handled separately
         return await this.initiateStandardFlow();
     }
 
-    /**
-     * Resolve flow name to actual implementation
-     * @param {string} flow - Requested flow
-     * @returns {string} - Resolved flow name
-     */
     _resolveFlow(flow) {
         if (flow === 'auto') {
-            return FeatureFlagUtils.getDefaultFlow() === 'both' ?
-                'direct' : FeatureFlagUtils.getDefaultFlow();
+            return FeatureFlagUtils.getDefaultFlow() === 'both'
+                ? 'direct'
+                : FeatureFlagUtils.getDefaultFlow();
         }
-
         return flow;
     }
 
-    /**
-     * Get Keycloak configuration from environment
-     * @returns {Object} - Keycloak configuration
-     */
     _getKeycloakConfig() {
-        return getBaseConfig()
+        return getBaseConfig();
     }
 
-    /**
-     * Detect current authentication flow
-     */
     _detectCurrentFlow() {
-        // Check if we're handling an OAuth callback
-        if (this.isOAuthCallback()) {
-            this.currentFlow = 'standard';
-            return;
-        }
-
-        // Check stored flow
-        const storedFlow = localStorage.getItem('authFlow');
+        // Check stored flow from sessionStorage (set during initiateFlow)
+        const storedFlow = sessionStorage.getItem('authFlow');
         if (storedFlow && FeatureFlagUtils.isFlowEnabled(storedFlow)) {
             this.currentFlow = storedFlow;
             return;
         }
 
-        // Check if we have a valid token to infer flow
-        const token = this.getToken();
-        if (token) {
-            if (isMockToken(token)) {
-                if (token.includes('direct')) this.currentFlow = 'direct';
-                else if (token.includes('standard')) this.currentFlow = 'standard';
-            }
-        }
-
         // Default to configured default flow
-        if (!this.currentFlow) {
-            this.currentFlow = FeatureFlagUtils.getDefaultFlow();
-        }
+        this.currentFlow = FeatureFlagUtils.getDefaultFlow();
     }
 
     /**
-     * Clear all stored tokens and auth data
+     * Clear all in-memory and sessionStorage auth state.
+     * No localStorage is used anymore.
      */
-    _clearTokens() {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('idToken');
-        localStorage.removeItem('authFlow');
+    _clearState() {
+        this._cachedUser = null;
+        this.currentFlow = null;
         sessionStorage.removeItem('oauth_state');
         sessionStorage.removeItem('authFlow');
         sessionStorage.removeItem('authFlowInitiated');
         cleanOAuthUrl();
     }
 
-    /**
-     * Utility: Parse JWT token (for backward compatibility)
-     * @param {string} token - JWT token
-     * @returns {Object} - Parsed token payload
-     */
-    parseJwt(token) {
-        return extractUserFromToken(token);
-    }
-
-    /**
-     * Utility: Remove tokens (for backward compatibility)
-     */
+    /** @deprecated No tokens stored in frontend — kept for backward compatibility */
     removeToken() {
-        this._clearTokens();
+        this._clearState();
     }
 
-    /**
-     * Exchange authorization code for tokens (for backward compatibility)
-     * @param {string} code - Authorization code
-     * @returns {Promise<Object>} - Token exchange result
-     */
-    async exchangeCodeForToken(code) {
-        if (!FeatureFlagUtils.isFlowEnabled('standard')) {
-            throw new Error('Standard flow is not enabled');
-        }
-
-        this.currentFlow = 'standard';
-        console.log("handle callback:" + `${window.location.origin}?code=${code}`)
-        return await this.standardFlow.handleCallback(`${window.location.origin}?code=${code}`);
+    /** @deprecated Use handleOAuthCallback() instead */
+    async exchangeCodeForToken() {
+        console.warn('exchangeCodeForToken() is deprecated. Token exchange is handled by the backend.');
+        return await this.handleOAuthCallback();
     }
 }
 

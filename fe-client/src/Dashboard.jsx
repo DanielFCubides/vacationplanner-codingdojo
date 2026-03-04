@@ -1,12 +1,17 @@
 import React from 'react';
+<<<<<<< Updated upstream
 import {useAuth} from "./hooks/useAuth.js";
 import {useNavigate} from "react-router-dom";
+=======
+import { useAuth } from "./useAuth.js";
+import { useNavigate } from "react-router-dom";
+>>>>>>> Stashed changes
 import UserProfile from "./components/UserProfile.jsx";
 import TripPlansList from "./components/TripPlansList.jsx";
 import AddTripContainer from "./components/AddTripContainer.tsx";
 
 const Dashboard = () => {
-    const {user, logout, tokens} = useAuth();
+    const { user, logout, tokens } = useAuth();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
@@ -32,7 +37,7 @@ const Dashboard = () => {
                 {/* User Profile Section */}
                 <UserProfile user={user} />
 
-                <AddTripContainer/>
+                <AddTripContainer />
 
                 {/* Trip Plans Section */}
                 <TripPlansList />
