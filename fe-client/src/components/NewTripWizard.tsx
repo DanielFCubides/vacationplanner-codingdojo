@@ -22,14 +22,16 @@ const NewTripWizard = () => {
             startDate: '',
             endDate: '',
         },
-        flights: {
-            airline: '',
-            flightNumber: '',
-            departureAirport: '',
-            departureTime: '',
-            arrivalAirport: '',
-            arrivalTime: '',
-        },
+        flights: [
+            {
+                airline: '',
+                flightNumber: '',
+                departureAirport: '',
+                departureTime: '',
+                arrivalAirport: '',
+                arrivalTime: '',
+            },
+        ],
         stays: {
             name: '',
             type: '',
@@ -66,6 +68,13 @@ const NewTripWizard = () => {
     // Handle field changes
     const handleFieldChange = (field: string, value: any) => {
         const stepId = steps[currentStep].id;
+
+        // The flights step passes the full updated array directly
+        if (stepId === 'flights') {
+            setFormData(prev => ({ ...prev, flights: value }));
+            return;
+        }
+
         setFormData(prev => ({
             ...prev,
             [stepId]: {
@@ -104,34 +113,29 @@ const NewTripWizard = () => {
                 ? parseFloat(formData.budget.totalBudget) 
                 : 0;
             
-            // Create flights array if flight data exists
-            const flights = [];
-            if (formData.flights.airline || formData.flights.flightNumber) {
-                flights.push({
-                    id: `flight_${Date.now()}`,
-                    airline: formData.flights.airline || '',
-                    flightNumber: formData.flights.flightNumber || '',
+            // Create flights array from all filled-in flight entries
+            const flights = formData.flights
+                .filter(f => f.airline || f.flightNumber)
+                .map((f, i) => ({
+                    id: `flight_${Date.now()}_${i}`,
+                    airline: f.airline || '',
+                    flightNumber: f.flightNumber || '',
                     departure: {
-                        airport: formData.flights.departureAirport || '',
-                        city: formData.flights.departureAirport || '',
-                        time: formData.flights.departureTime 
-                            ? new Date(formData.flights.departureTime) 
-                            : new Date(),
+                        airport: f.departureAirport || '',
+                        city: f.departureAirport || '',
+                        time: f.departureTime ? new Date(f.departureTime) : new Date(),
                     },
                     arrival: {
-                        airport: formData.flights.arrivalAirport || '',
-                        city: formData.flights.arrivalAirport || '',
-                        time: formData.flights.arrivalTime 
-                            ? new Date(formData.flights.arrivalTime) 
-                            : new Date(),
+                        airport: f.arrivalAirport || '',
+                        city: f.arrivalAirport || '',
+                        time: f.arrivalTime ? new Date(f.arrivalTime) : new Date(),
                     },
                     duration: '1',
                     stops: 0,
                     price: 0,
                     cabinClass: 'Economy',
                     status: 'pending' as const,
-                });
-            }
+                }));
             
             // Create accommodations array if accommodation data exists
             const accommodations = [];
@@ -244,7 +248,7 @@ const NewTripWizard = () => {
 
     // Render current step component
     const CurrentStepComponent = steps[currentStep].component;
-    const currentStepData = formData[steps[currentStep].id];
+    const currentStepData = formData[steps[currentStep].id as keyof typeof formData] as any;
 
     return (
         <div className="min-h-screen bg-gray-50 py-8">
