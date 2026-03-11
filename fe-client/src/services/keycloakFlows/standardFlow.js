@@ -120,7 +120,7 @@ export class StandardFlow {
         'Accept': 'application/json'
       }
     });
-    if (response.status === 401 || response.status === 403) {
+    if (response.status >= 401 && response.status < 500) {
       return null;
     }
     if (!response.ok) {
