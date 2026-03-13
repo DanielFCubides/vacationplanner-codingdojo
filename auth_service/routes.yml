@@ -1,0 +1,6 @@
+flights:
+  main_url: http://flights:8000/
+  available_routes:
+    - /search_flight
+    - /get_flights
+    - /
