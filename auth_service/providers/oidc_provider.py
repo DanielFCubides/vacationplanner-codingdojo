@@ -1,12 +1,30 @@
 import logging
 import secrets
+from dataclasses import dataclass
 
 from keycloak import KeycloakOpenID
 import redis.asyncio as aioredis
 import json
-from typing import Optional, Dict, Any
+from typing import Optional, Any
+
+from fastapi import Depends
+from infrastructure.redis_client import get_redis_client
+from infrastructure.keycloak_client import get_keycloak_client
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class SessionContext:
+    user_info: dict[str, Any]
+    access_token: str
+
+
+def get_oidc_provider(
+    keycloak_client: KeycloakOpenID = Depends(get_keycloak_client),
+    redis_client: aioredis.Redis = Depends(get_redis_client),
+) -> "OIDCProvider":
+    return OIDCProvider(keycloak_client, redis_client)
 
 
 class OIDCProvider:
@@ -69,14 +87,15 @@ class OIDCProvider:
 
         print("Session stored for session_id prefix")
 
-    async def silent_check_session(self, session_id: str) -> Optional[Dict[str, Any]]:
+    async def silent_check_session(self, session_id: str) -> Optional[SessionContext]:
         access_token = await self.redis_client.get(
             f'{session_id}:{self._ACCESS_TOKEN_SUFFIX}'
         )
 
         if access_token:
             print("Access token still valid, returning cached session")
-            return await self._get_user_info(session_id)
+            user_info = await self._get_user_info(session_id)
+            return SessionContext(user_info=user_info, access_token=access_token)
 
         print("Access token expired, attempting refresh")
         refresh_token = await self.redis_client.get(
@@ -93,7 +112,11 @@ class OIDCProvider:
             print("Token refreshed successfully")
 
             await self._store_session(session_id, new_token_response)
-            return await self._get_user_info(session_id)
+            new_access_token = await self.redis_client.get(
+                f'{session_id}:{self._ACCESS_TOKEN_SUFFIX}'
+            )
+            user_info = await self._get_user_info(session_id)
+            return SessionContext(user_info=user_info, access_token=new_access_token)
         except Exception as e:
             print(f"Error refreshing token: {e}")
             await self._delete_session(session_id)

@@ -1,26 +1,15 @@
 import os
 from typing import Dict, Any
 
-from providers.oidc_provider import OIDCProvider
-from infrastructure.redis_client import get_redis_client
-from infrastructure.keycloak_client import get_keycloak_client
+from providers.oidc_provider import OIDCProvider, get_oidc_provider
 
-import redis.asyncio as aioredis
 from fastapi import APIRouter, Depends, HTTPException, Response, Request, status
 from fastapi.responses import RedirectResponse
-from keycloak import KeycloakOpenID
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3001")
 KEYCLOAK_REDIRECT_URI = os.getenv("KEYCLOAK_REDIRECT_URI", "http://localhost:8002/auth/login")
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
-
-
-def get_oidc_provider(
-    keycloak_client: KeycloakOpenID = Depends(get_keycloak_client),
-    redis_client: aioredis.Redis = Depends(get_redis_client)
-) -> OIDCProvider:
-    return OIDCProvider(keycloak_client, redis_client)
 
 
 @router.get("/login")
@@ -90,4 +79,4 @@ async def silent_check(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Session expired, please log in again"
         )
-    return session_context
+    return session_context.user_info
