@@ -1,19 +1,18 @@
 import React from 'react';
-import {useAuth} from "./useAuth.js";
-import {useNavigate} from "react-router-dom";
+import { useAuth } from "./hooks/useAuth.js";
+import { useNavigate } from "react-router-dom";
 import UserProfile from "./components/UserProfile.jsx";
 import TripPlansList from "./components/TripPlansList.jsx";
+import AddTripContainer from "./components/AddTripContainer.tsx";
 
 const Dashboard = () => {
-    const {user, logout, tokens} = useAuth();
+    const { user, logout, tokens } = useAuth();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
         await logout();
         navigate('/');
     };
-
-    console.log("user", user);
 
     return (
         <div className="min-h-screen bg-gray-100 p-8">
@@ -32,6 +31,8 @@ const Dashboard = () => {
 
                 {/* User Profile Section */}
                 <UserProfile user={user} />
+
+                <AddTripContainer />
 
                 {/* Trip Plans Section */}
                 <TripPlansList />
