@@ -13,6 +13,7 @@ import {
   storeOAuthState,
   cleanOAuthUrl
 } from '../../utils/urlUtils.js';
+import { BACKEND_URL } from '../../config/constants.js';
 
 export class StandardFlow {
   constructor(keycloakConfig, backendBaseUrl) {
@@ -21,7 +22,7 @@ export class StandardFlow {
     this.clientId = keycloakConfig.clientId;
     this.redirectUri = keycloakConfig.redirectUri;
     this.scopes = keycloakConfig.scopes || 'openid profile email';
-    this.backendBaseUrl = backendBaseUrl || import.meta.env.VITE_AUTH_BACKEND_URL || 'http://localhost:8002';
+    this.backendBaseUrl = backendBaseUrl || BACKEND_URL;
   }
 
   /**

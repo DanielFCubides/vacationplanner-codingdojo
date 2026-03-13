@@ -4,13 +4,14 @@ import { StandardFlow } from './keycloakFlows/standardFlow.js';
 import mockKeycloakService from './mockKeycloakService.js';
 import { extractUserFromToken, getTokenDebugInfo, isMockToken, isTokenExpired } from '../utils/tokenUtils.js';
 import { cleanOAuthUrl, isOAuthCallback } from '../utils/urlUtils.js';
-import { getBaseConfig } from '../config/keycloakConfig.js'
+import { getBaseConfig } from '../config/keycloakConfig.js';
+import { BACKEND_URL } from '../config/constants.js';
 
 
 class EnhancedAuthService {
     constructor() {
         this.keycloakConfig = this._getKeycloakConfig();
-        this.backendBaseUrl = import.meta.env.VITE_AUTH_BACKEND_URL || 'http://localhost:8002';
+        this.backendBaseUrl = BACKEND_URL;
         this.currentFlow = null;
 
         this._cachedUser = null;
