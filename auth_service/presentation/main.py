@@ -40,7 +40,7 @@ async def health_check():
 
 
 @app.api_route(
-    "/{service_path:path}", 
+    "/{service_path:path}",
     methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"]
 )
 async def proxy_request(
@@ -60,7 +60,16 @@ async def proxy_request(
     normalized_endpoint = f"/{endpoint_path}"
     available_routes = router.get('available_routes')
 
-    if normalized_endpoint not in available_routes and "/" not in available_routes:
+    route_allowed = False
+    for route_pattern in available_routes:
+        if normalized_endpoint == route_pattern:
+            route_allowed = True
+            break
+        if matches_wildcard(normalized_endpoint, route_pattern):
+            route_allowed = True
+            break
+
+    if not route_allowed:
         raise HTTPException(status_code=404, detail="Endpoint not allowed")
 
     session_id = request.cookies.get('session_id')
@@ -73,7 +82,7 @@ async def proxy_request(
         raise HTTPException(status_code=401, detail="Invalid or expired session")
 
     target_url = f"{router['main_url']}{endpoint_path}"
-    
+
     proxy_headers = dict(request.headers)
     proxy_headers.pop('host', None)
     proxy_headers.pop('content-length', None)
@@ -112,3 +121,15 @@ async def proxy_request(
     except Exception as e:
         await client.aclose()
         raise HTTPException(status_code=500, detail=f"Internal proxy error: {str(e)}")
+
+def matches_wildcard(route: str, pattern: str) -> bool:
+    if '*' not in pattern:
+        return False
+    route_parts = route.split('/')
+    pattern_parts = pattern.split('/')
+    if len(route_parts) != len(pattern_parts):
+        return False
+    for r_part, p_part in zip(route_parts, pattern_parts):
+        if p_part != '*' and p_part != r_part:
+            return False
+    return True
