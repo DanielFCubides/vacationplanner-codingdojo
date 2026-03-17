@@ -1,9 +1,13 @@
-import {Trip} from "../Models";
+import { Trip } from "../Models";
+import { FEATURE_FLAGS } from "../config/featureFlags";
+import { BACKEND_URL } from "../config/constants.js";
+
 // ============================================
 // INTERFACE - Contract for trip operations
 // ============================================
 
 export interface ITripService {
+    serviceName?: string;
     getAllTrips(): Promise<Trip[]>;
 
     getTripById(id: string): Promise<Trip | null>;
@@ -20,6 +24,7 @@ export interface ITripService {
 // ============================================
 
 class SimpleTripService implements ITripService {
+    public readonly serviceName = "trips";
     private trips: Trip[] = [];
 
     /**
@@ -129,35 +134,33 @@ class SimpleTripService implements ITripService {
 }
 
 // ============================================
-// API IMPLEMENTATION (for future use)
+// API IMPLEMENTATION
 // ============================================
 class ApiTripService implements ITripService {
-    private host: string;
+    public readonly serviceName = "vacation-planner";
     private baseUrl: string;
-    private token: string;
+    private host: string;
+    private path: string;
 
-    constructor(baseUrl: string = 'http://127.0.0.1:8000/api/trips') {
-        this.baseUrl = baseUrl;
+    constructor() {
+        this.host = BACKEND_URL;
+        this.path = `api/trips`
+        this.baseUrl = `${this.host}/${this.serviceName}/${this.path}`
     }
 
     async getAllTrips(): Promise<Trip[]> {
         const response = await fetch(this.baseUrl, {
-                method: 'GET',
-                headers: this.setHeaders(),
-            }
-        );
-
-        if (!response.ok) {
-            throw new Error('Failed to fetch trips');
-        }
-
+            method: 'GET',
+            credentials: 'include',
+        });
+        if (!response.ok) throw new Error('Failed to fetch trips');
         return response.json();
     }
 
     async getTripById(id: string): Promise<Trip | null> {
         const response = await fetch(`${this.baseUrl}/${id}`, {
             method: 'GET',
-            headers: this.setHeaders(),
+            credentials: 'include',
         });
         if (response.status === 404) return null;
         if (!response.ok) throw new Error('Failed to fetch trip');
@@ -166,10 +169,11 @@ class ApiTripService implements ITripService {
 
     async createTrip(tripData: Partial<Trip>): Promise<Trip> {
         // Note: owner_id is never sent in the request body.
-        // The backend derives it automatically from the JWT token (sub claim).
+        // The backend derives it automatically from the session cookie.
         const response = await fetch(this.baseUrl, {
             method: 'POST',
-            headers: this.setHeaders(),
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(tripData),
         });
         if (!response.ok) throw new Error('Failed to create trip');
@@ -179,33 +183,21 @@ class ApiTripService implements ITripService {
     async updateTrip(id: string, updates: Partial<Trip>): Promise<Trip> {
         const response = await fetch(`${this.baseUrl}/${id}`, {
             method: 'PUT',
-            headers: this.setHeaders(),
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updates),
         });
         if (!response.ok) throw new Error('Failed to update trip');
         return response.json();
     }
 
-
     async deleteTrip(id: string): Promise<boolean> {
         const response = await fetch(`${this.baseUrl}/${id}`, {
             method: 'DELETE',
-            headers: this.setHeaders(),
+            credentials: 'include',
         });
         return response.ok;
     }
-
-    private setHeaders() {
-        return {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.token}`
-        };
-    }
-
-    public setToken(token: string){
-        this.token = token
-    }
-
 }
 
 // ============================================
@@ -213,14 +205,13 @@ class ApiTripService implements ITripService {
 // ============================================
 
 function createTripService(): ITripService {
-    // For now, always use simple in-memory service
-    // Later: can switch based on environment variable
-    console.log('🔧 Using Simple In-Memory Trip Service');
-    return new ApiTripService();
+    if (FEATURE_FLAGS.TRIPS?.useInMemory) {
+        console.log('🔧 Using Simple In-Memory Trip Service');
+        return new SimpleTripService();
+    } else {
+        console.log('🔗 Using API Trip Service');
+        return new ApiTripService();
+    }
 }
-
-// ============================================
-// EXPORTS
-// ============================================
 
 export const tripService = createTripService();

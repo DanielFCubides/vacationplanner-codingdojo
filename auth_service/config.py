@@ -1,4 +1,9 @@
+import os
 import yaml
+
+
+def get_allowed_hosts() -> list:
+    return os.getenv("ALLOWED_HOSTS", "*").split(",")
 
 
 def get_internal_router() -> dict:
