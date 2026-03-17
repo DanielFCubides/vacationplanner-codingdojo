@@ -115,6 +115,10 @@ class OIDCProvider:
             new_access_token = await self.redis_client.get(
                 f'{session_id}:{self._ACCESS_TOKEN_SUFFIX}'
             )
+            if not new_access_token:
+                print("Failed to retrieve new access token after refresh, deleting session")
+                await self._delete_session(session_id)
+                return None
             user_info = await self._get_user_info(session_id)
             return SessionContext(user_info=user_info, access_token=new_access_token)
         except Exception as e:

@@ -78,4 +78,4 @@ async def silent_check(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Session expired, please log in again"
         )
-    return session_context.user_info
+    return {"userinfo": session_context.user_info}

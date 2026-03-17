@@ -88,15 +88,13 @@ async def proxy_request(
     proxy_headers.pop('content-length', None)
     proxy_headers['Authorization'] = f"Bearer {session_context.access_token}"
 
-    body = await request.body()
-
     client = httpx.AsyncClient()
     try:
         proxy_req = client.build_request(
             method=request.method,
             url=target_url,
             headers=proxy_headers,
-            content=body,
+            content=request.stream(),
             params=request.query_params
         )
 
