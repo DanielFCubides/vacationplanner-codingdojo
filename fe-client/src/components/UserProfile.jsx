@@ -11,7 +11,7 @@ const UserProfile = ({ user }) => {
                 </div>
                 <div>
                     <p className="text-sm font-medium text-gray-600">User ID</p>
-                    <p className="text-blue-700">{user?.id || 'Not available'}</p>
+                    <p className="text-blue-700">{user?.sub || 'Not available'}</p>
                 </div>
             </div>
         </div>
