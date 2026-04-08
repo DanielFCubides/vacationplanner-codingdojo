@@ -105,9 +105,9 @@ services:
     volumes:
       - ./vacation_stay_scrapper:/vacation_stay_scrapper
 
-  flight-scrapper:
+  flight-service:
     build:
-      context: ./flight_scrapper_service
+      context: ./flight_service
       target: primary
     profiles: [ full, app ]
     environment:
@@ -115,7 +115,7 @@ services:
     ports:
       - "8001:8080"
     volumes:
-      - ./flight_scrapper_service:/flight_scrapper_service
+      - ./flight_service:/flight_service
 
   recommendations:
     build:
