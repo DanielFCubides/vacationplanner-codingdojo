@@ -1,7 +1,7 @@
 services:
   redis-cache:
     image: redis
-    profiles: [ full ]
+    profiles: [ app ]
     environment:
       - REDIS_PASSWORD=secret
       - REDIS_USER=secret
@@ -83,6 +83,7 @@ services:
       target: dev
     ports:
       - "8002:8000"
+    profiles: [ app, full ]
     environment:
       - KEYCLOAK_SERVER_URL=https://keycloack.dfcubidesc.com
       - KEYCLOAK_CLIENT_ID=auth-service
@@ -99,7 +100,7 @@ services:
     build:
       context: ./vacation_stay_scrapper
       target: primary
-    profiles: [ full, app, frontend ]
+    profiles: [ full, app ]
     ports:
       - "8000:8000"
     volumes:
@@ -109,7 +110,7 @@ services:
     build:
       context: ./flight_service
       target: primary
-    profiles: [ full, app ]
+    profiles: [ full ]
     environment:
       - SERVER=${SERVER:-rest}
     ports:
@@ -120,13 +121,13 @@ services:
   recommendations:
     build:
       context: ./recommendations
-    profiles: [ full, app ]
+    profiles: [ full ]
 
   fe-client:
     build:
       context: ./fe-client
       target: dev
-    profiles: [ full, frontend ]
+    profiles: [ full, app ]
     ports:
       - "3001:3001"
     volumes:
@@ -147,3 +148,15 @@ services:
       target: tests
     volumes:
       - ./flight_scrapper_service:/flight_scrapper_service
+
+  # ─── Observability ────────────────────────────────────────────────────────────
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    profiles: [ full, observability ]
+    command: [ "--config=/etc/otel/otel-config.yml" ]
+    volumes:
+      - ./opentelemetry/otel-config.yml:/etc/otel/otel-config.yml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "8889:8889"

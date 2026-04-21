@@ -4,3 +4,9 @@ flights:
     - /search_flight
     - /get_flights
     - /
+
+vacation-planner:
+  main_url: http://vacation-planner:8000/
+  available_routes:
+    - /api/trips
+    - /api/trips/*

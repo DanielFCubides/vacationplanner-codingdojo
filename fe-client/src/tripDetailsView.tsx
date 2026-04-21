@@ -1,17 +1,16 @@
-import React, {useEffect, useState} from 'react';
-import {useNavigate, useParams} from 'react-router-dom';
-import {Trip} from "./Models.ts";
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Trip } from "./Models.ts";
 import TripDetailOverview from "./TripDetailOverview.tsx";
 import TripFlightsOverview from "./components/flightsOverview.tsx";
 import StayOverview from "./components/StaysOverview.tsx";
 import ActivitiesOverview from "./components/ActivitiesOverview.tsx";
 import BudgetOverview from "./components/BudgetOverview.tsx";
-import {getStatusColor} from "./utils/StatusColors.ts";
-import {formatDate} from "./utils/formatDate.ts";
+import { getStatusColor } from "./utils/StatusColors.ts";
+import { formatDate } from "./utils/formatDate.ts";
 import TravellersOverview from "./components/TravellersOverview.tsx";
-import {tripService} from "./services/TripService.ts";
+import { tripService } from "./services/TripService.ts";
 
-// Tab type definition
 type TabKey = 'overview' | 'flights' | 'stays' | 'activities' | 'budget' | 'team';
 
 interface Tab {
@@ -21,19 +20,19 @@ interface Tab {
 }
 
 const TripDetailsView = () => {
-    const {tripId} = useParams();
+    const { tripId } = useParams();
     const [trip, setTrip] = useState<Trip | null>(null);
     const [activeTab, setActiveTab] = useState<TabKey>('overview');
     const navigate = useNavigate();
 
     // Define tabs
     const tabs: Tab[] = [
-        {key: 'overview', label: 'Overview', icon: '📋'},
-        {key: 'flights', label: 'Flights', icon: '✈️'},
-        {key: 'stays', label: 'Stays', icon: '🏨'},
-        {key: 'activities', label: 'Activities', icon: '📅'},
-        {key: 'budget', label: 'Budget', icon: '💰'},
-        {key: 'team', label: 'Team', icon: '👥'},
+        { key: 'overview', label: 'Overview', icon: '📋' },
+        { key: 'flights', label: 'Flights', icon: '✈️' },
+        { key: 'stays', label: 'Stays', icon: '🏨' },
+        { key: 'activities', label: 'Activities', icon: '📅' },
+        { key: 'budget', label: 'Budget', icon: '💰' },
+        { key: 'team', label: 'Team', icon: '👥' },
     ];
 
     useEffect(() => {
@@ -46,28 +45,27 @@ const TripDetailsView = () => {
         return () => clearTimeout(timer);
     }, [tripId]);
 
-    // Render content based on active tab
     const renderTabContent = () => {
         if (!trip) return null;
 
         switch (activeTab) {
             case 'overview':
-                return <TripDetailOverview trip={trip}/>;
+                return <TripDetailOverview trip={trip} />;
 
             case 'flights':
-                return <TripFlightsOverview trip={trip}/>;
+                return <TripFlightsOverview trip={trip} />;
 
             case 'stays':
-                return <StayOverview trip={trip}/>;
+                return <StayOverview trip={trip} />;
 
             case 'activities':
-                return <ActivitiesOverview trip={trip}/>;
+                return <ActivitiesOverview trip={trip} />;
 
             case 'budget':
-                return <BudgetOverview trip={trip}/>;
+                return <BudgetOverview trip={trip} />;
 
             case 'team':
-                return <TravellersOverview trip={trip}/>;
+                return <TravellersOverview trip={trip} />;
 
             default:
                 return null;
@@ -106,12 +104,12 @@ const TripDetailsView = () => {
             <div className="max-w-6xl mx-auto">
                 {/* Breadcrumb Navigation */}
                 <nav className="text-sm mb-6">
-          <span
-              className="text-gray-500 hover:text-gray-900 cursor-pointer transition-colors"
-              onClick={() => navigate('/dashboard')}
-          >
-            Dashboard
-          </span>
+                    <span
+                        className="text-gray-500 hover:text-gray-900 cursor-pointer transition-colors"
+                        onClick={() => navigate('/dashboard')}
+                    >
+                        Dashboard
+                    </span>
                     <span className="text-gray-400 mx-2">/</span>
                     <span className="text-gray-900 font-medium">{trip.name}</span>
                 </nav>
@@ -125,8 +123,8 @@ const TripDetailsView = () => {
                                 <h1 className="text-3xl font-bold text-gray-900">{trip.name}</h1>
                                 <span
                                     className={`inline-block px-3 py-1 rounded-full text-sm font-medium capitalize ${getStatusColor(trip.status)}`}>
-                  {trip.status}
-                </span>
+                                    {trip.status}
+                                </span>
                             </div>
 
                             {/* Location */}
@@ -139,8 +137,8 @@ const TripDetailsView = () => {
                             <p className="text-gray-600 flex items-center gap-2">
                                 <span className="text-lg">📅</span>
                                 <span className="text-base">
-                  {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
-                </span>
+                                    {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
+                                </span>
                             </p>
                         </div>
                         <div>{trip.id}</div>
@@ -155,11 +153,10 @@ const TripDetailsView = () => {
                             <button
                                 key={tab.key}
                                 onClick={() => setActiveTab(tab.key)}
-                                className={`flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                                    activeTab === tab.key
-                                        ? 'border-blue-600 text-blue-600'
-                                        : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-                                }`}
+                                className={`flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.key
+                                    ? 'border-blue-600 text-blue-600'
+                                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                                    }`}
                             >
                                 <span className="text-lg">{tab.icon}</span>
                                 <span>{tab.label}</span>

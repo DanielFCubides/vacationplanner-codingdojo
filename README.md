@@ -13,15 +13,9 @@ A microservices system for planning vacations — aggregating flights, stays, ac
 
 ## Running the stack
 
-### Frontend + vacation planner backend
-For UI development. Starts only the React frontend and the vacation planner API.
 
-```sh
-docker compose --profile frontend up
-```
-
-### All backend services (no infrastructure)
-Starts all three backend services without Redis, Kafka, or Selenium. Good for backend development and integration testing.
+### Backend services 
+Starts all backend services without Kafka, or Selenium. Good for backend development and integration testing.
 
 ```sh
 docker compose --profile app up

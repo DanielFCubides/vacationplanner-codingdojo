@@ -1,12 +1,31 @@
 import logging
 import secrets
+from dataclasses import dataclass
 
 from keycloak import KeycloakOpenID
 import redis.asyncio as aioredis
 import json
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 
-logger = logging.getLogger(__name__)
+from fastapi import Depends
+from infrastructure.redis_client import get_redis_client
+from infrastructure.keycloak_client import get_keycloak_client
+from log_config import get_logger
+
+logger = get_logger("Auth Provider")
+
+
+@dataclass
+class SessionContext:
+    user_info: dict[str, Any]
+    access_token: str
+
+
+def get_oidc_provider(
+    keycloak_client: KeycloakOpenID = Depends(get_keycloak_client),
+    redis_client: aioredis.Redis = Depends(get_redis_client),
+) -> "OIDCProvider":
+    return OIDCProvider(keycloak_client, redis_client)
 
 
 class OIDCProvider:
@@ -25,10 +44,11 @@ class OIDCProvider:
             code=code,
             redirect_uri=redirect_uri
         )
-        print("Token response: %s", token_response)
 
         session_id = secrets.token_urlsafe(32)
+        logger.debug("Session created", extra={"session_id": session_id})
         await self._store_session(session_id, token_response)
+        logger.info("Session successfully created", extra={"session_id": session_id})
         return session_id
 
     async def logout(self, session_id: str) -> None:
@@ -39,7 +59,7 @@ class OIDCProvider:
             if refresh_token_raw:
                 await self.keycloak_client.a_logout(refresh_token_raw)
         except Exception as e:
-            print(f"Error during Keycloak logout: {e}")
+            logger.error("Error during Keycloak logout", extra={"error": str(e)})
         finally:
             await self._delete_session(session_id)
 
@@ -67,42 +87,51 @@ class OIDCProvider:
                     int(refresh_expires_in)
                 )
 
-        print("Session stored for session_id prefix")
+        logger.debug("Session stored for session_id prefix", extra={"session_id": session_id})
 
-    async def silent_check_session(self, session_id: str) -> Optional[Dict[str, Any]]:
+    async def silent_check_session(self, session_id: str) -> Optional[SessionContext]:
         access_token = await self.redis_client.get(
             f'{session_id}:{self._ACCESS_TOKEN_SUFFIX}'
         )
 
         if access_token:
-            print("Access token still valid, returning cached session")
-            return await self._get_user_info(session_id)
+            logger.debug("Access token still valid, returning cached session", extra={"session_id": session_id})
+            user_info = await self._get_user_info(session_id)
+            return SessionContext(user_info=user_info, access_token=access_token)
 
-        print("Access token expired, attempting refresh")
+        logger.debug("Access token expired, attempting refresh", extra={"session_id": session_id})
         refresh_token = await self.redis_client.get(
             f'{session_id}:{self._REFRESH_TOKEN_SUFFIX}'
         )
 
         if not refresh_token:
-            print("Refresh token expired, deleting all session data")
+            logger.debug("Refresh token expired, deleting all session data", extra={"session_id": session_id})
             await self._delete_session(session_id)
             return None
 
         try:
             new_token_response = await self.keycloak_client.a_refresh_token(refresh_token)
-            print("Token refreshed successfully")
+            logger.info("Token refreshed successfully", extra={"session_id": session_id})
 
             await self._store_session(session_id, new_token_response)
-            return await self._get_user_info(session_id)
+            new_access_token = await self.redis_client.get(
+                f'{session_id}:{self._ACCESS_TOKEN_SUFFIX}'
+            )
+            if not new_access_token:
+                print("Failed to retrieve new access token after refresh, deleting session")
+                await self._delete_session(session_id)
+                return None
+            user_info = await self._get_user_info(session_id)
+            return SessionContext(user_info=user_info, access_token=new_access_token)
         except Exception as e:
-            print(f"Error refreshing token: {e}")
+            logger.error("Error refreshing token", extra={"error": str(e), "session_id": session_id})
             await self._delete_session(session_id)
             return None
 
     async def revoke_session(self, session_id: str) -> None:
         await self.redis_client.sadd("revoked_tokens", session_id)
         await self._delete_session(session_id)
-        print("Session revoked")
+        logger.info("Session revoked", extra={"session_id": session_id})
 
     async def _delete_session(self, session_id: str) -> None:
         await self.redis_client.delete(
@@ -120,7 +149,7 @@ class OIDCProvider:
                 await self.redis_client.set(f'{session_id}:{self._USER_INFO_SUFFIX}', json.dumps(user_info))
                 return user_info
             except Exception as e:
-                print(f"Could not fetch user info: {e}")
+                logger.error("Could not fetch user info", extra={"error": str(e), "session_id": session_id})
                 # TODO: this shouldnt return an empty dict, it should raise an exception
                 return {}
         return json.loads(user_info)
