@@ -10,6 +10,11 @@ tenacity
 ipython
 pdbpp
 
+# database
+sqlalchemy[asyncio]
+asyncpg
+alembic
+
 #auth
 python-jose
 pyjwt

@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     log_level: str = os.environ.get('LOG_LEVEL', 'INFO')
     log_file: Optional[str] = os.environ.get('LOG_FILE', None)
     
+    # Database
+    database_url: str = "postgresql+asyncpg://vacation:vacation@localhost:5432/vacation_planner"
+    database_echo: bool = False
+
     # CORS
     cors_origins: list[str] = ["*"]  # Configure per environment
     
