@@ -3,29 +3,48 @@ Vacation Planner API - Main Entry Point
 
 FastAPI application with clean architecture integration.
 """
+from contextlib import asynccontextmanager
 from datetime import date
 from typing import Optional, Annotated
 
+from alembic import command
+from alembic.config import Config
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 from starlette import status
 
+from src.shared.infrastructure.logging.logger import setup_logger
 # Import from new shared infrastructure
 from src.shared.infrastructure.auth.dependencies import get_current_user
 from src.shared.presentation.middleware import setup_middleware
 from src.shared.infrastructure.http.http_connector import HTTPConnector
 
-# Import trips router from clean architecture
 from src.trips.presentation.api.routes import router as trips_router
 
-# Old imports (will be migrated in next steps)
 from services.flight_scrapper import FlightScrapper
+
+logger = setup_logger(__name__)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    import asyncio
+    logger.info("Running database migrations...")
+    try:
+        alembic_cfg = Config("alembic.ini")
+        await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
+        logger.info("Database migrations complete.")
+    except Exception as exc:
+        logger.exception("Database migration failed: %s", exc)
+        raise
+    yield
+
 
 # Create FastAPI app
 app = FastAPI(
     title="Vacation Planner API",
     description="API for managing vacation plans, flights, and stays",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # Setup middleware (CORS, logging, exception handling)
