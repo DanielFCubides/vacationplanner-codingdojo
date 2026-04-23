@@ -105,6 +105,9 @@ services:
       - REDIS_PORT=6379
       - REDIS_DB=0
       - REDIS_PASSWORD=secret
+    depends_on:
+      - redis-cache
+      - vacation-planner
     volumes:
       - ./auth_service:/app
 
