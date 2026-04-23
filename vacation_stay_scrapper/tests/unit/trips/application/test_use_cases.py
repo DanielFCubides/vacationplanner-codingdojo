@@ -31,10 +31,11 @@ from src.trips.domain.value_objects.trip_status import TripStatus
 # Shared helpers
 # ---------------------------------------------------------------------------
 
-def make_trip(trip_id: int = 1) -> Trip:
+def make_trip(trip_id: int = 1, owner_id: str = "user-1") -> Trip:
     """Return a minimal valid Trip for use in tests."""
     return Trip(
         id=trip_id,
+        owner_id=owner_id,
         name="Summer Holiday",
         destination="Barcelona",
         start_date=date(2025, 7, 1),
@@ -87,25 +88,25 @@ class TestGetTripUseCase:
 
     def test_returns_trip_when_found(self):
         trip = make_trip(trip_id=1)
-        repo = make_repo(find_by_id=trip)
+        repo = make_repo(find_by_owner=trip)
 
-        result = asyncio.run(GetTripUseCase(repo).execute("1"))
+        result = asyncio.run(GetTripUseCase(repo).execute("1", "user-1"))
 
         assert result == trip
 
     def test_raises_entity_not_found_when_trip_is_missing(self):
-        repo = make_repo(find_by_id=None)
+        repo = make_repo(find_by_owner=None)
 
         with pytest.raises(EntityNotFound):
-            asyncio.run(GetTripUseCase(repo).execute("999"))
+            asyncio.run(GetTripUseCase(repo).execute("999", "user-1"))
 
     def test_passes_correct_trip_id_to_repository(self):
         trip = make_trip(trip_id=1)
-        repo = make_repo(find_by_id=trip)
+        repo = make_repo(find_by_owner=trip)
 
-        asyncio.run(GetTripUseCase(repo).execute("1"))
+        asyncio.run(GetTripUseCase(repo).execute("1", "user-1"))
 
-        called_with = repo.find_by_id.call_args[0][0]
+        called_with = repo.find_by_owner.call_args[0][0]
         assert called_with == 1
 
 
@@ -117,16 +118,16 @@ class TestGetAllTripsUseCase:
 
     def test_returns_all_trips_from_repository(self):
         trips = [make_trip(), make_trip()]
-        repo = make_repo(find_all=trips)
+        repo = make_repo(find_all_by_owner=trips)
 
-        result = asyncio.run(GetAllTripsUseCase(repo).execute())
+        result = asyncio.run(GetAllTripsUseCase(repo).execute("user-1"))
 
         assert result == trips
 
     def test_returns_empty_list_when_no_trips_exist(self):
-        repo = make_repo(find_all=[])
+        repo = make_repo(find_all_by_owner=[])
 
-        result = asyncio.run(GetAllTripsUseCase(repo).execute())
+        result = asyncio.run(GetAllTripsUseCase(repo).execute("user-1"))
 
         assert result == []
 
@@ -138,30 +139,32 @@ class TestGetAllTripsUseCase:
 class TestDeleteTripUseCase:
 
     def test_returns_true_when_trip_is_deleted(self):
-        repo = make_repo(exists=True, delete=True)
+        trip = make_trip()
+        repo = make_repo(find_by_owner=trip, delete=True)
 
-        result = asyncio.run(DeleteTripUseCase(repo).execute("42"))
+        result = asyncio.run(DeleteTripUseCase(repo).execute("42", "user-1"))
 
         assert result is True
 
     def test_calls_delete_on_the_repository(self):
-        repo = make_repo(exists=True, delete=True)
+        trip = make_trip()
+        repo = make_repo(find_by_owner=trip, delete=True)
 
-        asyncio.run(DeleteTripUseCase(repo).execute("42"))
+        asyncio.run(DeleteTripUseCase(repo).execute("42", "user-1"))
 
         repo.delete.assert_called_once()
 
     def test_raises_entity_not_found_when_trip_is_missing(self):
-        repo = make_repo(exists=False)
+        repo = make_repo(find_by_owner=None)
 
         with pytest.raises(EntityNotFound):
-            asyncio.run(DeleteTripUseCase(repo).execute("999"))
+            asyncio.run(DeleteTripUseCase(repo).execute("999", "user-1"))
 
     def test_does_not_call_delete_when_trip_does_not_exist(self):
-        repo = make_repo(exists=False)
+        repo = make_repo(find_by_owner=None)
 
         with pytest.raises(EntityNotFound):
-            asyncio.run(DeleteTripUseCase(repo).execute("999"))
+            asyncio.run(DeleteTripUseCase(repo).execute("999", "user-1"))
 
         repo.delete.assert_not_called()
 
@@ -176,35 +179,33 @@ class TestUpdateTripUseCase:
         existing = make_trip(trip_id=1)
         updated = make_trip(trip_id=1)
         updated.name = "Updated Name"
-        repo = make_repo(find_by_id=existing, save=updated)
+        repo = make_repo(find_by_owner=existing, save=updated)
 
-        result = asyncio.run(UpdateTripUseCase(repo).execute("1", updated))
+        result = asyncio.run(UpdateTripUseCase(repo).execute("1", updated, "user-1"))
 
         assert result == updated
 
     def test_saves_the_updated_trip_to_repository(self):
         existing = make_trip(trip_id=1)
         updated = make_trip(trip_id=1)
-        repo = make_repo(find_by_id=existing, save=updated)
+        repo = make_repo(find_by_owner=existing, save=updated)
 
-        asyncio.run(UpdateTripUseCase(repo).execute("1", updated))
-
-        repo.save.assert_called_once_with(updated)
+        asyncio.run(UpdateTripUseCase(repo).execute("1", updated, "user-1"))
 
         repo.save.assert_called_once_with(updated)
 
     def test_raises_entity_not_found_when_trip_is_missing(self):
         updated = make_trip()
-        repo = make_repo(find_by_id=None)
+        repo = make_repo(find_by_owner=None)
 
         with pytest.raises(EntityNotFound):
-            asyncio.run(UpdateTripUseCase(repo).execute("999", updated))
+            asyncio.run(UpdateTripUseCase(repo).execute("999", updated, "user-1"))
 
     def test_does_not_save_when_trip_does_not_exist(self):
         updated = make_trip()
-        repo = make_repo(find_by_id=None)
+        repo = make_repo(find_by_owner=None)
 
         with pytest.raises(EntityNotFound):
-            asyncio.run(UpdateTripUseCase(repo).execute("999", updated))
+            asyncio.run(UpdateTripUseCase(repo).execute("999", updated, "user-1"))
 
         repo.save.assert_not_called()
