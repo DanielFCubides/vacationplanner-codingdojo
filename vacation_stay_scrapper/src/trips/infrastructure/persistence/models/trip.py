@@ -8,10 +8,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.shared.infrastructure.database.base import Base
 
 
-class TripModel(Base):
+class Trip(Base):
     __tablename__ = "trips"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id_: Mapped[int] = mapped_column("id", BigInteger, primary_key=True, autoincrement=True)
     owner_id: Mapped[str] = mapped_column(String, nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
     destination: Mapped[str] = mapped_column(String, nullable=False)
@@ -30,40 +30,40 @@ class TripModel(Base):
     updated_at: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
 
     # Relationships
-    travelers: Mapped[List["TravelerModel"]] = relationship(
-        "TravelerModel",
+    travelers: Mapped[List["Traveler"]] = relationship(
+        "Traveler",
         back_populates="trip",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
-    flights: Mapped[List["FlightModel"]] = relationship(
-        "FlightModel",
+    flights: Mapped[List["Flight"]] = relationship(
+        "Flight",
         back_populates="trip",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
-    accommodations: Mapped[List["AccommodationModel"]] = relationship(
-        "AccommodationModel",
+    accommodations: Mapped[List["Accommodation"]] = relationship(
+        "Accommodation",
         back_populates="trip",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
-    activities: Mapped[List["ActivityModel"]] = relationship(
-        "ActivityModel",
+    activities: Mapped[List["Activity"]] = relationship(
+        "Activity",
         back_populates="trip",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
-    budget_categories: Mapped[List["BudgetCategoryModel"]] = relationship(
-        "BudgetCategoryModel",
+    budget_categories: Mapped[List["BudgetCategory"]] = relationship(
+        "BudgetCategory",
         back_populates="trip",
         cascade="all, delete-orphan",
         lazy="selectin",
     )
 
 
-from src.trips.infrastructure.persistence.models.traveler_model import TravelerModel  # noqa: E402
-from src.trips.infrastructure.persistence.models.flight_model import FlightModel  # noqa: E402
-from src.trips.infrastructure.persistence.models.accommodation_model import AccommodationModel  # noqa: E402
-from src.trips.infrastructure.persistence.models.activity_model import ActivityModel  # noqa: E402
-from src.trips.infrastructure.persistence.models.budget_category_model import BudgetCategoryModel  # noqa: E402
+from src.trips.infrastructure.persistence.models.traveler import Traveler  # noqa: E402
+from src.trips.infrastructure.persistence.models.flight import Flight  # noqa: E402
+from src.trips.infrastructure.persistence.models.accommodation import Accommodation  # noqa: E402
+from src.trips.infrastructure.persistence.models.activity import Activity  # noqa: E402
+from src.trips.infrastructure.persistence.models.budget_category import BudgetCategory  # noqa: E402

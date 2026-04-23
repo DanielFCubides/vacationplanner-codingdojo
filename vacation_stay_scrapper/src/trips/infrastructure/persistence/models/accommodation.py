@@ -9,13 +9,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.shared.infrastructure.database.base import Base
 
 if TYPE_CHECKING:
-    from src.trips.infrastructure.persistence.models.trip_model import TripModel
+    from src.trips.infrastructure.persistence.models.trip import Trip
 
 
-class AccommodationModel(Base):
+class Accommodation(Base):
     __tablename__ = "accommodations"
 
-    id: Mapped[str] = mapped_column(String, primary_key=True)
+    id_: Mapped[str] = mapped_column("id", String, primary_key=True)
     trip_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False
     )
@@ -37,4 +37,4 @@ class AccommodationModel(Base):
     status: Mapped[str] = mapped_column(String, nullable=False, default="pending")
     image: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
-    trip: Mapped["TripModel"] = relationship("TripModel", back_populates="accommodations")
+    trip: Mapped["Trip"] = relationship("Trip", back_populates="accommodations")

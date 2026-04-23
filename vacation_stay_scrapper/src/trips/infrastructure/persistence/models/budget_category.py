@@ -7,13 +7,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.shared.infrastructure.database.base import Base
 
 if TYPE_CHECKING:
-    from src.trips.infrastructure.persistence.models.trip_model import TripModel
+    from src.trips.infrastructure.persistence.models.trip import Trip
 
 
-class BudgetCategoryModel(Base):
+class BudgetCategory(Base):
     __tablename__ = "budget_categories"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id_: Mapped[int] = mapped_column("id", BigInteger, primary_key=True, autoincrement=True)
     trip_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False
     )
@@ -27,4 +27,4 @@ class BudgetCategoryModel(Base):
     spent_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     spent_currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
 
-    trip: Mapped["TripModel"] = relationship("TripModel", back_populates="budget_categories")
+    trip: Mapped["Trip"] = relationship("Trip", back_populates="budget_categories")
