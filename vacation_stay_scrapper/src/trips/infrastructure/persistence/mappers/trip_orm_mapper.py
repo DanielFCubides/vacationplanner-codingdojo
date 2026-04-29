@@ -9,21 +9,21 @@ from src.trips.domain.value_objects.airport import Airport
 from src.trips.domain.value_objects.budget import Budget, BudgetCategory
 from src.trips.domain.value_objects.money import Money
 from src.trips.domain.value_objects.trip_status import TripStatus
-from src.trips.infrastructure.persistence.models.accommodation_model import AccommodationModel
-from src.trips.infrastructure.persistence.models.activity_model import ActivityModel
-from src.trips.infrastructure.persistence.models.budget_category_model import BudgetCategoryModel
-from src.trips.infrastructure.persistence.models.flight_model import FlightModel
-from src.trips.infrastructure.persistence.models.traveler_model import TravelerModel
-from src.trips.infrastructure.persistence.models.trip_model import TripModel
+from src.trips.infrastructure.persistence.models.accommodation import Accommodation as AccommodationOrm
+from src.trips.infrastructure.persistence.models.activity import Activity as ActivityOrm
+from src.trips.infrastructure.persistence.models.budget_category import BudgetCategory as BudgetCategoryOrm
+from src.trips.infrastructure.persistence.models.flight import Flight as FlightOrm
+from src.trips.infrastructure.persistence.models.traveler import Traveler as TravelerOrm
+from src.trips.infrastructure.persistence.models.trip import Trip as TripOrm
 
 
 class TripOrmMapper:
 
     @staticmethod
-    def to_domain(model: TripModel) -> Trip:
+    def to_domain(model: TripOrm) -> Trip:
         travelers = [
             Traveler(
-                id=t.id,
+                id=t.id_,
                 name=t.name,
                 email=t.email,
                 role=t.role,
@@ -34,7 +34,7 @@ class TripOrmMapper:
 
         flights = [
             Flight(
-                id=f.id,
+                id=f.id_,
                 airline=f.airline,
                 flight_number=f.flight_number,
                 departure_airport=Airport(code=f.departure_airport_code, city=f.departure_airport_city),
@@ -52,7 +52,7 @@ class TripOrmMapper:
 
         accommodations = [
             Accommodation(
-                id=a.id,
+                id=a.id_,
                 name=a.name,
                 type=a.type,
                 check_in=a.check_in,
@@ -69,7 +69,7 @@ class TripOrmMapper:
 
         activities = [
             Activity(
-                id=act.id,
+                id=act.id_,
                 name=act.name,
                 date=act.date,
                 cost=Money(amount=act.cost_amount, currency=act.cost_currency),
@@ -103,7 +103,7 @@ class TripOrmMapper:
             )
 
         return Trip(
-            id=model.id,
+            id=model.id_,
             owner_id=model.owner_id,
             name=model.name,
             destination=model.destination,
@@ -120,8 +120,8 @@ class TripOrmMapper:
         )
 
     @staticmethod
-    def to_model(trip: Trip) -> TripModel:
-        model = TripModel(
+    def to_model(trip: Trip) -> TripOrm:
+        model = TripOrm(
             owner_id=trip.owner_id,
             name=trip.name,
             destination=trip.destination,
@@ -133,7 +133,7 @@ class TripOrmMapper:
         )
 
         if trip.id is not None:
-            model.id = trip.id
+            model.id_ = trip.id
 
         if trip.budget is not None:
             model.budget_total_amount = trip.budget.total.amount
@@ -141,7 +141,7 @@ class TripOrmMapper:
             model.budget_spent_amount = trip.budget.spent.amount
             model.budget_spent_currency = trip.budget.spent.currency
             model.budget_categories = [
-                BudgetCategoryModel(
+                BudgetCategoryOrm(
                     category=bc.category,
                     planned_amount=bc.planned.amount,
                     planned_currency=bc.planned.currency,
@@ -152,8 +152,8 @@ class TripOrmMapper:
             ]
 
         model.travelers = [
-            TravelerModel(
-                id=t.id,
+            TravelerOrm(
+                id_=t.id,
                 name=t.name,
                 email=t.email,
                 role=t.role,
@@ -163,8 +163,8 @@ class TripOrmMapper:
         ]
 
         model.flights = [
-            FlightModel(
-                id=f.id,
+            FlightOrm(
+                id_=f.id,
                 airline=f.airline,
                 flight_number=f.flight_number,
                 departure_airport_code=f.departure_airport.code,
@@ -184,8 +184,8 @@ class TripOrmMapper:
         ]
 
         model.accommodations = [
-            AccommodationModel(
-                id=a.id,
+            AccommodationOrm(
+                id_=a.id,
                 name=a.name,
                 type=a.type,
                 check_in=a.check_in,
@@ -203,8 +203,8 @@ class TripOrmMapper:
         ]
 
         model.activities = [
-            ActivityModel(
-                id=act.id,
+            ActivityOrm(
+                id_=act.id,
                 name=act.name,
                 date=act.date,
                 cost_amount=act.cost.amount,
