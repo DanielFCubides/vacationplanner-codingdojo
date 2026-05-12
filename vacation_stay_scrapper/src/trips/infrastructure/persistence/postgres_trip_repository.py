@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.trips.domain.entities.trip import Trip
 from src.trips.domain.repositories.trip_repository import ITripRepository
 from src.trips.infrastructure.persistence.mappers.trip_orm_mapper import TripOrmMapper
-from src.trips.infrastructure.persistence.models.trip_model import TripModel
+from src.trips.infrastructure.persistence.models.trip import Trip as TripOrm
 
 
 class PostgresTripRepository(ITripRepository):
@@ -24,9 +24,9 @@ class PostgresTripRepository(ITripRepository):
             model = TripOrmMapper.to_model(trip)
             self._session.add(model)
             await self._session.flush()
-            trip.id = model.id
+            trip.id = model.id_
         else:
-            existing = await self._session.get(TripModel, trip.id)
+            existing = await self._session.get(TripOrm, trip.id)
             updated = TripOrmMapper.to_model(trip)
             if existing is None:
                 self._session.add(updated)
@@ -55,16 +55,16 @@ class PostgresTripRepository(ITripRepository):
 
     async def find_by_id(self, trip_id: int) -> Optional[Trip]:
         result = await self._session.execute(
-            select(TripModel).where(TripModel.id == trip_id)
+            select(TripOrm).where(TripOrm.id_ == trip_id)
         )
         model = result.scalar_one_or_none()
         return TripOrmMapper.to_domain(model) if model else None
 
     async def find_by_owner(self, trip_id: int, owner_id: str) -> Optional[Trip]:
         result = await self._session.execute(
-            select(TripModel).where(
-                TripModel.id == trip_id,
-                TripModel.owner_id == owner_id,
+            select(TripOrm).where(
+                TripOrm.id_ == trip_id,
+                TripOrm.owner_id == owner_id,
             )
         )
         model = result.scalar_one_or_none()
@@ -72,18 +72,18 @@ class PostgresTripRepository(ITripRepository):
 
     async def find_all_by_owner(self, owner_id: str) -> List[Trip]:
         result = await self._session.execute(
-            select(TripModel).where(TripModel.owner_id == owner_id)
+            select(TripOrm).where(TripOrm.owner_id == owner_id)
         )
         return [TripOrmMapper.to_domain(m) for m in result.scalars().all()]
 
     async def delete(self, trip_id: int) -> bool:
         result = await self._session.execute(
-            delete(TripModel).where(TripModel.id == trip_id)
+            delete(TripOrm).where(TripOrm.id_ == trip_id)
         )
         return result.rowcount > 0
 
     async def exists(self, trip_id: int) -> bool:
         result = await self._session.execute(
-            select(TripModel.id).where(TripModel.id == trip_id)
+            select(TripOrm.id_).where(TripOrm.id_ == trip_id)
         )
         return result.scalar_one_or_none() is not None
