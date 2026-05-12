@@ -103,7 +103,7 @@ const NewTripWizard = () => {
         // from the JWT token, so we should never reach this point unauthenticated.
         if (!isAuthenticated) {
             alert('You must be logged in to create a trip.');
-            navigate('/login');
+            navigate('/');
             return;
         }
 

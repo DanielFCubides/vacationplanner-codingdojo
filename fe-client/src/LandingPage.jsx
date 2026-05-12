@@ -1,12 +1,26 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import lockLogo from './assets/LockLogo.png';
+import authService from './services/authService.js';
 
 const LandingPage = () => {
-  const navigate = useNavigate();
-
   const handleGetStarted = () => {
-    navigate('/login');
+    console.log('🔵 Initiating Keycloak redirect...');
+    
+    authService.initiateStandardFlow().then(result => {
+      console.log('🔵 Standard Flow result:', result);
+      
+      if (result.success && result.url) {
+        console.log('🔵 Redirecting to:', result.url);
+        window.location.replace(result.url);
+        console.log('⚠️ This log indicates redirect might have failed!');
+      } else {
+        console.error('❌ Failed to get redirect URL:', result);
+        alert('Failed to initiate Keycloak login. Check console for details.');
+      }
+    }).catch(err => {
+      console.error('❌ Failed to initiate Keycloak flow:', err);
+      alert('Error: ' + err.message);
+    });
   };
 
   return (
@@ -67,7 +81,7 @@ const LandingPage = () => {
           </button>
           
           <p className="text-gray-500 text-sm">
-            Click to access your account and start planning your vacation
+            Sign in securely with your account to get started
           </p>
         </div>
 
