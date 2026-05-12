@@ -4,21 +4,15 @@ import authService from './services/authService.js';
 
 const LandingPage = () => {
   const handleGetStarted = () => {
-    console.log('🔵 Initiating Keycloak redirect...');
-    
+
     authService.initiateStandardFlow().then(result => {
-      console.log('🔵 Standard Flow result:', result);
-      
       if (result.success && result.url) {
-        console.log('🔵 Redirecting to:', result.url);
         window.location.replace(result.url);
-        console.log('⚠️ This log indicates redirect might have failed!');
       } else {
         console.error('❌ Failed to get redirect URL:', result);
-        alert('Failed to initiate Keycloak login. Check console for details.');
       }
     }).catch(err => {
-      console.error('❌ Failed to initiate Keycloak flow:', err);
+      console.error('❌ Failed to initiate kc flow:', err);
       alert('Error: ' + err.message);
     });
   };
