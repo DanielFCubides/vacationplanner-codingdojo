@@ -24,6 +24,7 @@ def make_trip(**overrides) -> Trip:
     """Return a minimal valid Trip, allowing field overrides."""
     defaults = dict(
         id=1,
+        owner_id="user-1",
         name="Summer Holiday",
         destination="Barcelona",
         start_date=date(2025, 7, 1),
