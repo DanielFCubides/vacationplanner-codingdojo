@@ -12,7 +12,7 @@ import pytest
 
 from src.trips.domain.entities.trip import Trip
 from src.trips.domain.value_objects.trip_status import TripStatus
-from src.trips.infrastructure.persistence.models.trip_model import TripModel
+from src.trips.infrastructure.persistence.models.trip import Trip as TripOrm
 from src.trips.infrastructure.persistence.postgres_trip_repository import PostgresTripRepository
 
 
@@ -32,9 +32,8 @@ def make_trip(trip_id=None, owner_id="user-1") -> Trip:
     )
 
 
-def make_trip_model(trip_id=1, owner_id="user-1") -> TripModel:
-    model = TripModel(
-        id=trip_id,
+def make_trip_model(trip_id=1, owner_id="user-1") -> TripOrm:
+    model = TripOrm(
         owner_id=owner_id,
         name="Summer Holiday",
         destination="Barcelona",
@@ -42,6 +41,7 @@ def make_trip_model(trip_id=1, owner_id="user-1") -> TripModel:
         end_date=date(2025, 7, 8),
         status="planning",
     )
+    model.id_ = trip_id
     model.travelers = []
     model.flights = []
     model.accommodations = []
@@ -82,7 +82,7 @@ class TestSaveNewTrip:
     def test_adds_model_to_session(self):
         session = make_session()
         model = make_trip_model(trip_id=42)
-        session.flush = AsyncMock(side_effect=lambda: setattr(model, "id", 42))
+        session.flush = AsyncMock(side_effect=lambda: setattr(model, "id_", 42))
 
         trip = make_trip(trip_id=None)
 
@@ -99,7 +99,7 @@ class TestSaveNewTrip:
         model = make_trip_model(trip_id=99)
 
         async def fake_flush():
-            model.id = 99
+            model.id_ = 99
 
         session.flush = AsyncMock(side_effect=fake_flush)
 
