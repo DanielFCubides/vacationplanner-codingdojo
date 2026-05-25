@@ -12,6 +12,7 @@ import TravellersOverview from "./components/TravellersOverview.tsx";
 import { tripService } from "./services/TripService.ts";
 
 type TabKey = 'overview' | 'flights' | 'stays' | 'activities' | 'budget' | 'team';
+type TripStatus = 'planning' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
 
 interface Tab {
     key: TabKey;
@@ -23,6 +24,9 @@ const TripDetailsView = () => {
     const { tripId } = useParams();
     const [trip, setTrip] = useState<Trip | null>(null);
     const [activeTab, setActiveTab] = useState<TabKey>('overview');
+    const [originalStatus, setOriginalStatus] = useState<TripStatus | null>(null);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
     // Define tabs
@@ -38,12 +42,36 @@ const TripDetailsView = () => {
     useEffect(() => {
         const timer = setTimeout(async () => {
             if (tripId) {
-                setTrip(await tripService.getTripById(tripId));
+                const fetchedTrip = await tripService.getTripById(tripId);
+                if (fetchedTrip) {
+                    setTrip(fetchedTrip);
+                    setOriginalStatus(fetchedTrip.status);
+                }
             }
         }, 500);
 
         return () => clearTimeout(timer);
     }, [tripId]);
+
+    const handleStatusChange = async (newStatus: TripStatus) => {
+        if (!trip || !tripId) return;
+
+        setIsUpdating(true);
+        setError(null);
+
+        try {
+            const updatedTrip = await tripService.updateTripStatus(tripId, newStatus);
+            setTrip(updatedTrip);
+            setOriginalStatus(updatedTrip.status);
+        } catch (err) {
+            setError('Failed to update status');
+            if (trip) {
+                setTrip({ ...trip, status: originalStatus || trip.status });
+            }
+        } finally {
+            setIsUpdating(false);
+        }
+    };
 
     const renderTabContent = () => {
         if (!trip) return null;
@@ -125,6 +153,28 @@ const TripDetailsView = () => {
                                     className={`inline-block px-3 py-1 rounded-full text-sm font-medium capitalize ${getStatusColor(trip.status)}`}>
                                     {trip.status}
                                 </span>
+                                <select
+                                    value={trip.status}
+                                    onChange={(e) => handleStatusChange(e.target.value as TripStatus)}
+                                    disabled={isUpdating}
+                                    className={`px-3 py-1 rounded-lg text-sm font-medium border ${
+                                        isUpdating
+                                            ? 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed'
+                                            : 'bg-white text-gray-700 border-gray-300 cursor-pointer hover:border-gray-400'
+                                    }`}
+                                >
+                                    <option value="planning">Planning</option>
+                                    <option value="confirmed">Confirmed</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                                {isUpdating && (
+                                    <span className="text-sm text-gray-500">Updating...</span>
+                                )}
+                                {error && (
+                                    <span className="text-sm text-red-600">{error}</span>
+                                )}
                             </div>
 
                             {/* Location */}
