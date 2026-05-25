@@ -1,8 +1,9 @@
+from datetime import date
+
 from ...domain.entities.trip import Trip
 from ...domain.repositories.trip_repository import ITripRepository
 from ...domain.value_objects.trip_status import TripStatus
 from ....shared.domain.exceptions import EntityNotFound
-from datetime import date
 
 
 class UpdateTripUseCase:
@@ -41,8 +42,8 @@ class UpdateTripUseCase:
         Update the status of a trip owned by the authenticated user.
 
         Verifies the trip exists and belongs to the given owner before
-        applying the status update. Both "not found" and "wrong owner" raise
-        EntityNotFound to avoid leaking trip existence to other users.
+        applying the status update. Uses the repository's update_status method
+        to avoid SQLAlchemy identity map conflicts.
 
         Args:
             trip_id: Trip identifier string
@@ -61,7 +62,12 @@ class UpdateTripUseCase:
         if trip is None:
             raise EntityNotFound(entity_type="Trip", entity_id=trip_id)
 
+        updated = await self._repository.update_status(trip_id_int, str(new_status))
+
+        if not updated:
+            raise EntityNotFound(entity_type="Trip", entity_id=trip_id)
+
         trip.status = new_status
         trip.updated_at = date.today()
 
-        return await self._repository.save(trip)
+        return trip
