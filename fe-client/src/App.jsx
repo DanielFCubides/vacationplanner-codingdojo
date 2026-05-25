@@ -1,6 +1,5 @@
 import './App.css'
 import Dashboard from "./Dashboard.jsx";
-import LoginPage from "./LoginPage.jsx";
 import LandingPage from "./LandingPage.jsx";
 import TripDetailsView from "./tripDetailsView.tsx";
 import NewTripWizard from "./components/NewTripWizard.tsx";
@@ -34,8 +33,8 @@ const OAuthCallbackHandler = () => {
             loginWithOAuth({ success: true, user });
             navigate('/dashboard', { replace: true });
         } else {
-            console.warn('⚠️ No active session found at /auth/callback, redirecting to login');
-            navigate('/login', { replace: true });
+            console.warn('⚠️ No active session found at /auth/callback, redirecting to home');
+            navigate('/', { replace: true });
         }
     }, [isAuthenticated, loading, user, loginWithOAuth, navigate]);
 
@@ -57,7 +56,7 @@ const ProtectedRoute = ({ children }) => {
         );
     }
 
-    return isAuthenticated ? children : <Navigate to="/login" replace />;
+    return isAuthenticated ? children : <Navigate to="/" replace />;
 };
 
 const RootHandler = () => {
@@ -74,9 +73,6 @@ const App = () => {
             <Routes>
                 {/* Landing Page — redirects to /dashboard if session cookie is active */}
                 <Route path="/" element={<RootHandler />} />
-
-                {/* Login Page - No authentication required */}
-                <Route path="/login" element={<LoginPage />} />
 
                 {/* OAuth Callback Handler */}
                 <Route path="/auth/callback" element={<OAuthCallbackHandler />} />

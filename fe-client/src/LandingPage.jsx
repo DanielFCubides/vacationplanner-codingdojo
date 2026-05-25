@@ -1,12 +1,20 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import lockLogo from './assets/LockLogo.png';
+import authService from './services/authService.js';
 
 const LandingPage = () => {
-  const navigate = useNavigate();
-
   const handleGetStarted = () => {
-    navigate('/login');
+
+    authService.initiateStandardFlow().then(result => {
+      if (result.success && result.url) {
+        window.location.replace(result.url);
+      } else {
+        console.error('❌ Failed to get redirect URL:', result);
+      }
+    }).catch(err => {
+      console.error('❌ Failed to initiate kc flow:', err);
+      alert('Error: ' + err.message);
+    });
   };
 
   return (
@@ -67,7 +75,7 @@ const LandingPage = () => {
           </button>
           
           <p className="text-gray-500 text-sm">
-            Click to access your account and start planning your vacation
+            Sign in securely with your account to get started
           </p>
         </div>
 
