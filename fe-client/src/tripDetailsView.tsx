@@ -146,21 +146,17 @@ const TripDetailsView = () => {
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
                     <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
                         <div className="flex-1">
-                            {/* Title and Status Badge */}
+                            {/* Title and Status Badge (Clickable Dropdown) */}
                             <div className="flex items-center gap-3 mb-3">
                                 <h1 className="text-3xl font-bold text-gray-900">{trip.name}</h1>
-                                <span
-                                    className={`inline-block px-3 py-1 rounded-full text-sm font-medium capitalize ${getStatusColor(trip.status)}`}>
-                                    {trip.status}
-                                </span>
                                 <select
                                     value={trip.status}
                                     onChange={(e) => handleStatusChange(e.target.value as TripStatus)}
                                     disabled={isUpdating}
-                                    className={`px-3 py-1 rounded-lg text-sm font-medium border ${
+                                    className={`px-3 py-1 rounded-full text-sm font-medium capitalize border-2 ${
                                         isUpdating
-                                            ? 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed'
-                                            : 'bg-white text-gray-700 border-gray-300 cursor-pointer hover:border-gray-400'
+                                            ? `opacity-50 cursor-not-allowed ${getStatusColor(trip.status)}`
+                                            : `${getStatusColor(trip.status)} cursor-pointer hover:opacity-80`
                                     }`}
                                 >
                                     <option value="planning">Planning</option>
@@ -173,7 +169,7 @@ const TripDetailsView = () => {
                                     <span className="text-sm text-gray-500">Updating...</span>
                                 )}
                                 {error && (
-                                    <span className="text-sm text-red-600">{error}</span>
+                                    <span className="text-sm text-red-600 ml-2">{error}</span>
                                 )}
                             </div>
 
