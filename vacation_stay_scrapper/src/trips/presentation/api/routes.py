@@ -5,15 +5,17 @@ FastAPI routes for trip management CRUD operations.
 """
 import logging
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, HTTPException
 from typing import List, Annotated
 
 from fastapi.security import HTTPBearer
 
 from src.shared.infrastructure.auth.dependencies import get_current_user
+from src.shared.domain.exceptions import EntityNotFound
 from .schemas import (
     TripCreateRequest,
     TripUpdateRequest,
+    UpdateTripStatusRequest,
     TripResponse,
     TripListResponse,
     MessageResponse
@@ -29,6 +31,7 @@ from ...application.use_cases.create_trip import CreateTripUseCase
 from ...application.use_cases.get_trip import GetTripUseCase, GetAllTripsUseCase
 from ...application.use_cases.update_trip import UpdateTripUseCase
 from ...application.use_cases.delete_trip import DeleteTripUseCase
+from ...domain.value_objects.trip_status import TripStatus
 from ..mappers.trip_mapper import TripMapper
 
 # Create router
@@ -186,3 +189,42 @@ async def delete_trip(
     return MessageResponse(
         message=f"Trip {trip_id} deleted successfully"
     )
+
+
+@router.patch(
+    "/{trip_id}/status",
+    response_model=TripResponse,
+    summary="Update trip status"
+)
+async def update_trip_status(
+        trip_id: str,
+        request: UpdateTripStatusRequest,
+        use_case: UpdateTripUseCase = Depends(get_update_trip_use_case),
+        current_user: dict = Depends(get_current_user)
+) -> TripResponse:
+    """
+    Update the status of a trip. Only the owner can update their trip's status.
+
+    Args:
+        trip_id: Trip identifier
+        request: Update trip status request
+        use_case: Update trip use case (injected)
+        current_user: Decoded JWT claims from the authenticated user
+
+    Returns:
+        Updated trip details
+
+    Raises:
+        HTTPException: 404 if trip not found or not owned by user
+    """
+    owner_id = current_user["sub"]
+
+    try:
+        new_status = TripStatus.from_string(request.status)
+        updated_trip = await use_case.update_status(trip_id, owner_id, new_status)
+        return TripMapper.to_response(updated_trip)
+    except EntityNotFound as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
