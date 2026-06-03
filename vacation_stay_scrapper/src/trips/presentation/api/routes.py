@@ -18,18 +18,22 @@ from .schemas import (
     UpdateTripStatusRequest,
     TripResponse,
     TripListResponse,
-    MessageResponse
+    MessageResponse,
+    FlightUpdateRequest,
+    FlightResponse,
 )
 from .dependencies import (
     get_create_trip_use_case,
     get_get_trip_use_case,
     get_get_all_trips_use_case,
     get_update_trip_use_case,
+    get_update_flight_use_case,
     get_delete_trip_use_case
 )
 from ...application.use_cases.create_trip import CreateTripUseCase
 from ...application.use_cases.get_trip import GetTripUseCase, GetAllTripsUseCase
 from ...application.use_cases.update_trip import UpdateTripUseCase
+from ...application.use_cases.update_flight import UpdateFlightUseCase
 from ...application.use_cases.delete_trip import DeleteTripUseCase
 from ...domain.value_objects.trip_status import TripStatus
 from ..mappers.trip_mapper import TripMapper
@@ -223,6 +227,42 @@ async def update_trip_status(
         new_status = TripStatus.from_string(request.status)
         updated_trip = await use_case.update_status(trip_id, owner_id, new_status)
         return TripMapper.to_response(updated_trip)
+    except EntityNotFound as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+
+
+@router.put(
+    "/{trip_id}/flights/{flight_id}",
+    response_model=FlightResponse,
+    summary="Update a single flight"
+)
+async def update_flight(
+        trip_id: str,
+        flight_id: str,
+        request: FlightUpdateRequest,
+        use_case: UpdateFlightUseCase = Depends(get_update_flight_use_case),
+        current_user: dict = Depends(get_current_user)
+) -> FlightResponse:
+    """
+    Update a single flight on a trip without touching the rest of the trip's
+    collections. The flight's id is preserved.
+
+    Raises:
+        HTTPException: 404 if the trip or flight does not exist or is not owned by the user
+    """
+    owner_id = current_user["sub"]
+
+    try:
+        updated_flight = await use_case.execute(
+            trip_id=trip_id,
+            flight_id=flight_id,
+            apply_update=lambda flight: TripMapper.apply_flight_update(flight, request),
+            owner_id=owner_id,
+        )
+        return TripMapper.flight_to_response(updated_flight)
     except EntityNotFound as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

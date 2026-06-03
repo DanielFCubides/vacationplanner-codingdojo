@@ -250,6 +250,22 @@ class UpdateTripStatusRequest(BaseModel):
         populate_by_name = True
 
 
+class FlightUpdateRequest(BaseModel):
+    """Request schema for updating a single flight (all fields optional for partial updates)"""
+    airline: Optional[str] = Field(None, min_length=1)
+    flight_number: Optional[str] = Field(None, min_length=1, alias="flightNumber")
+    departure: Optional[FlightLocationRequest] = None
+    arrival: Optional[FlightLocationRequest] = None
+    duration: Optional[str] = Field(None, min_length=1)
+    stops: Optional[int] = Field(None, ge=0)
+    price: Optional[float] = Field(None, ge=0)
+    cabin_class: Optional[str] = Field(None, alias="cabinClass")
+    status: Optional[Literal["confirmed", "pending", "cancelled"]] = None
+
+    class Config:
+        populate_by_name = True
+
+
 # ============================================================================
 # LIST RESPONSES
 # ============================================================================

@@ -23,6 +23,7 @@ from ..api.schemas import (
     TripUpdateRequest,
     FlightResponse,
     FlightLocationResponse,
+    FlightUpdateRequest,
     TravelerResponse,
     ActivityResponse,
     AccommodationResponse,
@@ -62,7 +63,7 @@ class TripMapper:
                 TripMapper._traveler_to_response(t) for t in trip.travelers
             ],
             flights=[
-                TripMapper._flight_to_response(f) for f in trip.flights
+                TripMapper.flight_to_response(f) for f in trip.flights
             ],
             accommodations=[
                 TripMapper._accommodation_to_response(a) 
@@ -138,6 +139,44 @@ class TripMapper:
         )
     
     @staticmethod
+    def apply_flight_update(flight: Flight, request: FlightUpdateRequest) -> Flight:
+        """
+        Apply a partial flight update onto an existing Flight entity in place,
+        preserving its id. Only fields explicitly provided in the request are
+        mutated.
+        """
+        if request.airline is not None:
+            flight.airline = request.airline
+        if request.flight_number is not None:
+            flight.flight_number = request.flight_number
+        if request.departure is not None:
+            flight.departure_airport = Airport(
+                code=request.departure.airport,
+                city=request.departure.city,
+            )
+            flight.departure_time = request.departure.time
+        if request.arrival is not None:
+            flight.arrival_airport = Airport(
+                code=request.arrival.airport,
+                city=request.arrival.city,
+            )
+            flight.arrival_time = request.arrival.time
+        if request.duration is not None:
+            flight.duration = request.duration
+        if request.stops is not None:
+            flight.stops = request.stops
+        if request.price is not None:
+            flight.price = Money(request.price, flight.price.currency)
+        if request.cabin_class is not None:
+            flight.cabin_class = request.cabin_class
+        if request.status is not None:
+            flight.status = request.status
+
+        # Re-validate invariants after mutation
+        flight.__post_init__()
+        return flight
+
+    @staticmethod
     def update_from_request(trip: Trip, request: TripUpdateRequest) -> Trip:
         """
         Update Trip entity from update request
@@ -204,7 +243,7 @@ class TripMapper:
         )
     
     @staticmethod
-    def _flight_to_response(flight: Flight) -> FlightResponse:
+    def flight_to_response(flight: Flight) -> FlightResponse:
         """Convert Flight entity to response matching frontend"""
         return FlightResponse(
             id=flight.id,
