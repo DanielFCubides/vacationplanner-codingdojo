@@ -7,6 +7,7 @@ from typing import List, Optional, Dict
 from datetime import date
 
 from ....shared.domain.exceptions import EntityNotFound
+from ...domain.entities.accommodation import Accommodation
 from ...domain.entities.flight import Flight
 from ...domain.entities.trip import Trip
 from ...domain.repositories.trip_repository import ITripRepository
@@ -151,6 +152,25 @@ class InMemoryTripRepository(ITripRepository):
                 return flight
 
         raise EntityNotFound(entity_type="Flight", entity_id=flight.id)
+
+    async def update_accommodation(self, accommodation: Accommodation, trip_id: int) -> Accommodation:
+        """
+        Update a single accommodation on a trip in place by id.
+
+        Raises:
+            EntityNotFound: if the trip does not exist or has no matching accommodation
+        """
+        trip = self._storage.get(trip_id)
+        if trip is None:
+            raise EntityNotFound(entity_type="Trip", entity_id=str(trip_id))
+
+        for index, existing in enumerate(trip.accommodations):
+            if existing.id == accommodation.id:
+                trip.accommodations[index] = accommodation
+                trip.updated_at = date.today()
+                return accommodation
+
+        raise EntityNotFound(entity_type="Accommodation", entity_id=accommodation.id)
 
     def count(self) -> int:
         """Get total number of trips"""
