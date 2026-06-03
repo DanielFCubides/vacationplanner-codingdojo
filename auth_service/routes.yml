@@ -11,3 +11,4 @@ vacation-planner:
     - /api/trips
     - /api/trips/*
     - /api/trips/*/*
+    - /api/trips/*/flights/*
