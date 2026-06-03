@@ -5,10 +5,12 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.shared.domain.exceptions import EntityNotFound
+from src.trips.domain.entities.accommodation import Accommodation
 from src.trips.domain.entities.flight import Flight
 from src.trips.domain.entities.trip import Trip
 from src.trips.domain.repositories.trip_repository import ITripRepository
 from src.trips.infrastructure.persistence.mappers.trip_orm_mapper import TripOrmMapper
+from src.trips.infrastructure.persistence.models.accommodation import Accommodation as AccommodationOrm
 from src.trips.infrastructure.persistence.models.flight import Flight as FlightOrm
 from src.trips.infrastructure.persistence.models.trip import Trip as TripOrm
 
@@ -128,3 +130,30 @@ class PostgresTripRepository(ITripRepository):
 
         await self._session.flush()
         return flight
+
+    async def update_accommodation(self, accommodation: Accommodation, trip_id: int) -> Accommodation:
+        result = await self._session.execute(
+            select(AccommodationOrm).where(
+                AccommodationOrm.id_ == accommodation.id,
+                AccommodationOrm.trip_id == trip_id,
+            )
+        )
+        existing = result.scalar_one_or_none()
+        if existing is None:
+            raise EntityNotFound(entity_type="Accommodation", entity_id=accommodation.id)
+
+        existing.name = accommodation.name
+        existing.type = accommodation.type
+        existing.check_in = accommodation.check_in
+        existing.check_out = accommodation.check_out
+        existing.price_per_night_amount = accommodation.price_per_night.amount
+        existing.price_per_night_currency = accommodation.price_per_night.currency
+        existing.total_price_amount = accommodation.total_price.amount
+        existing.total_price_currency = accommodation.total_price.currency
+        existing.rating = accommodation.rating
+        existing.amenities = accommodation.amenities
+        existing.status = accommodation.status
+        existing.image = accommodation.image
+
+        await self._session.flush()
+        return accommodation
