@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Trip } from "./Models.ts";
+import { Flight, Trip } from "./Models.ts";
 import TripDetailOverview from "./TripDetailOverview.tsx";
 import TripFlightsOverview from "./components/flightsOverview.tsx";
 import StayOverview from "./components/StaysOverview.tsx";
@@ -53,6 +53,20 @@ const TripDetailsView = () => {
         return () => clearTimeout(timer);
     }, [tripId]);
 
+    const handleFlightUpdate = async (updatedFlight: Flight): Promise<void> => {
+        if (!trip || !tripId) return;
+
+        const savedFlight = await tripService.updateFlight(tripId, updatedFlight.id, updatedFlight);
+
+        setTrip((prev) => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                flights: prev.flights.map((f) => (f.id === savedFlight.id ? savedFlight : f)),
+            };
+        });
+    };
+
     const handleStatusChange = async (newStatus: TripStatus) => {
         if (!trip || !tripId) return;
 
@@ -81,7 +95,7 @@ const TripDetailsView = () => {
                 return <TripDetailOverview trip={trip} />;
 
             case 'flights':
-                return <TripFlightsOverview trip={trip} />;
+                return <TripFlightsOverview trip={trip} onFlightUpdate={handleFlightUpdate} />;
 
             case 'stays':
                 return <StayOverview trip={trip} />;
