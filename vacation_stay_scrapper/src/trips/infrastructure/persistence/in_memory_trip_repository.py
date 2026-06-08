@@ -112,6 +112,24 @@ class InMemoryTripRepository(ITripRepository):
             True if exists, False otherwise
         """
         return trip_id in self._storage
+
+    async def update_status(self, trip_id: int, status: str) -> bool:
+        """
+        Update the status of a trip
+
+        Args:
+            trip_id: Trip integer identifier
+            status: New status value
+
+        Returns:
+            True if updated, False if not found
+        """
+        trip = self._storage.get(trip_id)
+        if trip is None:
+            return False
+        trip.status = status
+        trip.updated_at = date.today()
+        return True
     
     def count(self) -> int:
         """Get total number of trips"""

@@ -1,7 +1,7 @@
 from datetime import date
 from typing import List, Optional
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.trips.domain.entities.trip import Trip
@@ -87,3 +87,12 @@ class PostgresTripRepository(ITripRepository):
             select(TripOrm.id_).where(TripOrm.id_ == trip_id)
         )
         return result.scalar_one_or_none() is not None
+
+    async def update_status(self, trip_id: int, status: str) -> bool:
+        result = await self._session.execute(
+            update(TripOrm)
+            .where(TripOrm.id_ == trip_id)
+            .values(status=status, updated_at=date.today())
+        )
+        await self._session.flush()
+        return result.rowcount > 0
