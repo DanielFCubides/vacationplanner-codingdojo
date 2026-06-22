@@ -1,4 +1,4 @@
-FROM python:3.10-slim-buster as builder
+FROM python:3.10-slim-buster AS builder
 
 ENV VIRTUAL_ENV=/opt/app/env
 RUN python -m venv $VIRTUAL_ENV
@@ -8,18 +8,21 @@ COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 
-FROM builder as primary
+FROM builder AS primary
 
 WORKDIR /flight_service
-COPY . $WORKDIR
 
 COPY --from=builder /opt/app/env /opt/app/env
-ENV PATH=/opt/app/env:$PATH
+ENV PATH="/opt/app/env/bin:$PATH"
+
+COPY . .
+
+EXPOSE 8080
 
 CMD ["python3", "main.py"]
 
 
-FROM primary as tests
+FROM primary AS tests
 
 COPY requirements_test.txt /tmp/requirements_test.txt
 RUN pip install --no-cache-dir -r /tmp/requirements_test.txt

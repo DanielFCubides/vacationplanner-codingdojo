@@ -12,9 +12,7 @@ services:
 
   redis-cache:
     image: redis
-    environment:
-      - REDIS_PASSWORD=secret
-      - REDIS_USER=secret
+    command: redis-server --requirepass secret
     ports:
       - "6379:6379"
 
@@ -24,6 +22,7 @@ services:
       - "5540:5540"
     depends_on:
       - redis-cache
+    profiles: [full]
 
   broker:
     image: apache/kafka:latest
@@ -45,6 +44,7 @@ services:
     ports:
       - "9092:9092"
       - "9093:9093"
+    profiles: [full]
 
   selenium-hub:
     image: selenium/hub:latest
@@ -55,6 +55,7 @@ services:
       - "4442:4442"
       - "4443:4443"
       - "4444:4444"
+    profiles: [full]
 
   node-1:
     image: selenium/node-firefox:latest
@@ -66,6 +67,7 @@ services:
       - SE_EVENT_BUS_PUBLISH_PORT=4442
       - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
       - log-level=FINE
+    profiles: [full]
 
   node-2:
     image: selenium/node-chrome:latest
@@ -81,6 +83,7 @@ services:
       - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
       - log-level=FINE
     shm_size: 2g
+    profiles: [full]
 
 volumes:
   postgres_data:

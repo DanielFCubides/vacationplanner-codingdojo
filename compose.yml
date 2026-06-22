@@ -14,9 +14,14 @@ services:
       - REDIS_PORT=6379
       - REDIS_DB=0
       - REDIS_PASSWORD=secret
+      - OTEL_SERVICE_NAME=auth-service
+      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
     depends_on:
       - redis-cache
       - vacation-planner
+    networks:
+      - default
+      - observability
     volumes:
       - ./auth_service:/app
 
@@ -28,8 +33,13 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql+asyncpg://vacation:vacation@postgres:5432/vacation_planner
+      - OTEL_SERVICE_NAME=vacation-planner
+      - OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
     depends_on:
       - postgres
+    networks:
+      - default
+      - observability
     volumes:
       - ./vacation_stay_scrapper:/vacation_stay_scrapper
 
@@ -58,3 +68,8 @@ services:
       - ./fe-client/src:/app/src
       - ./fe-client/index.html:/app/index.html
       - ./fe-client/vite.config.js:/app/vite.config.js
+
+networks:
+  observability:
+    external: true
+    name: vacationplanner-codingdojo_observability
