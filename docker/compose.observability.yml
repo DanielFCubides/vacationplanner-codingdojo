@@ -3,29 +3,35 @@ services:
     image: otel/opentelemetry-collector-contrib:latest
     command: [ "--config=/etc/otel/otel-config.yml" ]
     volumes:
-      - ../docker/opentelemetry/otel-config.yml:/etc/otel/otel-config.yml:ro
+      - ./docker/opentelemetry/otel-config.yml:/etc/otel/otel-config.yml:ro
     ports:
       - "4317:4317"
       - "4318:4318"
       - "8889:8889"
+    networks:
+      - observability
 
   tempo:
     image: grafana/tempo:latest
     command: [ "-config.file=/etc/tempo/tempo.yml" ]
     volumes:
-      - ../docker/opentelemetry/tempo.yml:/etc/tempo/tempo.yml:ro
+      - ./docker/opentelemetry/tempo.yml:/etc/tempo/tempo.yml:ro
       - tempo_data:/var/tempo
     ports:
       - "3200:3200"
+    networks:
+      - observability
 
   loki:
     image: grafana/loki:latest
     command: [ "-config.file=/etc/loki/loki.yml" ]
     volumes:
-      - ../docker/opentelemetry/loki.yml:/etc/loki/loki.yml:ro
+      - ./docker/opentelemetry/loki.yml:/etc/loki/loki.yml:ro
       - loki_data:/loki
     ports:
       - "3100:3100"
+    networks:
+      - observability
 
   prometheus:
     image: prom/prometheus:latest
@@ -33,10 +39,12 @@ services:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
     volumes:
-      - ../docker/opentelemetry/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./docker/opentelemetry/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     ports:
       - "9090:9090"
+    networks:
+      - observability
 
   grafana:
     image: grafana/grafana:latest
@@ -46,16 +54,22 @@ services:
       GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       - grafana_data:/var/lib/grafana
-      - ../docker/opentelemetry/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./docker/opentelemetry/grafana/provisioning:/etc/grafana/provisioning:ro
     ports:
-      - "3000:3000"
+      - "3002:3000"
     depends_on:
       - prometheus
       - tempo
       - loki
+    networks:
+      - observability
 
 volumes:
   tempo_data:
   prometheus_data:
   grafana_data:
   loki_data:
+
+networks:
+  observability:
+    driver: bridge
