@@ -8,7 +8,7 @@ COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 
-FROM builder as primary
+FROM builder as dev
 
 WORKDIR /flight_service
 COPY . $WORKDIR
@@ -19,7 +19,7 @@ ENV PATH=/opt/app/env:$PATH
 CMD ["python3", "main.py"]
 
 
-FROM primary as tests
+FROM dev as tests
 
 COPY requirements_test.txt /tmp/requirements_test.txt
 RUN pip install --no-cache-dir -r /tmp/requirements_test.txt
