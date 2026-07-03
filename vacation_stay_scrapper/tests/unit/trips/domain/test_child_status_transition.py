@@ -10,6 +10,7 @@ import pytest
 from src.shared.domain.exceptions import InvalidStatusTransition
 from src.trips.domain.services.child_status_transition import (
     FlightStatusTransitionValidator,
+    AccommodationStatusTransitionValidator,
 )
 
 
@@ -54,3 +55,33 @@ class TestFlightStatusTransitionValidator:
         message = str(exc_info.value)
         assert "confirmed" in message
         assert "pending" in message
+
+
+class TestAccommodationStatusTransitionValidator:
+
+    def setup_method(self):
+        self.validator = AccommodationStatusTransitionValidator()
+
+    @pytest.mark.parametrize(
+        "current,new_status",
+        [
+            ("pending", "confirmed"),
+            ("pending", "cancelled"),
+            ("confirmed", "cancelled"),
+            ("cancelled", "pending"),
+        ],
+    )
+    def test_allows_valid_transitions(self, current, new_status):
+        self.validator.validate(current, new_status)
+
+    @pytest.mark.parametrize(
+        "current,new_status",
+        [
+            ("confirmed", "pending"),
+            ("cancelled", "confirmed"),
+            ("pending", "booked"),  # accommodations never use 'booked'
+        ],
+    )
+    def test_rejects_invalid_transitions(self, current, new_status):
+        with pytest.raises(InvalidStatusTransition):
+            self.validator.validate(current, new_status)

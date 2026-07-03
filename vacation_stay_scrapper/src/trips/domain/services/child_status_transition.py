@@ -48,3 +48,13 @@ class FlightStatusTransitionValidator(ChildStatusTransitionValidator):
         "confirmed": {"cancelled"},
         "cancelled": {"pending"},
     }
+
+
+class AccommodationStatusTransitionValidator(ChildStatusTransitionValidator):
+    """Accommodation state machine: identical to flights."""
+
+    VALID_TRANSITIONS = {
+        "pending": {"confirmed", "cancelled"},
+        "confirmed": {"cancelled"},
+        "cancelled": {"pending"},
+    }

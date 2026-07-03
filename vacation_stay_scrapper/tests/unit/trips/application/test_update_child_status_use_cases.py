@@ -22,8 +22,12 @@ from src.shared.domain.exceptions import (
     InvalidStatusTransition,
 )
 from src.trips.application.use_cases.update_flight_status import UpdateFlightStatusUseCase
+from src.trips.application.use_cases.update_accommodation_status import (
+    UpdateAccommodationStatusUseCase,
+)
 from src.trips.domain.entities.trip import Trip
 from src.trips.domain.entities.flight import Flight
+from src.trips.domain.entities.accommodation import Accommodation
 from src.trips.domain.value_objects.trip_status import TripStatus
 from src.trips.domain.value_objects.airport import Airport
 from src.trips.domain.value_objects.money import Money
@@ -69,9 +73,30 @@ def make_repo(**method_returns) -> AsyncMock:
     return repo
 
 
+def make_accommodation(acc_id: str = "a1", status: str = "pending") -> Accommodation:
+    return Accommodation(
+        id=acc_id,
+        name="Hotel Arts",
+        type="hotel",
+        check_in=date(2025, 7, 1),
+        check_out=date(2025, 7, 5),
+        price_per_night=Money.from_float(200.0),
+        total_price=Money.from_float(800.0),
+        rating=4.5,
+        amenities=["wifi"],
+        status=status,
+    )
+
+
 def trip_with_flight(status: str = "pending") -> Trip:
     trip = make_trip()
     trip.add_flight(make_flight(status=status))
+    return trip
+
+
+def trip_with_accommodation(status: str = "pending") -> Trip:
+    trip = make_trip()
+    trip.add_accommodation(make_accommodation(status=status))
     return trip
 
 
@@ -128,5 +153,48 @@ class TestUpdateFlightStatusUseCase:
         with pytest.raises(InvalidStatusTransition):
             asyncio.run(
                 UpdateFlightStatusUseCase(repo).execute("1", "f1", "pending", "user-1")
+            )
+        repo.save.assert_not_called()
+
+
+class TestUpdateAccommodationStatusUseCase:
+
+    def test_updates_status_and_persists(self):
+        trip = trip_with_accommodation("pending")
+        repo = make_repo(find_by_owner=trip, save=trip)
+
+        result = asyncio.run(
+            UpdateAccommodationStatusUseCase(repo).execute("1", "a1", "confirmed", "user-1")
+        )
+
+        assert result.accommodations[0].status == "confirmed"
+        repo.save.assert_called_once_with(trip)
+
+    def test_raises_entity_not_found_when_trip_missing_or_not_owned(self):
+        repo = make_repo(find_by_owner=None)
+
+        with pytest.raises(EntityNotFound):
+            asyncio.run(
+                UpdateAccommodationStatusUseCase(repo).execute("999", "a1", "confirmed", "user-1")
+            )
+        repo.save.assert_not_called()
+
+    def test_raises_child_not_found_for_unknown_accommodation(self):
+        trip = trip_with_accommodation("pending")
+        repo = make_repo(find_by_owner=trip, save=trip)
+
+        with pytest.raises(ChildNotFound):
+            asyncio.run(
+                UpdateAccommodationStatusUseCase(repo).execute("1", "nope", "confirmed", "user-1")
+            )
+        repo.save.assert_not_called()
+
+    def test_raises_invalid_transition_and_does_not_persist(self):
+        trip = trip_with_accommodation("confirmed")
+        repo = make_repo(find_by_owner=trip, save=trip)
+
+        with pytest.raises(InvalidStatusTransition):
+            asyncio.run(
+                UpdateAccommodationStatusUseCase(repo).execute("1", "a1", "pending", "user-1")
             )
         repo.save.assert_not_called()

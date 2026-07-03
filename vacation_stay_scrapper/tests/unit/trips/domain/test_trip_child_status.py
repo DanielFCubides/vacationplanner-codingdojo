@@ -9,6 +9,7 @@ from datetime import date, datetime
 
 from src.trips.domain.entities.trip import Trip
 from src.trips.domain.entities.flight import Flight
+from src.trips.domain.entities.accommodation import Accommodation
 from src.trips.domain.value_objects.trip_status import TripStatus
 from src.trips.domain.value_objects.airport import Airport
 from src.trips.domain.value_objects.money import Money
@@ -40,6 +41,21 @@ def make_flight(flight_id: str = "f1", status: str = "pending") -> Flight:
         arrival_time=datetime(2025, 7, 1, 12, 30),
         duration="2h 30m",
         price=Money.from_float(150.0),
+        status=status,
+    )
+
+
+def make_accommodation(acc_id: str = "a1", status: str = "pending") -> Accommodation:
+    return Accommodation(
+        id=acc_id,
+        name="Hotel Arts",
+        type="hotel",
+        check_in=date(2025, 7, 1),
+        check_out=date(2025, 7, 5),
+        price_per_night=Money.from_float(200.0),
+        total_price=Money.from_float(800.0),
+        rating=4.5,
+        amenities=["wifi"],
         status=status,
     )
 
@@ -76,3 +92,28 @@ class TestTripUpdateFlightStatus:
             trip.update_flight_status("f1", "pending")
 
         assert trip.flights[0].status == "confirmed"
+
+
+class TestTripUpdateAccommodationStatus:
+
+    def test_updates_accommodation_status_on_valid_transition(self):
+        trip = make_trip()
+        trip.add_accommodation(make_accommodation(status="pending"))
+
+        trip.update_accommodation_status("a1", "confirmed")
+
+        assert trip.accommodations[0].status == "confirmed"
+
+    def test_raises_child_not_found_for_unknown_accommodation(self):
+        trip = make_trip()
+        trip.add_accommodation(make_accommodation("a1"))
+
+        with pytest.raises(ChildNotFound):
+            trip.update_accommodation_status("nope", "confirmed")
+
+    def test_raises_invalid_transition_for_illegal_move(self):
+        trip = make_trip()
+        trip.add_accommodation(make_accommodation(status="confirmed"))
+
+        with pytest.raises(InvalidStatusTransition):
+            trip.update_accommodation_status("a1", "pending")

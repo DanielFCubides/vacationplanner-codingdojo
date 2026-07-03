@@ -10,7 +10,10 @@ from typing import List, Optional
 
 from ..value_objects.trip_status import TripStatus
 from ..value_objects.budget import Budget
-from ..services.child_status_transition import FlightStatusTransitionValidator
+from ..services.child_status_transition import (
+    FlightStatusTransitionValidator,
+    AccommodationStatusTransitionValidator,
+)
 from .flight import Flight
 from .traveler import Traveler
 from .activity import Activity
@@ -123,6 +126,24 @@ class Trip:
     def get_confirmed_accommodations(self) -> List[Accommodation]:
         """Get all confirmed accommodations"""
         return [a for a in self.accommodations if a.is_confirmed()]
+
+    def update_accommodation_status(self, accommodation_id: str, new_status: str):
+        """
+        Update an accommodation's status, enforcing the accommodation state machine.
+
+        Raises:
+            ChildNotFound: if no accommodation with the given id exists
+            InvalidStatusTransition: if the move is not a legal transition
+        """
+        accommodation = next(
+            (a for a in self.accommodations if a.id == accommodation_id), None
+        )
+        if accommodation is None:
+            raise ChildNotFound("Accommodation", accommodation_id)
+        AccommodationStatusTransitionValidator().validate(
+            accommodation.status, new_status
+        )
+        accommodation.status = new_status
     
     @property
     def total_accommodation_cost(self) -> float:
