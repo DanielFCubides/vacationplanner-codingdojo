@@ -10,6 +10,7 @@ from datetime import date, datetime
 from src.trips.domain.entities.trip import Trip
 from src.trips.domain.entities.flight import Flight
 from src.trips.domain.entities.accommodation import Accommodation
+from src.trips.domain.entities.activity import Activity
 from src.trips.domain.value_objects.trip_status import TripStatus
 from src.trips.domain.value_objects.airport import Airport
 from src.trips.domain.value_objects.money import Money
@@ -56,6 +57,17 @@ def make_accommodation(acc_id: str = "a1", status: str = "pending") -> Accommoda
         total_price=Money.from_float(800.0),
         rating=4.5,
         amenities=["wifi"],
+        status=status,
+    )
+
+
+def make_activity(activity_id: str = "act1", status: str = "pending") -> Activity:
+    return Activity(
+        id=activity_id,
+        name="Sagrada Familia Tour",
+        date=date(2025, 7, 2),
+        cost=Money.from_float(50.0),
+        category="sightseeing",
         status=status,
     )
 
@@ -117,3 +129,28 @@ class TestTripUpdateAccommodationStatus:
 
         with pytest.raises(InvalidStatusTransition):
             trip.update_accommodation_status("a1", "pending")
+
+
+class TestTripUpdateActivityStatus:
+
+    def test_updates_activity_status_on_valid_transition(self):
+        trip = make_trip()
+        trip.add_activity(make_activity(status="pending"))
+
+        trip.update_activity_status("act1", "booked")
+
+        assert trip.activities[0].status == "booked"
+
+    def test_raises_child_not_found_for_unknown_activity(self):
+        trip = make_trip()
+        trip.add_activity(make_activity("act1"))
+
+        with pytest.raises(ChildNotFound):
+            trip.update_activity_status("nope", "booked")
+
+    def test_raises_invalid_transition_for_illegal_move(self):
+        trip = make_trip()
+        trip.add_activity(make_activity(status="booked"))
+
+        with pytest.raises(InvalidStatusTransition):
+            trip.update_activity_status("act1", "pending")

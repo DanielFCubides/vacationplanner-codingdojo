@@ -25,9 +25,13 @@ from src.trips.application.use_cases.update_flight_status import UpdateFlightSta
 from src.trips.application.use_cases.update_accommodation_status import (
     UpdateAccommodationStatusUseCase,
 )
+from src.trips.application.use_cases.update_activity_status import (
+    UpdateActivityStatusUseCase,
+)
 from src.trips.domain.entities.trip import Trip
 from src.trips.domain.entities.flight import Flight
 from src.trips.domain.entities.accommodation import Accommodation
+from src.trips.domain.entities.activity import Activity
 from src.trips.domain.value_objects.trip_status import TripStatus
 from src.trips.domain.value_objects.airport import Airport
 from src.trips.domain.value_objects.money import Money
@@ -94,9 +98,26 @@ def trip_with_flight(status: str = "pending") -> Trip:
     return trip
 
 
+def make_activity(activity_id: str = "act1", status: str = "pending") -> Activity:
+    return Activity(
+        id=activity_id,
+        name="Sagrada Familia Tour",
+        date=date(2025, 7, 2),
+        cost=Money.from_float(50.0),
+        category="sightseeing",
+        status=status,
+    )
+
+
 def trip_with_accommodation(status: str = "pending") -> Trip:
     trip = make_trip()
     trip.add_accommodation(make_accommodation(status=status))
+    return trip
+
+
+def trip_with_activity(status: str = "pending") -> Trip:
+    trip = make_trip()
+    trip.add_activity(make_activity(status=status))
     return trip
 
 
@@ -196,5 +217,48 @@ class TestUpdateAccommodationStatusUseCase:
         with pytest.raises(InvalidStatusTransition):
             asyncio.run(
                 UpdateAccommodationStatusUseCase(repo).execute("1", "a1", "pending", "user-1")
+            )
+        repo.save.assert_not_called()
+
+
+class TestUpdateActivityStatusUseCase:
+
+    def test_updates_status_and_persists(self):
+        trip = trip_with_activity("pending")
+        repo = make_repo(find_by_owner=trip, save=trip)
+
+        result = asyncio.run(
+            UpdateActivityStatusUseCase(repo).execute("1", "act1", "booked", "user-1")
+        )
+
+        assert result.activities[0].status == "booked"
+        repo.save.assert_called_once_with(trip)
+
+    def test_raises_entity_not_found_when_trip_missing_or_not_owned(self):
+        repo = make_repo(find_by_owner=None)
+
+        with pytest.raises(EntityNotFound):
+            asyncio.run(
+                UpdateActivityStatusUseCase(repo).execute("999", "act1", "booked", "user-1")
+            )
+        repo.save.assert_not_called()
+
+    def test_raises_child_not_found_for_unknown_activity(self):
+        trip = trip_with_activity("pending")
+        repo = make_repo(find_by_owner=trip, save=trip)
+
+        with pytest.raises(ChildNotFound):
+            asyncio.run(
+                UpdateActivityStatusUseCase(repo).execute("1", "nope", "booked", "user-1")
+            )
+        repo.save.assert_not_called()
+
+    def test_raises_invalid_transition_and_does_not_persist(self):
+        trip = trip_with_activity("booked")
+        repo = make_repo(find_by_owner=trip, save=trip)
+
+        with pytest.raises(InvalidStatusTransition):
+            asyncio.run(
+                UpdateActivityStatusUseCase(repo).execute("1", "act1", "pending", "user-1")
             )
         repo.save.assert_not_called()

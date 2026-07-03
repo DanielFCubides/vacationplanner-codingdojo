@@ -11,6 +11,7 @@ from src.shared.domain.exceptions import InvalidStatusTransition
 from src.trips.domain.services.child_status_transition import (
     FlightStatusTransitionValidator,
     AccommodationStatusTransitionValidator,
+    ActivityStatusTransitionValidator,
 )
 
 
@@ -80,6 +81,36 @@ class TestAccommodationStatusTransitionValidator:
             ("confirmed", "pending"),
             ("cancelled", "confirmed"),
             ("pending", "booked"),  # accommodations never use 'booked'
+        ],
+    )
+    def test_rejects_invalid_transitions(self, current, new_status):
+        with pytest.raises(InvalidStatusTransition):
+            self.validator.validate(current, new_status)
+
+
+class TestActivityStatusTransitionValidator:
+
+    def setup_method(self):
+        self.validator = ActivityStatusTransitionValidator()
+
+    @pytest.mark.parametrize(
+        "current,new_status",
+        [
+            ("pending", "booked"),
+            ("pending", "cancelled"),
+            ("booked", "cancelled"),
+            ("cancelled", "pending"),
+        ],
+    )
+    def test_allows_valid_transitions(self, current, new_status):
+        self.validator.validate(current, new_status)
+
+    @pytest.mark.parametrize(
+        "current,new_status",
+        [
+            ("booked", "pending"),
+            ("pending", "confirmed"),  # activities never use 'confirmed'
+            ("cancelled", "booked"),
         ],
     )
     def test_rejects_invalid_transitions(self, current, new_status):

@@ -58,3 +58,13 @@ class AccommodationStatusTransitionValidator(ChildStatusTransitionValidator):
         "confirmed": {"cancelled"},
         "cancelled": {"pending"},
     }
+
+
+class ActivityStatusTransitionValidator(ChildStatusTransitionValidator):
+    """Activity state machine: uses 'booked' as the committed state."""
+
+    VALID_TRANSITIONS = {
+        "pending": {"booked", "cancelled"},
+        "booked": {"cancelled"},
+        "cancelled": {"pending"},
+    }

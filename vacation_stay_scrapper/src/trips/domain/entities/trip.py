@@ -13,6 +13,7 @@ from ..value_objects.budget import Budget
 from ..services.child_status_transition import (
     FlightStatusTransitionValidator,
     AccommodationStatusTransitionValidator,
+    ActivityStatusTransitionValidator,
 )
 from .flight import Flight
 from .traveler import Traveler
@@ -163,6 +164,22 @@ class Trip:
     def get_booked_activities(self) -> List[Activity]:
         """Get all booked activities"""
         return [a for a in self.activities if a.is_booked()]
+
+    def update_activity_status(self, activity_id: str, new_status: str):
+        """
+        Update an activity's status, enforcing the activity state machine.
+
+        Raises:
+            ChildNotFound: if no activity with the given id exists
+            InvalidStatusTransition: if the move is not a legal transition
+        """
+        activity = next(
+            (a for a in self.activities if a.id == activity_id), None
+        )
+        if activity is None:
+            raise ChildNotFound("Activity", activity_id)
+        ActivityStatusTransitionValidator().validate(activity.status, new_status)
+        activity.status = new_status
     
     # Budget management
     
