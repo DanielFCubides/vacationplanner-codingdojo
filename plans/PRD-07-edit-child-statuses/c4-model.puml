@@ -1,0 +1,111 @@
+@startuml c4-model-prd07-edit-child-statuses
+!include <C4/C4_Component>
+
+title PRD-07: Edit Trip Child Statuses — C4 Component Model\n(vacation_stay_scrapper + fe-client — <<new>> / <<modified>> / unchanged)
+
+skinparam wrapWidth 220
+skinparam defaultTextAlignment center
+
+' ============================================================
+' Tag styles: new (green), modified (amber), unchanged (gray)
+' ============================================================
+AddElementTag("new", $bgColor="#d5e8d4", $borderColor="#82b366", $fontColor="#1e1e1e")
+AddElementTag("modified", $bgColor="#ffe6cc", $borderColor="#d79b00", $fontColor="#1e1e1e")
+AddElementTag("unchanged", $bgColor="#eeeeee", $borderColor="#999999", $fontColor="#555555")
+
+Person(owner, "Trip Owner", "Updates the status of a flight / stay / activity")
+
+System_Ext(auth, "auth_service (BFF)", "Proxies request, injects Bearer JWT from Redis session — unchanged", $tags="unchanged")
+
+Container_Boundary(fe, "fe-client [React SPA :3001]") {
+    Component(feDetail, "tripDetailsView.tsx", "React view", "Owns trip state; threads onChildStatusChange callback into child cards", $tags="modified")
+    Component(feFlights, "flightsOverview.tsx", "React component", "Flight cards; editable badge + de-emphasize cancelled", $tags="modified")
+    Component(feStays, "StaysOverview.tsx", "React component", "Stay cards; editable badge + de-emphasize cancelled", $tags="modified")
+    Component(feActs, "ActivitiesOverview.tsx", "React component", "Activity cards; editable badge + de-emphasize cancelled", $tags="modified")
+    Component(feBudget, "BudgetOverview.tsx", "React component", "Renders authoritative budget.spent from PATCH response", $tags="modified")
+    Component(feCtrl, "ChildStatusControl.tsx", "React component", "Editable status badge -> dropdown of valid next states; optimistic + revert + toast", $tags="new")
+    Component(feTrans, "childStatusTransitions.ts", "Constants", "Per-type valid-transition map mirroring backend", $tags="new")
+    Component(feColors, "StatusColors.ts", "Util", "Badge colors aligned to FR-10 (pending gray, booked green)", $tags="modified")
+    Component(feSvc, "TripService.ts", "Service (ITripService / SimpleTripService / ApiTripService)", "+updateFlightStatus / +updateAccommodationStatus / +updateActivityStatus", $tags="modified")
+    Component(feModels, "Models.ts", "Types", "Child status unions already correct", $tags="unchanged")
+}
+
+Container_Boundary(vss, "vacation_stay_scrapper [FastAPI :8000]") {
+
+    Boundary(pres, "Presentation") {
+        Component(routes, "routes.py", "FastAPI router", "3 new PATCH endpoints:\n/flights/{id}/status\n/accommodations/{id}/status\n/activities/{id}/status", $tags="modified")
+        Component(schemas, "schemas.py", "Pydantic", "+ ChildStatusUpdateRequest {status}; reuses TripResponse", $tags="modified")
+        Component(deps, "dependencies.py", "DI factories", "+ get_update_flight/accommodation/activity_status_use_case", $tags="modified")
+        Component(mapper, "trip_mapper.py", "Mapper", "to_response already serializes child status + budget", $tags="unchanged")
+    }
+
+    Boundary(app, "Application") {
+        Component(ucFlight, "UpdateFlightStatusUseCase", "use_cases/update_flight_status.py", "Owner-scope, delegate to aggregate, save", $tags="new")
+        Component(ucAcc, "UpdateAccommodationStatusUseCase", "use_cases/update_accommodation_status.py", "", $tags="new")
+        Component(ucAct, "UpdateActivityStatusUseCase", "use_cases/update_activity_status.py", "", $tags="new")
+    }
+
+    Boundary(dom, "Domain") {
+        Component(trip, "Trip (aggregate root)", "entities/trip.py", "+ update_flight_status / update_accommodation_status / update_activity_status;\nvalidate transition, then recalc budget", $tags="modified")
+        Component(validator, "ChildStatusTransitionValidator (+3 concrete)", "services/child_status_transition.py", "Parameterized VALID_TRANSITIONS per child type; raises InvalidStatusTransition", $tags="new")
+        Component(budget, "Budget (value object)", "value_objects/budget.py", "+ recalculate_spent(flights, accommodations, activities) -> Budget", $tags="modified")
+        Component(money, "Money (value object)", "value_objects/money.py", "+ Money.zero(currency) for safe summation", $tags="modified")
+        Component(children, "Flight / Accommodation / Activity", "entities/*.py", "Inline status-value validation kept as safety net", $tags="unchanged")
+        Component(exc, "ChildNotFound / InvalidStatusTransition", "shared/domain/exceptions.py", "Subclass EntityNotFound / ValidationError -> 404 / 422 via existing middleware", $tags="new")
+        Component(irepo, "ITripRepository", "repositories/trip_repository.py", "Unchanged — reuse find_by_owner + save", $tags="unchanged")
+    }
+
+    Boundary(infra, "Infrastructure") {
+        Component(repo, "PostgresTripRepository", "persistence/postgres_trip_repository.py", "save() already persists child status; no change", $tags="unchanged")
+        Component(orm, "Flight/Accommodation/Activity ORM + TripOrmMapper", "persistence/models + mappers", "status columns already exist; NO migration", $tags="unchanged")
+    }
+}
+
+ContainerDb(pg, "PostgreSQL", "trips + flights + accommodations + activities (status columns exist)", $tags="unchanged")
+
+' ---------------- Frontend relationships ----------------
+Rel(owner, feCtrl, "Picks a new status")
+Rel(feDetail, feFlights, "renders (trip + onChange)")
+Rel(feDetail, feStays, "renders (trip + onChange)")
+Rel(feDetail, feActs, "renders (trip + onChange)")
+Rel(feDetail, feBudget, "renders")
+Rel(feFlights, feCtrl, "uses")
+Rel(feStays, feCtrl, "uses")
+Rel(feActs, feCtrl, "uses")
+Rel(feCtrl, feTrans, "reads valid next states")
+Rel(feCtrl, feColors, "badge color")
+Rel(feCtrl, feSvc, "updateXStatus()")
+Rel(feSvc, auth, "PATCH .../{child}/{id}/status (session cookie)")
+
+' ---------------- Backend relationships ----------------
+Rel(auth, routes, "proxies + injects JWT")
+Rel(routes, schemas, "validates ChildStatusUpdateRequest")
+Rel(routes, deps, "Depends(get_update_*_status_use_case)")
+Rel(routes, mapper, "to_response(trip)")
+Rel(deps, ucFlight, "creates + injects validator")
+Rel(deps, ucAcc, "creates + injects validator")
+Rel(deps, ucAct, "creates + injects validator")
+Rel(ucFlight, irepo, "find_by_owner + save")
+Rel(ucAcc, irepo, "find_by_owner + save")
+Rel(ucAct, irepo, "find_by_owner + save")
+Rel(ucFlight, trip, "update_flight_status()")
+Rel(ucAcc, trip, "update_accommodation_status()")
+Rel(ucAct, trip, "update_activity_status()")
+Rel(trip, validator, "validate(current, next)")
+Rel(trip, budget, "recalculate_spent()")
+Rel(trip, children, "mutates child.status")
+Rel(budget, money, "Money.zero + sum")
+Rel(validator, exc, "raises InvalidStatusTransition")
+Rel(trip, exc, "raises ChildNotFound")
+Rel(irepo, repo, "implemented by")
+Rel(repo, orm, "maps")
+Rel(repo, pg, "SQL read/write")
+
+legend right
+  == PRD-07 Change Legend ==
+  <back:#d5e8d4>  new  </back>        Created by PRD-07
+  <back:#ffe6cc>  modified  </back>   Changed by PRD-07
+  <back:#eeeeee>  unchanged  </back>  Referenced only
+endlegend
+
+@enduml
