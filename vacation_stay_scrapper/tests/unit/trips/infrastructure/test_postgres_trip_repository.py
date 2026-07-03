@@ -59,6 +59,11 @@ def make_session() -> AsyncMock:
     return session
 
 
+def make_merge(return_model) -> AsyncMock:
+    """A session.merge stub that echoes back a persistent-like model."""
+    return AsyncMock(return_value=return_model)
+
+
 def scalar_result(value):
     result = MagicMock()
     result.scalar_one_or_none.return_value = value
@@ -137,13 +142,12 @@ class TestSaveNewTrip:
 
 class TestSaveExistingTrip:
 
-    def test_updates_existing_model_fields(self):
+    def test_merges_the_model_for_an_existing_trip(self):
         session = make_session()
-        existing_model = make_trip_model(trip_id=1)
         updated_model = make_trip_model(trip_id=1)
         updated_model.name = "New Name"
 
-        session.get = AsyncMock(return_value=existing_model)
+        session.merge = make_merge(updated_model)
         session.flush = AsyncMock()
 
         trip = make_trip(trip_id=1)
@@ -155,25 +159,29 @@ class TestSaveExistingTrip:
         ):
             asyncio.run(PostgresTripRepository(session).save(trip))
 
-        assert existing_model.name == "New Name"
+        # The full desired state is merged onto the persistent row rather than
+        # field-copied onto a separately-fetched instance.
+        session.merge.assert_called_once_with(updated_model)
         session.flush.assert_called_once()
+        # An existing trip must never be re-added (would cause a PK conflict).
+        session.add.assert_not_called()
 
-    def test_adds_new_model_when_not_found_in_db(self):
+    def test_keeps_id_from_merged_model(self):
         session = make_session()
-        new_model = make_trip_model(trip_id=7)
+        merged_model = make_trip_model(trip_id=7)
 
-        session.get = AsyncMock(return_value=None)
+        session.merge = make_merge(merged_model)
         session.flush = AsyncMock()
 
         trip = make_trip(trip_id=7)
 
         with patch(
             "src.trips.infrastructure.persistence.postgres_trip_repository.TripOrmMapper.to_model",
-            return_value=new_model,
+            return_value=merged_model,
         ):
-            asyncio.run(PostgresTripRepository(session).save(trip))
+            result = asyncio.run(PostgresTripRepository(session).save(trip))
 
-        session.add.assert_called_once_with(new_model)
+        assert result.id == 7
 
 
 # ---------------------------------------------------------------------------
