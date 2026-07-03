@@ -111,6 +111,7 @@ class Trip:
             raise ChildNotFound("Flight", flight_id)
         FlightStatusTransitionValidator().validate(flight.status, new_status)
         flight.status = new_status
+        self._recalculate_budget()
     
     # Accommodation management
     
@@ -145,6 +146,7 @@ class Trip:
             accommodation.status, new_status
         )
         accommodation.status = new_status
+        self._recalculate_budget()
     
     @property
     def total_accommodation_cost(self) -> float:
@@ -180,12 +182,25 @@ class Trip:
             raise ChildNotFound("Activity", activity_id)
         ActivityStatusTransitionValidator().validate(activity.status, new_status)
         activity.status = new_status
+        self._recalculate_budget()
     
     # Budget management
     
     def set_budget(self, budget: Budget):
         """Set the trip budget"""
         self.budget = budget
+
+    def _recalculate_budget(self):
+        """
+        Recompute budget.spent from the current child statuses.
+
+        No-op when the trip has no budget. Called after any child status
+        change so that spent reflects only committed children (ADR-003).
+        """
+        if self.budget is not None:
+            self.budget = self.budget.recalculate_spent(
+                self.flights, self.accommodations, self.activities
+            )
     
     @property
     def total_spent(self) -> float:

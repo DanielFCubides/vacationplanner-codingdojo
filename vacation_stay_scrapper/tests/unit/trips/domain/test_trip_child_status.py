@@ -6,6 +6,7 @@ Status changes flow through the aggregate so that domain invariants
 """
 import pytest
 from datetime import date, datetime
+from decimal import Decimal
 
 from src.trips.domain.entities.trip import Trip
 from src.trips.domain.entities.flight import Flight
@@ -14,6 +15,7 @@ from src.trips.domain.entities.activity import Activity
 from src.trips.domain.value_objects.trip_status import TripStatus
 from src.trips.domain.value_objects.airport import Airport
 from src.trips.domain.value_objects.money import Money
+from src.trips.domain.value_objects.budget import Budget
 from src.shared.domain.exceptions import ChildNotFound, InvalidStatusTransition
 
 
@@ -129,6 +131,48 @@ class TestTripUpdateAccommodationStatus:
 
         with pytest.raises(InvalidStatusTransition):
             trip.update_accommodation_status("a1", "pending")
+
+
+def make_budget(total: float = 5000.0) -> Budget:
+    return Budget(total=Money.from_float(total), spent=Money.from_float(0.0))
+
+
+class TestChildStatusUpdateRecalculatesBudget:
+
+    def test_confirming_a_flight_adds_its_price_to_spent(self):
+        trip = make_trip(budget=make_budget())
+        trip.add_flight(make_flight(status="pending"))  # price 150
+
+        trip.update_flight_status("f1", "confirmed")
+
+        assert trip.budget.spent.amount == Decimal("150.0")
+
+    def test_cancelling_an_accommodation_excludes_its_cost(self):
+        trip = make_trip(budget=make_budget())
+        trip.add_accommodation(make_accommodation(status="confirmed"))  # total 800
+
+        assert trip.budget.spent.amount == Decimal("0.0")  # not yet recalculated
+        trip.update_accommodation_status("a1", "cancelled")
+
+        assert trip.budget.spent.amount == Decimal("0")
+
+    def test_booking_an_activity_adds_its_cost_to_spent(self):
+        trip = make_trip(budget=make_budget())
+        trip.add_activity(make_activity(status="pending"))  # cost 50
+
+        trip.update_activity_status("act1", "booked")
+
+        assert trip.budget.spent.amount == Decimal("50.0")
+
+    def test_no_budget_is_tolerated(self):
+        trip = make_trip(budget=None)
+        trip.add_flight(make_flight(status="pending"))
+
+        # Should not raise even though there is no budget to recalculate
+        trip.update_flight_status("f1", "confirmed")
+
+        assert trip.flights[0].status == "confirmed"
+        assert trip.budget is None
 
 
 class TestTripUpdateActivityStatus:
