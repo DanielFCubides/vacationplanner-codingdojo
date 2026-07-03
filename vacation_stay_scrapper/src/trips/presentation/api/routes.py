@@ -16,19 +16,22 @@ from .schemas import (
     TripUpdateRequest,
     TripResponse,
     TripListResponse,
-    MessageResponse
+    MessageResponse,
+    ChildStatusUpdateRequest
 )
 from .dependencies import (
     get_create_trip_use_case,
     get_get_trip_use_case,
     get_get_all_trips_use_case,
     get_update_trip_use_case,
-    get_delete_trip_use_case
+    get_delete_trip_use_case,
+    get_update_flight_status_use_case
 )
 from ...application.use_cases.create_trip import CreateTripUseCase
 from ...application.use_cases.get_trip import GetTripUseCase, GetAllTripsUseCase
 from ...application.use_cases.update_trip import UpdateTripUseCase
 from ...application.use_cases.delete_trip import DeleteTripUseCase
+from ...application.use_cases.update_flight_status import UpdateFlightStatusUseCase
 from ..mappers.trip_mapper import TripMapper
 
 # Create router
@@ -157,6 +160,36 @@ async def update_trip(
     result = await use_case.execute(trip_id, updated_trip, owner_id=owner_id)
 
     return TripMapper.to_response(result)
+
+
+@router.patch(
+    "/{trip_id}/flights/{flight_id}/status",
+    response_model=TripResponse,
+    summary="Update a flight's status"
+)
+async def update_flight_status(
+        trip_id: str,
+        flight_id: str,
+        request: ChildStatusUpdateRequest,
+        use_case: UpdateFlightStatusUseCase = Depends(get_update_flight_status_use_case),
+        current_user: dict = Depends(get_current_user)
+) -> TripResponse:
+    """
+    Update the status of a flight within a trip. Only the trip owner may do so.
+
+    Args:
+        trip_id: Trip identifier
+        flight_id: Flight identifier within the trip
+        request: New status
+        use_case: Update flight status use case (injected)
+        current_user: Decoded JWT claims from the authenticated user
+
+    Returns:
+        The updated full trip
+    """
+    owner_id = current_user["sub"]
+    trip = await use_case.execute(trip_id, flight_id, request.status, owner_id=owner_id)
+    return TripMapper.to_response(trip)
 
 
 @router.delete(

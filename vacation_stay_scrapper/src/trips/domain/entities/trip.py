@@ -10,10 +10,12 @@ from typing import List, Optional
 
 from ..value_objects.trip_status import TripStatus
 from ..value_objects.budget import Budget
+from ..services.child_status_transition import FlightStatusTransitionValidator
 from .flight import Flight
 from .traveler import Traveler
 from .activity import Activity
 from .accommodation import Accommodation
+from ....shared.domain.exceptions import ChildNotFound
 
 
 @dataclass
@@ -91,6 +93,20 @@ class Trip:
     def get_confirmed_flights(self) -> List[Flight]:
         """Get all confirmed flights"""
         return [f for f in self.flights if f.status == "confirmed"]
+
+    def update_flight_status(self, flight_id: str, new_status: str):
+        """
+        Update a flight's status, enforcing the flight state machine.
+
+        Raises:
+            ChildNotFound: if no flight with the given id exists on this trip
+            InvalidStatusTransition: if the move is not a legal transition
+        """
+        flight = next((f for f in self.flights if f.id == flight_id), None)
+        if flight is None:
+            raise ChildNotFound("Flight", flight_id)
+        FlightStatusTransitionValidator().validate(flight.status, new_status)
+        flight.status = new_status
     
     # Accommodation management
     

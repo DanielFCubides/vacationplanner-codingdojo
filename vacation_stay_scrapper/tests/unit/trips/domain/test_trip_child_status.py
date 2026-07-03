@@ -1,0 +1,78 @@
+"""
+Unit tests for the Trip aggregate's child-status update methods (PRD-07, FR-4).
+
+Status changes flow through the aggregate so that domain invariants
+(valid transition + child existence) are enforced in one place.
+"""
+import pytest
+from datetime import date, datetime
+
+from src.trips.domain.entities.trip import Trip
+from src.trips.domain.entities.flight import Flight
+from src.trips.domain.value_objects.trip_status import TripStatus
+from src.trips.domain.value_objects.airport import Airport
+from src.trips.domain.value_objects.money import Money
+from src.shared.domain.exceptions import ChildNotFound, InvalidStatusTransition
+
+
+def make_trip(**overrides) -> Trip:
+    defaults = dict(
+        id=1,
+        owner_id="user-1",
+        name="Summer Holiday",
+        destination="Barcelona",
+        start_date=date(2025, 7, 1),
+        end_date=date(2025, 7, 8),
+        status=TripStatus.PLANNING,
+    )
+    defaults.update(overrides)
+    return Trip(**defaults)
+
+
+def make_flight(flight_id: str = "f1", status: str = "pending") -> Flight:
+    return Flight(
+        id=flight_id,
+        airline="Iberia",
+        flight_number="IB3166",
+        departure_airport=Airport(code="BCN", city="Barcelona"),
+        departure_time=datetime(2025, 7, 1, 10, 0),
+        arrival_airport=Airport(code="LHR", city="London"),
+        arrival_time=datetime(2025, 7, 1, 12, 30),
+        duration="2h 30m",
+        price=Money.from_float(150.0),
+        status=status,
+    )
+
+
+class TestTripUpdateFlightStatus:
+
+    def test_updates_flight_status_on_valid_transition(self):
+        trip = make_trip()
+        trip.add_flight(make_flight(status="pending"))
+
+        trip.update_flight_status("f1", "confirmed")
+
+        assert trip.flights[0].status == "confirmed"
+
+    def test_raises_child_not_found_for_unknown_flight(self):
+        trip = make_trip()
+        trip.add_flight(make_flight("f1"))
+
+        with pytest.raises(ChildNotFound):
+            trip.update_flight_status("does-not-exist", "confirmed")
+
+    def test_raises_invalid_transition_for_illegal_move(self):
+        trip = make_trip()
+        trip.add_flight(make_flight(status="confirmed"))
+
+        with pytest.raises(InvalidStatusTransition):
+            trip.update_flight_status("f1", "pending")
+
+    def test_does_not_change_status_when_transition_is_invalid(self):
+        trip = make_trip()
+        trip.add_flight(make_flight(status="confirmed"))
+
+        with pytest.raises(InvalidStatusTransition):
+            trip.update_flight_status("f1", "pending")
+
+        assert trip.flights[0].status == "confirmed"
