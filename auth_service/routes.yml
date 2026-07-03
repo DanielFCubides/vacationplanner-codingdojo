@@ -10,3 +10,6 @@ vacation-planner:
   available_routes:
     - /api/trips
     - /api/trips/*
+    - /api/trips/*/flights/*/status
+    - /api/trips/*/accommodations/*/status
+    - /api/trips/*/activities/*/status
