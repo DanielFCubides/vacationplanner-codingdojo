@@ -12,7 +12,7 @@ services:
       - observability
 
   tempo:
-    image: grafana/tempo:latest
+    image: grafana/tempo:2.8.2
     command: [ "-config.file=/etc/tempo/tempo.yml" ]
     volumes:
       - ./docker/opentelemetry/tempo.yml:/etc/tempo/tempo.yml:ro
@@ -72,4 +72,5 @@ volumes:
 
 networks:
   observability:
-    driver: bridge
+    external: true
+    name: vacationplanner-codingdojo_observability

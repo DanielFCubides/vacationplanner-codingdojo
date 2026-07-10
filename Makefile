@@ -1,14 +1,18 @@
 COMPOSE ?= docker compose
 PROJECT ?= vacationplanner-codingdojo
+OBS_NETWORK := $(PROJECT)_observability
 
-MAIN_FILES := -f compose.yml -f docker/compose.dependencies.yml
-ALL_FILES := -f compose.yml -f docker/compose.dependencies.yml -f docker/compose.observability.yml
-TEST_FILES := -f docker/compose.tests.yml
-OBS_FILES := -f docker/compose.observability.yml
+MAIN_FILES := --project-directory . -f compose.yml -f docker/compose.dependencies.yml
+ALL_FILES := --project-directory . -f compose.yml -f docker/compose.dependencies.yml -f docker/compose.observability.yml
+TEST_FILES := --project-directory . -f docker/compose.tests.yml
+OBS_FILES := --project-directory . -f docker/compose.observability.yml
 
 .DEFAULT_GOAL := help
 
-.PHONY: help up build observability tests vacation-planner flight-service exec logs down stop restart ps config run
+.PHONY: help up build observability tests vacation-planner flight-service exec logs down stop restart ps config run network
+
+network:
+	@docker network inspect $(OBS_NETWORK) >/dev/null 2>&1 || docker network create $(OBS_NETWORK)
 
 help:
 	@printf '%s\n' \
@@ -30,10 +34,10 @@ help:
 		'  ps                  Show stack status' \
 		'  config              Render the combined compose config'
 
-up:
+up: network
 	$(COMPOSE) -p $(PROJECT) $(ALL_FILES) up -d
 
-observability:
+observability: network
 	$(COMPOSE) -p $(PROJECT) $(OBS_FILES) up -d
 
 build:
@@ -63,10 +67,10 @@ tests:
 		$(COMPOSE) -p $(PROJECT) $(TEST_FILES) up -d; \
 	fi
 
-vacation-planner:
+vacation-planner: network
 	$(COMPOSE) -p $(PROJECT) $(MAIN_FILES) up -d fe-client auth-service postgres vacation-planner
 
-flight-service:
+flight-service: network
 	$(COMPOSE) -p $(PROJECT) $(MAIN_FILES) up -d flight-service redis-cache redis-ui selenium-hub node-1 node-2
 
 exec:
@@ -125,7 +129,7 @@ restart:
 		$(COMPOSE) -p $(PROJECT) $(ALL_FILES) restart; \
 	fi
 
-run:
+run: network
 	@if [ -n "$(strip $(SERVICE))" ]; then \
 		$(COMPOSE) -p $(PROJECT) $(MAIN_FILES) up -d $(SERVICE); \
 	else \

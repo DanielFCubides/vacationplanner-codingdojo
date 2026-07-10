@@ -28,7 +28,7 @@ services:
   vacation-planner:
     build:
       context: ./vacation_stay_scrapper
-      target: primary
+      target: dev
     ports:
       - "8000:8000"
     environment:
@@ -46,7 +46,7 @@ services:
   flight-service:
     build:
       context: ./flight_service
-      target: primary
+      target: dev
     environment:
       - SERVER=${SERVER:-rest}
     ports:
