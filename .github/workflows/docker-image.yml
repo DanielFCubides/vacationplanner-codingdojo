@@ -61,3 +61,49 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    #if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Redeploy Portainer stack (pull latest images)
+        env:
+          PORTAINER_URL: ${{ vars.PORTAINER_URL }}
+          PORTAINER_STACK_ID: ${{ vars.PORTAINER_STACK_ID }}
+          PORTAINER_ENDPOINT_ID: ${{ vars.PORTAINER_ENDPOINT_ID }}
+          PORTAINER_API_TOKEN: ${{ secrets.PORTAINER_API_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          STACK_FILE=$(curl -sf -H "X-API-Key: $PORTAINER_API_TOKEN" \
+            "$PORTAINER_URL/api/stacks/$PORTAINER_STACK_ID/file" | jq -r .StackFileContent)
+
+          jq -n --arg content "$STACK_FILE" '{
+            stackFileContent: $content,
+            pullImage: true,
+            prune: false,
+            env: [
+              {name: "DOCKERHUB_USER", value: "noixter"},
+              {name: "TAG", value: "latest"},
+              {name: "SERVER", value: "rest"}
+            ]
+          }' | curl -sf --max-time 600 -X PUT \
+            -H "X-API-Key: $PORTAINER_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d @- \
+            "$PORTAINER_URL/api/stacks/$PORTAINER_STACK_ID?endpointId=$PORTAINER_ENDPOINT_ID"
+
+      - name: Verify all containers running
+        env:
+          PORTAINER_URL: ${{ vars.PORTAINER_URL }}
+          PORTAINER_ENDPOINT_ID: ${{ vars.PORTAINER_ENDPOINT_ID }}
+          PORTAINER_API_TOKEN: ${{ secrets.PORTAINER_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          sleep 20
+          curl -sf -H "X-API-Key: $PORTAINER_API_TOKEN" \
+            "$PORTAINER_URL/api/endpoints/$PORTAINER_ENDPOINT_ID/docker/containers/json" \
+            | jq -e '[.[]
+                | select(.Names[0] | startswith("/vacation-planner-"))
+                | select(.State != "running")] | length == 0'
