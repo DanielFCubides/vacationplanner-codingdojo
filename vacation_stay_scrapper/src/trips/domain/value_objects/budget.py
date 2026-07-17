@@ -67,6 +67,30 @@ class Budget:
         """Check if over total budget"""
         return self.spent.amount > self.total.amount
     
+    def recalculate_spent(self, flights, accommodations, activities) -> "Budget":
+        """
+        Return a new Budget whose ``spent`` is derived from committed children.
+
+        ``spent`` = confirmed flights + confirmed accommodations + booked
+        activities (see ADR-003). Pending and cancelled children are excluded.
+        ``total`` and ``categories`` are carried over unchanged.
+        """
+        total_spent = Money.zero(self.total.currency)
+        for flight in flights:
+            if flight.is_confirmed():
+                total_spent = total_spent + flight.price
+        for accommodation in accommodations:
+            if accommodation.is_confirmed():
+                total_spent = total_spent + accommodation.total_price
+        for activity in activities:
+            if activity.is_booked():
+                total_spent = total_spent + activity.cost
+        return Budget(
+            total=self.total,
+            spent=total_spent,
+            categories=self.categories,
+        )
+
     def add_category(self, category: BudgetCategory):
         """Add a budget category"""
         # Note: This creates a new Budget since it's frozen

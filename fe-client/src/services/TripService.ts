@@ -17,6 +17,12 @@ export interface ITripService {
     updateTrip(id: string, updates: Partial<Trip>): Promise<Trip>;
 
     deleteTrip(id: string): Promise<boolean>;
+
+    updateFlightStatus(tripId: string, flightId: string, status: string): Promise<Trip>;
+
+    updateAccommodationStatus(tripId: string, accommodationId: string, status: string): Promise<Trip>;
+
+    updateActivityStatus(tripId: string, activityId: string, status: string): Promise<Trip>;
 }
 
 // ============================================
@@ -125,6 +131,39 @@ class SimpleTripService implements ITripService {
         return true;
     }
 
+    async updateFlightStatus(tripId: string, flightId: string, status: string): Promise<Trip> {
+        await this.delay(200);
+        const trip = this.requireTrip(tripId);
+        const flight = trip.flights.find(f => f.id === flightId);
+        if (!flight) throw new Error('Flight not found in this trip');
+        flight.status = status as Trip['flights'][number]['status'];
+        return trip;
+    }
+
+    async updateAccommodationStatus(tripId: string, accommodationId: string, status: string): Promise<Trip> {
+        await this.delay(200);
+        const trip = this.requireTrip(tripId);
+        const accommodation = trip.accommodations.find(a => a.id === accommodationId);
+        if (!accommodation) throw new Error('Accommodation not found in this trip');
+        accommodation.status = status as Trip['accommodations'][number]['status'];
+        return trip;
+    }
+
+    async updateActivityStatus(tripId: string, activityId: string, status: string): Promise<Trip> {
+        await this.delay(200);
+        const trip = this.requireTrip(tripId);
+        const activity = trip.activities.find(a => a.id === activityId);
+        if (!activity) throw new Error('Activity not found in this trip');
+        activity.status = status as Trip['activities'][number]['status'];
+        return trip;
+    }
+
+    private requireTrip(tripId: string): Trip {
+        const trip = this.trips.find(t => t.id === tripId);
+        if (!trip) throw new Error(`Trip with id ${tripId} not found`);
+        return trip;
+    }
+
     /**
      * Simulate network delay
      */
@@ -197,6 +236,40 @@ class ApiTripService implements ITripService {
             credentials: 'include',
         });
         return response.ok;
+    }
+
+    async updateFlightStatus(tripId: string, flightId: string, status: string): Promise<Trip> {
+        return this.patchChildStatus(`${tripId}/flights/${flightId}/status`, status);
+    }
+
+    async updateAccommodationStatus(tripId: string, accommodationId: string, status: string): Promise<Trip> {
+        return this.patchChildStatus(`${tripId}/accommodations/${accommodationId}/status`, status);
+    }
+
+    async updateActivityStatus(tripId: string, activityId: string, status: string): Promise<Trip> {
+        return this.patchChildStatus(`${tripId}/activities/${activityId}/status`, status);
+    }
+
+    private async patchChildStatus(path: string, status: string): Promise<Trip> {
+        const response = await fetch(`${this.baseUrl}/${path}`, {
+            method: 'PATCH',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status }),
+        });
+        if (!response.ok) {
+            // Surface the backend's descriptive message (422 invalid transition,
+            // 404 child not found, etc.) so the caller can show it to the user.
+            let detail = 'Failed to update status';
+            try {
+                const body = await response.json();
+                detail = body.details || body.message || detail;
+            } catch {
+                // response had no JSON body; keep the default message
+            }
+            throw new Error(detail);
+        }
+        return response.json();
     }
 }
 

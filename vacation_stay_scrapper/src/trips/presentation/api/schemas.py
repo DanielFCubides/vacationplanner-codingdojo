@@ -221,6 +221,19 @@ class TripCreateRequest(BaseModel):
         populate_by_name = True
 
 
+class ChildStatusUpdateRequest(BaseModel):
+    """
+    Request schema for updating a trip child's status (flight, accommodation,
+    or activity).
+
+    The allowed value set differs per child type (e.g. activities use
+    ``booked`` instead of ``confirmed``), so the value is validated in the
+    domain transition validator rather than constrained here — that keeps the
+    422 message consistent with the state machine.
+    """
+    status: str = Field(..., min_length=1)
+
+
 class TripUpdateRequest(BaseModel):
     """Request schema for updating a trip"""
     name: Optional[str] = Field(None, min_length=1, max_length=200)
