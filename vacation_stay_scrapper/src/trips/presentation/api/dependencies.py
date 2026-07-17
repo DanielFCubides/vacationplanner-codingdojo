@@ -12,6 +12,7 @@ from ...domain.repositories.trip_repository import ITripRepository
 from ...application.use_cases.create_trip import CreateTripUseCase
 from ...application.use_cases.get_trip import GetTripUseCase, GetAllTripsUseCase
 from ...application.use_cases.update_trip import UpdateTripUseCase
+from ...application.use_cases.update_flight import UpdateFlightUseCase
 from ...application.use_cases.delete_trip import DeleteTripUseCase
 
 
@@ -49,3 +50,9 @@ def get_delete_trip_use_case(
     repository: ITripRepository = Depends(get_trip_repository)
 ) -> DeleteTripUseCase:
     return DeleteTripUseCase(repository)
+
+
+def get_update_flight_use_case(
+    repository: ITripRepository = Depends(get_trip_repository)
+) -> UpdateFlightUseCase:
+    return UpdateFlightUseCase(repository)

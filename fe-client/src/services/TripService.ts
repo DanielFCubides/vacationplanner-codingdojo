@@ -1,4 +1,4 @@
-import { Trip } from "../Models";
+import { Trip, Flight } from "../Models";
 import { FEATURE_FLAGS } from "../config/featureFlags";
 import { BACKEND_URL } from "../config/constants.js";
 
@@ -15,6 +15,10 @@ export interface ITripService {
     createTrip(trip: Partial<Trip>): Promise<Trip>;
 
     updateTrip(id: string, updates: Partial<Trip>): Promise<Trip>;
+
+    updateTripStatus(id: string, status: string): Promise<Trip>;
+
+    updateFlight(tripId: string, flightId: string, updates: Partial<Flight>): Promise<Flight>;
 
     deleteTrip(id: string): Promise<boolean>;
 }
@@ -107,6 +111,60 @@ class SimpleTripService implements ITripService {
     }
 
     /**
+     * Update trip status
+     */
+    async updateTripStatus(id: string, status: string): Promise<Trip> {
+        await this.delay(200);
+
+        const index = this.trips.findIndex(t => t.id === id);
+        if (index === -1) {
+            throw new Error(`Trip with id ${id} not found`);
+        }
+
+        // Update status
+        const updatedTrip = {
+            ...this.trips[index],
+            status: status as Trip['status'],
+        };
+
+        this.trips[index] = updatedTrip;
+
+        console.log('✅ Trip status updated:', updatedTrip);
+
+        return updatedTrip;
+    }
+
+    /**
+     * Update a single flight on a trip
+     */
+    async updateFlight(tripId: string, flightId: string, updates: Partial<Flight>): Promise<Flight> {
+        await this.delay(200);
+
+        const tripIndex = this.trips.findIndex(t => t.id === tripId);
+        if (tripIndex === -1) {
+            throw new Error(`Trip with id ${tripId} not found`);
+        }
+
+        const trip = this.trips[tripIndex];
+        const flightIndex = trip.flights.findIndex(f => f.id === flightId);
+        if (flightIndex === -1) {
+            throw new Error(`Flight with id ${flightId} not found`);
+        }
+
+        const updatedFlight: Flight = {
+            ...trip.flights[flightIndex],
+            ...updates,
+            id: flightId,
+        };
+
+        const updatedFlights = [...trip.flights];
+        updatedFlights[flightIndex] = updatedFlight;
+        this.trips[tripIndex] = { ...trip, flights: updatedFlights };
+
+        return updatedFlight;
+    }
+
+    /**
      * Delete trip
      */
     async deleteTrip(id: string): Promise<boolean> {
@@ -188,6 +246,28 @@ class ApiTripService implements ITripService {
             body: JSON.stringify(updates),
         });
         if (!response.ok) throw new Error('Failed to update trip');
+        return response.json();
+    }
+
+    async updateTripStatus(id: string, status: string): Promise<Trip> {
+        const response = await fetch(`${this.baseUrl}/${id}/status`, {
+            method: 'PATCH',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status }),
+        });
+        if (!response.ok) throw new Error('Failed to update trip status');
+        return response.json();
+    }
+
+    async updateFlight(tripId: string, flightId: string, updates: Partial<Flight>): Promise<Flight> {
+        const response = await fetch(`${this.baseUrl}/${tripId}/flights/${flightId}`, {
+            method: 'PUT',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates),
+        });
+        if (!response.ok) throw new Error('Failed to update flight');
         return response.json();
     }
 

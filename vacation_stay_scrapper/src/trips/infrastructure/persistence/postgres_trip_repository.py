@@ -1,12 +1,15 @@
 from datetime import date
 from typing import List, Optional
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.shared.domain.exceptions import EntityNotFound
+from src.trips.domain.entities.flight import Flight
 from src.trips.domain.entities.trip import Trip
 from src.trips.domain.repositories.trip_repository import ITripRepository
 from src.trips.infrastructure.persistence.mappers.trip_orm_mapper import TripOrmMapper
+from src.trips.infrastructure.persistence.models.flight import Flight as FlightOrm
 from src.trips.infrastructure.persistence.models.trip import Trip as TripOrm
 
 
@@ -87,3 +90,41 @@ class PostgresTripRepository(ITripRepository):
             select(TripOrm.id_).where(TripOrm.id_ == trip_id)
         )
         return result.scalar_one_or_none() is not None
+
+    async def update_status(self, trip_id: int, status: str) -> bool:
+        result = await self._session.execute(
+            update(TripOrm)
+            .where(TripOrm.id_ == trip_id)
+            .values(status=status, updated_at=date.today())
+        )
+        await self._session.flush()
+        return result.rowcount > 0
+
+    async def update_flight(self, flight: Flight, trip_id: int) -> Flight:
+        result = await self._session.execute(
+            select(FlightOrm).where(
+                FlightOrm.id_ == flight.id,
+                FlightOrm.trip_id == trip_id,
+            )
+        )
+        existing = result.scalar_one_or_none()
+        if existing is None:
+            raise EntityNotFound(entity_type="Flight", entity_id=flight.id)
+
+        existing.airline = flight.airline
+        existing.flight_number = flight.flight_number
+        existing.departure_airport_code = flight.departure_airport.code
+        existing.departure_airport_city = flight.departure_airport.city
+        existing.departure_time = flight.departure_time
+        existing.arrival_airport_code = flight.arrival_airport.code
+        existing.arrival_airport_city = flight.arrival_airport.city
+        existing.arrival_time = flight.arrival_time
+        existing.duration = flight.duration
+        existing.price_amount = flight.price.amount
+        existing.price_currency = flight.price.currency
+        existing.stops = flight.stops
+        existing.cabin_class = flight.cabin_class
+        existing.status = flight.status
+
+        await self._session.flush()
+        return flight

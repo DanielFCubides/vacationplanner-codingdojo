@@ -6,6 +6,8 @@ Implementation of trip repository using in-memory storage.
 from typing import List, Optional, Dict
 from datetime import date
 
+from ....shared.domain.exceptions import EntityNotFound
+from ...domain.entities.flight import Flight
 from ...domain.entities.trip import Trip
 from ...domain.repositories.trip_repository import ITripRepository
 
@@ -112,7 +114,44 @@ class InMemoryTripRepository(ITripRepository):
             True if exists, False otherwise
         """
         return trip_id in self._storage
+
+    async def update_status(self, trip_id: int, status: str) -> bool:
+        """
+        Update the status of a trip
+
+        Args:
+            trip_id: Trip integer identifier
+            status: New status value
+
+        Returns:
+            True if updated, False if not found
+        """
+        trip = self._storage.get(trip_id)
+        if trip is None:
+            return False
+        trip.status = status
+        trip.updated_at = date.today()
+        return True
     
+    async def update_flight(self, flight: Flight, trip_id: int) -> Flight:
+        """
+        Update a single flight on a trip in place by id.
+
+        Raises:
+            EntityNotFound: if the trip does not exist or has no matching flight
+        """
+        trip = self._storage.get(trip_id)
+        if trip is None:
+            raise EntityNotFound(entity_type="Trip", entity_id=str(trip_id))
+
+        for index, existing in enumerate(trip.flights):
+            if existing.id == flight.id:
+                trip.flights[index] = flight
+                trip.updated_at = date.today()
+                return flight
+
+        raise EntityNotFound(entity_type="Flight", entity_id=flight.id)
+
     def count(self) -> int:
         """Get total number of trips"""
         return len(self._storage)

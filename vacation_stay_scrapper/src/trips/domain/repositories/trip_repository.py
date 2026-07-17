@@ -6,6 +6,7 @@ Defines the contract for trip persistence operations.
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
+from ..entities.flight import Flight
 from ..entities.trip import Trip
 
 
@@ -87,11 +88,43 @@ class ITripRepository(ABC):
     async def exists(self, trip_id: int) -> bool:
         """
         Check if trip exists
-        
+
         Args:
             trip_id: Trip identifier
-            
+
         Returns:
             True if exists, False otherwise
+        """
+        pass
+
+    @abstractmethod
+    async def update_status(self, trip_id: int, status: str) -> bool:
+        """
+        Update the status of a trip
+
+        Args:
+            trip_id: Trip identifier
+            status: New status value
+
+        Returns:
+            True if updated, False if not found
+        """
+        pass
+
+    @abstractmethod
+    async def update_flight(self, flight: Flight, trip_id: int) -> Flight:
+        """
+        Update a single flight in place by its ID, without touching the
+        rest of the trip's collections.
+
+        Args:
+            flight: Flight entity with updated fields (id must match an existing flight)
+            trip_id: Owning trip's identifier
+
+        Returns:
+            The updated Flight entity
+
+        Raises:
+            EntityNotFound: If the flight does not exist or does not belong to the trip
         """
         pass
