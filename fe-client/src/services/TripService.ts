@@ -16,6 +16,8 @@ export interface ITripService {
 
     updateTrip(id: string, updates: Partial<Trip>): Promise<Trip>;
 
+    updateTripStatus(id: string, status: string): Promise<Trip>;
+
     deleteTrip(id: string): Promise<boolean>;
 }
 
@@ -107,6 +109,30 @@ class SimpleTripService implements ITripService {
     }
 
     /**
+     * Update trip status
+     */
+    async updateTripStatus(id: string, status: string): Promise<Trip> {
+        await this.delay(200);
+
+        const index = this.trips.findIndex(t => t.id === id);
+        if (index === -1) {
+            throw new Error(`Trip with id ${id} not found`);
+        }
+
+        // Update status
+        const updatedTrip = {
+            ...this.trips[index],
+            status: status as Trip['status'],
+        };
+
+        this.trips[index] = updatedTrip;
+
+        console.log('✅ Trip status updated:', updatedTrip);
+
+        return updatedTrip;
+    }
+
+    /**
      * Delete trip
      */
     async deleteTrip(id: string): Promise<boolean> {
@@ -188,6 +214,17 @@ class ApiTripService implements ITripService {
             body: JSON.stringify(updates),
         });
         if (!response.ok) throw new Error('Failed to update trip');
+        return response.json();
+    }
+
+    async updateTripStatus(id: string, status: string): Promise<Trip> {
+        const response = await fetch(`${this.baseUrl}/${id}/status`, {
+            method: 'PATCH',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status }),
+        });
+        if (!response.ok) throw new Error('Failed to update trip status');
         return response.json();
     }
 

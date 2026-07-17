@@ -15,7 +15,8 @@ from src.shared.domain.exceptions import (
     EntityNotFound,
     ValidationError,
     BusinessRuleViolation,
-    ServiceUnavailable
+    ServiceUnavailable,
+    UnauthorizedAccess
 )
 
 logger = setup_logger(__name__)
@@ -131,7 +132,23 @@ def setup_exception_handlers(app: FastAPI):
                 "details": str(exc)
             }
         )
-    
+
+    @app.exception_handler(UnauthorizedAccess)
+    async def unauthorized_access_handler(
+        request: Request,
+        exc: UnauthorizedAccess
+    ):
+        logger.warning(f"Unauthorized access: {exc}")
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={
+                "message": str(exc),
+                "resource_type": exc.resource_type,
+                "resource_id": exc.resource_id,
+                "user_id": exc.user_id
+            }
+        )
+
     @app.exception_handler(DomainException)
     async def domain_exception_handler(
         request: Request,

@@ -8,6 +8,8 @@ from pydantic import BaseModel, Field
 from datetime import date, datetime
 from typing import List, Optional, Literal
 
+TripStatusType = Literal["planning", "confirmed", "in_progress", "completed", "cancelled"]
+
 
 # ============================================================================
 # REQUEST SCHEMAS FOR NESTED OBJECTS
@@ -181,13 +183,13 @@ class TripResponse(BaseModel):
     destination: str
     start_date: date = Field(alias="startDate")
     end_date: date = Field(alias="endDate")
-    status: Literal["planning", "confirmed", "completed"]
+    status: TripStatusType
     travelers: List[TravelerResponse] = []
     flights: List[FlightResponse] = []
     accommodations: List[AccommodationResponse] = []
     activities: List[ActivityResponse] = []
     budget: BudgetResponse
-    
+
     class Config:
         populate_by_name = True
 
@@ -199,7 +201,7 @@ class TripResponse(BaseModel):
 class TripCreateRequest(BaseModel):
     """
     Request schema for creating a trip with all nested objects
-    
+
     Now supports creating a complete trip with flights, accommodations,
     activities, and travelers in a single request.
     """
@@ -208,15 +210,15 @@ class TripCreateRequest(BaseModel):
     destination: str = Field(..., min_length=1, max_length=200)
     start_date: date = Field(alias="startDate")
     end_date: date = Field(alias="endDate")
-    status: Optional[Literal["planning", "confirmed", "completed"]] = "planning"
-    
+    status: Optional[TripStatusType] = "planning"
+
     # Nested objects (optional, defaults to empty lists)
     travelers: Optional[List[TravelerCreateRequest]] = Field(default_factory=list)
     flights: Optional[List[FlightCreateRequest]] = Field(default_factory=list)
     accommodations: Optional[List[AccommodationCreateRequest]] = Field(default_factory=list)
     activities: Optional[List[ActivityCreateRequest]] = Field(default_factory=list)
     budget: Optional[BudgetRequest] = None
-    
+
     class Config:
         populate_by_name = True
 
@@ -227,15 +229,23 @@ class TripUpdateRequest(BaseModel):
     destination: Optional[str] = None
     start_date: Optional[date] = Field(None, alias="startDate")
     end_date: Optional[date] = Field(None, alias="endDate")
-    status: Optional[Literal["planning", "confirmed", "completed"]] = None
-    
+    status: Optional[TripStatusType] = None
+
     # Nested objects for update (optional)
     travelers: Optional[List[TravelerCreateRequest]] = None
     flights: Optional[List[FlightCreateRequest]] = None
     accommodations: Optional[List[AccommodationCreateRequest]] = None
     activities: Optional[List[ActivityCreateRequest]] = None
     budget: Optional[BudgetRequest] = None
-    
+
+    class Config:
+        populate_by_name = True
+
+
+class UpdateTripStatusRequest(BaseModel):
+    """Request schema for updating a trip's status"""
+    status: TripStatusType = Field(..., description="New status for the trip")
+
     class Config:
         populate_by_name = True
 
