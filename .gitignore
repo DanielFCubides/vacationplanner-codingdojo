@@ -130,7 +130,8 @@ dmypy.json
 .pyre/
 .idea/
 
-
+# vscode
+.vscode/
 # npm
 node_modules/
 
