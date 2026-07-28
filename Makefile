@@ -1,4 +1,4 @@
-COMPOSE ?= docker compose
+COMPOSE ?= docker compose --project-directory .
 PROJECT ?= vacationplanner-codingdojo
 
 MAIN_FILES := -f compose.yml -f docker/compose.dependencies.yml

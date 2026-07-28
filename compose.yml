@@ -1,10 +1,13 @@
+include:
+  - docker/compose.dependencies.yml
+
 services:
   auth-service:
     build:
       context: ./auth_service
       target: dev
     ports:
-      - "8002:8000"
+      - "8000:8000"
     environment:
       - KEYCLOAK_SERVER_URL=https://keycloack.dfcubidesc.com
       - KEYCLOAK_CLIENT_ID=auth-service
@@ -15,34 +18,40 @@ services:
       - REDIS_DB=0
       - REDIS_PASSWORD=secret
     depends_on:
-      - redis-cache
-      - vacation-planner
+      redis-cache:
+        condition: service_started
     volumes:
       - ./auth_service:/app
 
   vacation-planner:
     build:
       context: ./vacation_stay_scrapper
-      target: primary
+      target: dev
     ports:
-      - "8000:8000"
+      - "8001:8000"
     environment:
       - DATABASE_URL=postgresql+asyncpg://vacation:vacation@postgres:5432/vacation_planner
     depends_on:
-      - postgres
+      postgres:
+        condition: service_started
+      auth-service:
+        condition: service_started
     volumes:
       - ./vacation_stay_scrapper:/vacation_stay_scrapper
 
   flight-service:
     build:
       context: ./flight_service
-      target: primary
+      target: dev
     environment:
       - SERVER=${SERVER:-rest}
     ports:
-      - "8001:8080"
+      - "8002:8080"
     volumes:
       - ./flight_service:/flight_service
+    depends_on:
+      auth-service:
+        condition: service_started
 
   recommendations:
     build:
