@@ -1,23 +1,36 @@
 import {Trip} from "../Models.ts";
-import {getStatusColor} from "../utils/StatusColors.ts";
 import {formatDate} from "../utils/formatDate.ts";
+import ChildStatusControl from "./ChildStatusControl.tsx";
 
-const StaysOverview = ({trip}: { trip: Trip }) => {
+interface Props {
+    trip: Trip;
+    editable?: boolean;
+    onStatusChange?: (accommodationId: string, newStatus: string) => void | Promise<void>;
+}
+
+const StaysOverview = ({trip, editable = true, onStatusChange}: Props) => {
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-bold mb-4">Accommodations</h2>
             <div className="space-y-4">
-                {trip.accommodations.map((accommodation) => (
-                    <div key={accommodation.id} className="border border-gray-200 rounded-lg p-4">
+                {trip.accommodations.map((accommodation) => {
+                    const cancelled = accommodation.status === 'cancelled';
+                    return (
+                    <div
+                        key={accommodation.id}
+                        className={`border border-gray-200 rounded-lg p-4 ${cancelled ? 'opacity-60' : ''}`}
+                    >
                         <div className="flex justify-between items-start mb-2">
                             <div>
                                 <h3 className="font-semibold text-lg">{accommodation.name}</h3>
                                 <p className="text-sm text-gray-600 capitalize">{accommodation.type}</p>
                             </div>
-                            <span
-                                className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(accommodation.status)}`}>
-                      {accommodation.status}
-                    </span>
+                            <ChildStatusControl
+                                childType="accommodation"
+                                status={accommodation.status}
+                                editable={editable && !!onStatusChange}
+                                onSelect={(next) => onStatusChange?.(accommodation.id, next)}
+                            />
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mt-3">
                             <div>
@@ -34,7 +47,7 @@ const StaysOverview = ({trip}: { trip: Trip }) => {
                             </div>
                             <div>
                                 <p className="text-gray-500">Total</p>
-                                <p className="font-medium text-green-600">${accommodation.totalPrice}</p>
+                                <p className={`font-medium text-green-600 ${cancelled ? 'line-through' : ''}`}>${accommodation.totalPrice}</p>
                             </div>
                         </div>
                         <div className="mt-3">
@@ -43,7 +56,8 @@ const StaysOverview = ({trip}: { trip: Trip }) => {
                             </p>
                         </div>
                     </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     )

@@ -1,3 +1,5 @@
+[![Build Status](https://github.com/DanielFCubides/vacationplanner-codingdojo/actions/workflows/docker-image.yml/badge.svg)](https://github.com/DanielFCubides/vacationplanner-codingdojo/actions)
+
 # Vacation Planner
 
 A microservices system for planning vacations — aggregating flights, stays, activities, and recommendations.

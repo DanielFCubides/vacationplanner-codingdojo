@@ -1,14 +1,25 @@
 import {Trip} from "../Models.ts";
-import {getStatusColor} from "../utils/StatusColors.ts";
 import {formatDate} from "../utils/formatDate.ts";
+import ChildStatusControl from "./ChildStatusControl.tsx";
 
-const TripFlightsOverview = ({trip}: { trip: Trip }) => {
+interface Props {
+    trip: Trip;
+    editable?: boolean;
+    onStatusChange?: (flightId: string, newStatus: string) => void | Promise<void>;
+}
+
+const TripFlightsOverview = ({trip, editable = true, onStatusChange}: Props) => {
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-bold mb-4">Flights</h2>
             <div className="space-y-4">
-                {trip.flights.map((flight) => (
-                    <div key={flight.id} className="border border-gray-200 rounded-lg p-4">
+                {trip.flights.map((flight) => {
+                    const cancelled = flight.status === 'cancelled';
+                    return (
+                    <div
+                        key={flight.id}
+                        className={`border border-gray-200 rounded-lg p-4 ${cancelled ? 'opacity-60' : ''}`}
+                    >
                         <div className="flex justify-between items-start mb-2">
                             <div>
                                 <h3 className="font-semibold text-lg">
@@ -18,10 +29,12 @@ const TripFlightsOverview = ({trip}: { trip: Trip }) => {
                                     {flight.airline} {flight.flightNumber}
                                 </p>
                             </div>
-                            <span
-                                className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(flight.status)}`}>
-                      {flight.status}
-                    </span>
+                            <ChildStatusControl
+                                childType="flight"
+                                status={flight.status}
+                                editable={editable && !!onStatusChange}
+                                onSelect={(next) => onStatusChange?.(flight.id, next)}
+                            />
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mt-3">
                             <div>
@@ -41,12 +54,13 @@ const TripFlightsOverview = ({trip}: { trip: Trip }) => {
                             </div>
                             <div>
                                 <p className="text-gray-500">Price</p>
-                                <p className="font-medium text-green-600">${flight.price}</p>
+                                <p className={`font-medium text-green-600 ${cancelled ? 'line-through' : ''}`}>${flight.price}</p>
                                 <p className="text-xs text-gray-600">{flight.cabinClass}</p>
                             </div>
                         </div>
                     </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );

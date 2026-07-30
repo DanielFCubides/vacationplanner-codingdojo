@@ -20,36 +20,22 @@ class PostgresTripRepository(ITripRepository):
             trip.created_at = date.today()
         trip.updated_at = date.today()
 
+        model = TripOrmMapper.to_model(trip)
+
         if trip.id is None:
-            model = TripOrmMapper.to_model(trip)
+            # New trip: let the database assign the autoincrement id.
             self._session.add(model)
             await self._session.flush()
             trip.id = model.id_
         else:
-            existing = await self._session.get(TripOrm, trip.id)
-            updated = TripOrmMapper.to_model(trip)
-            if existing is None:
-                self._session.add(updated)
-                await self._session.flush()
-            else:
-                existing.owner_id = updated.owner_id
-                existing.name = updated.name
-                existing.destination = updated.destination
-                existing.start_date = updated.start_date
-                existing.end_date = updated.end_date
-                existing.status = updated.status
-                existing.budget_total_amount = updated.budget_total_amount
-                existing.budget_total_currency = updated.budget_total_currency
-                existing.budget_spent_amount = updated.budget_spent_amount
-                existing.budget_spent_currency = updated.budget_spent_currency
-                existing.created_at = updated.created_at
-                existing.updated_at = updated.updated_at
-                existing.travelers = updated.travelers
-                existing.flights = updated.flights
-                existing.accommodations = updated.accommodations
-                existing.activities = updated.activities
-                existing.budget_categories = updated.budget_categories
-                await self._session.flush()
+            # Existing trip: merge the full desired state onto the persistent
+            # row and its child collections. merge() reconciles children by
+            # primary key (insert/update) and, with the delete-orphan cascade,
+            # removes children no longer present — all without creating a
+            # duplicate parent (which previously caused a trips_pkey conflict).
+            merged = await self._session.merge(model)
+            await self._session.flush()
+            trip.id = merged.id_
 
         return trip
 

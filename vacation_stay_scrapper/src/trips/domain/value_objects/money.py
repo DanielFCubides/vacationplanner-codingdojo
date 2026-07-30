@@ -28,6 +28,16 @@ class Money:
     def from_float(cls, amount: float, currency: str = "USD") -> "Money":
         """Create Money from float value"""
         return cls(amount=Decimal(str(amount)), currency=currency)
+
+    @classmethod
+    def zero(cls, currency: str = "USD") -> "Money":
+        """
+        Create a zero Money value.
+
+        Useful as the seed when summing Money objects, since the built-in
+        sum() starts at the integer 0 (which cannot be added to Money).
+        """
+        return cls(amount=Decimal("0"), currency=currency)
     
     def __str__(self) -> str:
         return f"{self.currency} {self.amount:.2f}"

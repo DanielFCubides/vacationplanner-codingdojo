@@ -44,3 +44,29 @@ class EntityNotFound(DomainException):
 class BusinessRuleViolation(DomainException):
     """Raised when a business rule is violated"""
     pass
+
+
+class ChildNotFound(EntityNotFound):
+    """
+    Raised when a trip child (flight, accommodation, or activity) is not
+    found within a trip.
+
+    Subclasses EntityNotFound so it is handled by the existing 404 handler,
+    but renders a trip-scoped message ("Flight not found in this trip")
+    instead of the generic entity message.
+    """
+
+    def __init__(self, child_type: str, child_id: str):
+        self.entity_type = child_type
+        self.entity_id = child_id
+        DomainException.__init__(self, f"{child_type} not found in this trip")
+
+
+class InvalidStatusTransition(ValidationError):
+    """
+    Raised when a status change is not a legal transition for a child type.
+
+    Subclasses ValidationError so it inherits the existing 422 handler; the
+    descriptive message is surfaced to the client in the response details.
+    """
+    pass

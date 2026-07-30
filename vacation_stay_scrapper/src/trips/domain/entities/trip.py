@@ -10,10 +10,16 @@ from typing import List, Optional
 
 from ..value_objects.trip_status import TripStatus
 from ..value_objects.budget import Budget
+from ..services.child_status_transition import (
+    FlightStatusTransitionValidator,
+    AccommodationStatusTransitionValidator,
+    ActivityStatusTransitionValidator,
+)
 from .flight import Flight
 from .traveler import Traveler
 from .activity import Activity
 from .accommodation import Accommodation
+from ....shared.domain.exceptions import ChildNotFound
 
 
 @dataclass
@@ -91,6 +97,21 @@ class Trip:
     def get_confirmed_flights(self) -> List[Flight]:
         """Get all confirmed flights"""
         return [f for f in self.flights if f.status == "confirmed"]
+
+    def update_flight_status(self, flight_id: str, new_status: str):
+        """
+        Update a flight's status, enforcing the flight state machine.
+
+        Raises:
+            ChildNotFound: if no flight with the given id exists on this trip
+            InvalidStatusTransition: if the move is not a legal transition
+        """
+        flight = next((f for f in self.flights if f.id == flight_id), None)
+        if flight is None:
+            raise ChildNotFound("Flight", flight_id)
+        FlightStatusTransitionValidator().validate(flight.status, new_status)
+        flight.status = new_status
+        self._recalculate_budget()
     
     # Accommodation management
     
@@ -107,6 +128,25 @@ class Trip:
     def get_confirmed_accommodations(self) -> List[Accommodation]:
         """Get all confirmed accommodations"""
         return [a for a in self.accommodations if a.is_confirmed()]
+
+    def update_accommodation_status(self, accommodation_id: str, new_status: str):
+        """
+        Update an accommodation's status, enforcing the accommodation state machine.
+
+        Raises:
+            ChildNotFound: if no accommodation with the given id exists
+            InvalidStatusTransition: if the move is not a legal transition
+        """
+        accommodation = next(
+            (a for a in self.accommodations if a.id == accommodation_id), None
+        )
+        if accommodation is None:
+            raise ChildNotFound("Accommodation", accommodation_id)
+        AccommodationStatusTransitionValidator().validate(
+            accommodation.status, new_status
+        )
+        accommodation.status = new_status
+        self._recalculate_budget()
     
     @property
     def total_accommodation_cost(self) -> float:
@@ -126,12 +166,41 @@ class Trip:
     def get_booked_activities(self) -> List[Activity]:
         """Get all booked activities"""
         return [a for a in self.activities if a.is_booked()]
+
+    def update_activity_status(self, activity_id: str, new_status: str):
+        """
+        Update an activity's status, enforcing the activity state machine.
+
+        Raises:
+            ChildNotFound: if no activity with the given id exists
+            InvalidStatusTransition: if the move is not a legal transition
+        """
+        activity = next(
+            (a for a in self.activities if a.id == activity_id), None
+        )
+        if activity is None:
+            raise ChildNotFound("Activity", activity_id)
+        ActivityStatusTransitionValidator().validate(activity.status, new_status)
+        activity.status = new_status
+        self._recalculate_budget()
     
     # Budget management
     
     def set_budget(self, budget: Budget):
         """Set the trip budget"""
         self.budget = budget
+
+    def _recalculate_budget(self):
+        """
+        Recompute budget.spent from the current child statuses.
+
+        No-op when the trip has no budget. Called after any child status
+        change so that spent reflects only committed children (ADR-003).
+        """
+        if self.budget is not None:
+            self.budget = self.budget.recalculate_spent(
+                self.flights, self.accommodations, self.activities
+            )
     
     @property
     def total_spent(self) -> float:
