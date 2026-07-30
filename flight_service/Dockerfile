@@ -1,4 +1,4 @@
-FROM python:3.10-slim-buster as builder
+FROM python:3.11.15-bookworm as builder
 
 ENV VIRTUAL_ENV=/opt/app/env
 RUN python -m venv $VIRTUAL_ENV

@@ -12,7 +12,6 @@ from log_config import get_logger
 
 logger = get_logger(__name__)
 
-
 app = FastAPI(
     title="Auth Service",
     description="Authentication BFF for Vacation Planner",

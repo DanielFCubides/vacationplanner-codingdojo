@@ -13,33 +13,30 @@ processors:
     send_batch_max_size: 2048
 
 exporters:
-  loki:
-    endpoint: http://localhost:3100/loki/api/v1/push
-    default_labels_enabled:
-      exporter: true
-      job: true
-      instance: true
-      level: true
+  debug:
+    verbosity: detailed
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
   prometheus:
     endpoint: 0.0.0.0:8889
     namespace: otel
     enable_open_metrics: true
   otlp/tempo:
-    endpoint: localhost:4317
+    endpoint: tempo:4317
     tls:
       insecure: true
 
 service:
   pipelines:
     traces:
-      receivers:  [otlp]
+      receivers: [otlp]
       processors: [batch]
-      exporters:  [otlp/tempo]
+      exporters: [otlp/tempo]
     metrics:
-      receivers:  [otlp]
+      receivers: [otlp]
       processors: [batch]
-      exporters:  [prometheus]
+      exporters: [prometheus]
     logs:
-      receivers:  [otlp]
+      receivers: [otlp]
       processors: [batch]
-      exporters:  [loki]
+      exporters: [debug, otlphttp/loki]
