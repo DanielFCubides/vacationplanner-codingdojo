@@ -81,6 +81,17 @@ class TestExplicitDisable:
         assert status.enabled is False
         assert status.reason == "OTEL_SDK_DISABLED"
 
+    def test_sdk_disabled_false_string_does_not_disable(self, monkeypatch):
+        # The .env default is the literal string "false"; it must NOT be treated
+        # as "disabled" (base plan §9.6). The probe should run normally.
+        monkeypatch.setenv("OTEL_SDK_DISABLED", "false")
+        _force_unreachable(monkeypatch)
+
+        status = otel.setup_telemetry("svc")
+
+        # Not short-circuited by the flag: falls through to the probe instead.
+        assert status.reason == "collector unreachable"
+
 
 class TestConfig:
 
