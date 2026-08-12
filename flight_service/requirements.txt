@@ -64,3 +64,15 @@ faker
 
 #openfeature
 openfeature-sdk==0.8.1
+
+# observability (OpenTelemetry) — services degrade gracefully if the collector is unreachable.
+# Pinned to a consistent 1.24.0 / 0.45b0 set. Unpinned, pip backtracks the OTLP exporter to
+# 1.15.0 (incompatible with a newer sdk → ImportError: LogData). The newest OTel (1.44.0) can't
+# be used here because opentelemetry-proto>=1.44 needs protobuf>=5, conflicting with this
+# service's pinned grpcio-tools==1.62.1 (protobuf<5). 1.24.0's proto allows protobuf<5.
+opentelemetry-sdk==1.24.0
+opentelemetry-exporter-otlp-proto-http==1.24.0
+opentelemetry-instrumentation==0.45b0
+opentelemetry-instrumentation-flask==0.45b0
+opentelemetry-instrumentation-requests==0.45b0
+opentelemetry-instrumentation-logging==0.45b0
