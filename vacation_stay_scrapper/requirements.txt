@@ -21,3 +21,12 @@ pyjwt
 cryptography
 pydantic_settings
 jwcrypto
+
+# observability (OpenTelemetry) — services degrade gracefully if the collector is unreachable
+opentelemetry-sdk
+opentelemetry-exporter-otlp-proto-http
+opentelemetry-instrumentation
+opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-httpx
+opentelemetry-instrumentation-sqlalchemy
+opentelemetry-instrumentation-logging

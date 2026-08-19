@@ -17,6 +17,10 @@ services:
       - REDIS_PORT=6379
       - REDIS_DB=0
       - REDIS_PASSWORD=secret
+      # OpenTelemetry (inert until instrumentation is wired; services degrade gracefully if the collector is unreachable)
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME_AUTH:-auth-service}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      - OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED:-false}
     depends_on:
       redis-cache:
         condition: service_started
@@ -31,6 +35,10 @@ services:
       - "8001:8000"
     environment:
       - DATABASE_URL=postgresql+asyncpg://vacation:vacation@postgres:5432/vacation_planner
+      # OpenTelemetry (inert until instrumentation is wired; services degrade gracefully if the collector is unreachable)
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME_VACATION:-vacation-planner}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      - OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED:-false}
     depends_on:
       postgres:
         condition: service_started
@@ -45,6 +53,10 @@ services:
       target: dev
     environment:
       - SERVER=${SERVER:-rest}
+      # OpenTelemetry (inert until instrumentation is wired; services degrade gracefully if the collector is unreachable)
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME_FLIGHT:-flight-service}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      - OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED:-false}
     ports:
       - "8002:8080"
     volumes:

@@ -50,6 +50,34 @@ Start only the observability services (OpenTelemetry Collector, Tempo, Loki, Pro
 make observability
 ```
 
+#### Centralized telemetry (traces, metrics, logs)
+
+Backend services (`auth-service`, `vacation-planner`, `flight-service`) are configured to export
+telemetry to the OpenTelemetry Collector, which fans it out to Tempo (traces), Prometheus (metrics),
+and Loki (logs), all viewable in Grafana (`http://localhost:3000`, admin/admin).
+
+Both `make up` and `make observability` run under the same Docker Compose project
+(`-p vacationplanner-codingdojo`), so the app services and the collector share one network and the
+services can always resolve the collector at `otel-collector:4318`. To run them yourself without the
+Makefile, keep the project name consistent and include both compose files:
+
+```sh
+docker compose -p vacationplanner-codingdojo \
+  -f compose.yml -f docker/compose.dependencies.yml -f docker/compose.observability.yml up -d
+```
+
+Relevant environment variables (defaults in `.env`):
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://otel-collector:4318` | Collector OTLP/HTTP endpoint |
+| `OTEL_SDK_DISABLED` | `false` | Set `true` to disable telemetry entirely |
+| `OTEL_SERVICE_NAME_{AUTH,VACATION,FLIGHT}` | service name | Resource name reported per service |
+
+If the observability stack is **not** running, the services still start normally: they detect the
+unreachable collector at startup, log a single warning that centralization is unavailable, and fall
+back to local `stdout` logging.
+
 ### Build services
 
 Build every main application service:
