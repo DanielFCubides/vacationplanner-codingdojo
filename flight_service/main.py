@@ -6,6 +6,7 @@ from enum import Enum
 from typing import Callable, Union
 
 from bootstrap import bootstrap
+from telemetry import setup_telemetry
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('flight_scrapper')
@@ -18,6 +19,11 @@ class ServerTypes(Enum):
 
 
 dependencies = bootstrap()
+
+# Centralized telemetry — traces/metrics/logs to the OTel collector when it is
+# reachable; otherwise a single warning and local stdout logging only. Runs
+# before app_factory() so whichever SERVER type starts inherits the setup.
+setup_telemetry("flight-service")
 
 
 def app_factory(method: str) -> Union[Callable | bool]:
