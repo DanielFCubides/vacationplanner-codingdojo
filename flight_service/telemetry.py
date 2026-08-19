@@ -59,3 +59,55 @@ def _disabled(service_name: str, endpoint: str, reason: str, *, warn: bool) -> T
         _warned = True
     _status = TelemetryStatus(enabled=False, service_name=service_name, endpoint=endpoint, reason=reason)
     return _status
+
+
+def setup_telemetry(service_name: str, app: object | None = None) -> TelemetryStatus:
+    """Configure centralized telemetry for flight_service if the collector is reachable.
+
+    Traces, metrics and logs are exported over OTLP/HTTP. The Flask (REST/GraphQL),
+    requests and logging libraries are auto-instrumented globally; whichever server
+    type ``SERVER`` selects starts *after* this runs, so it inherits the setup.
+    gRPC gets export + graceful fallback but no framework spans. If the collector
+    cannot be reached (or OTEL is disabled), the service continues with local
+    stdout logging only — telemetry setup never breaks startup.
+
+    Returns:
+        TelemetryStatus describing whether telemetry was enabled and why not.
+    """
+    global _status
+    if _status is not None:
+        return _status
+
+    resolved_name = os.getenv("OTEL_SERVICE_NAME", service_name)
+    endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", DEFAULT_OTLP_ENDPOINT)
+
+    if _is_truthy(os.getenv("OTEL_SDK_DISABLED")):
+        _status = TelemetryStatus(
+            enabled=False, service_name=resolved_name, endpoint=endpoint, reason="OTEL_SDK_DISABLED",
+        )
+        logger.info("OpenTelemetry disabled via OTEL_SDK_DISABLED; using local logging only.")
+        return _status
+
+    # Reachability probe — the graceful-degradation gate.
+    host, port = _endpoint_host_port(endpoint)
+    if not _probe_collector(host, port):
+        return _disabled(resolved_name, endpoint, "collector unreachable", warn=True)
+
+    # Collector reachable — configure the SDK. Any failure downgrades to disabled.
+    try:
+        _configure_sdk(resolved_name, endpoint, app)
+    except Exception as exc:  # noqa: BLE001 - telemetry must never break startup
+        return _disabled(resolved_name, endpoint, f"SDK setup failed: {exc!r}", warn=True)
+
+    _status = TelemetryStatus(enabled=True, service_name=resolved_name, endpoint=endpoint)
+    logger.info(
+        f"OpenTelemetry enabled for {resolved_name}; exporting traces, metrics and logs to {endpoint}."
+    )
+    return _status
+
+
+def _configure_sdk(service_name: str, endpoint: str, app: object | None) -> None:
+    # Provider/exporter/instrumentation wiring lands in the next commit. Until
+    # then this raises, and setup_telemetry() downgrades to disabled — the
+    # service keeps running on local stdout logging.
+    raise NotImplementedError("SDK wiring not yet implemented")
