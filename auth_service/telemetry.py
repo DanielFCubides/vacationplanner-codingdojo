@@ -109,7 +109,51 @@ def setup_telemetry(service_name: str, app: object | None = None) -> TelemetrySt
 
 
 def _configure_sdk(service_name: str, endpoint: str, app: object | None) -> None:
-    # Provider/exporter/instrumentation wiring lands in the next commit. Until
-    # then this raises, and setup_telemetry() downgrades to disabled — the
-    # service keeps running on local stdout logging.
-    raise NotImplementedError("SDK wiring not yet implemented")
+    """Register providers, OTLP exporters and auto-instrumentation.
+
+    Heavy OTel imports are performed here (lazily) so the fallback path never
+    depends on the SDK being installed.
+    """
+    from opentelemetry import _logs, metrics, trace
+    from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
+    from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
+    from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+    from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+    from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+    from opentelemetry.sdk.metrics import MeterProvider
+    from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+    resource = Resource.create({"service.name": service_name})
+
+    # Traces
+    tracer_provider = TracerProvider(resource=resource)
+    tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=f"{endpoint}/v1/traces")))
+    trace.set_tracer_provider(tracer_provider)
+
+    # Metrics
+    metric_reader = PeriodicExportingMetricReader(OTLPMetricExporter(endpoint=f"{endpoint}/v1/metrics"))
+    meter_provider = MeterProvider(resource=resource, metric_readers=[metric_reader])
+    metrics.set_meter_provider(meter_provider)
+
+    # Logs — attach an OTLP handler to the root logger; the stdout handler
+    # configured in log_config stays in place.
+    logger_provider = LoggerProvider(resource=resource)
+    logger_provider.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter(endpoint=f"{endpoint}/v1/logs")))
+    _logs.set_logger_provider(logger_provider)
+    logging.getLogger().addHandler(LoggingHandler(level=logging.NOTSET, logger_provider=logger_provider))
+
+    # Auto-instrumentation. httpx injects W3C traceparent on outbound proxy
+    # calls (cross-service tracing); logging stamps trace_id/span_id into logs.
+    from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+    from opentelemetry.instrumentation.logging import LoggingInstrumentor
+
+    LoggingInstrumentor().instrument(set_logging_format=False)
+    HTTPXClientInstrumentor().instrument()
+
+    if app is not None:
+        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+        FastAPIInstrumentor.instrument_app(app, tracer_provider=tracer_provider, meter_provider=meter_provider)
