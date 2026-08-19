@@ -52,7 +52,7 @@ def reset_telemetry_state() -> None:
 def _disabled(service_name: str, endpoint: str, reason: str, *, warn: bool) -> TelemetryStatus:
     global _warned, _status
     if warn and not _warned:
-        logger.warning(f"OpenTelemetry collector unreachable at %{endpoint}; telemetry centralization disabled ({reason}), falling back to local stdout logging." )
+        logger.warning(f"OpenTelemetry collector unreachable at {endpoint}; telemetry centralization disabled ({reason}), falling back to local stdout logging.")
         _warned = True
     _status = TelemetryStatus(enabled=False, service_name=service_name, endpoint=endpoint, reason=reason)
     return _status
@@ -76,7 +76,7 @@ def setup_telemetry(service_name: str, app: object | None = None) -> TelemetrySt
     resolved_name = os.getenv("OTEL_SERVICE_NAME", service_name)
     endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", DEFAULT_OTLP_ENDPOINT)
 
-    if os.getenv("OTEL_SDK_DISABLED"):
+    if _is_truthy(os.getenv("OTEL_SDK_DISABLED")):
         _status = TelemetryStatus(enabled=False, service_name=resolved_name, endpoint=endpoint,
             reason="OTEL_SDK_DISABLED", )
         logger.info("OpenTelemetry disabled via OTEL_SDK_DISABLED; using local logging only.")
@@ -136,3 +136,29 @@ def _configure_sdk(service_name: str, endpoint: str, app: object | None) -> None
     logger_provider.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter(endpoint=f"{endpoint}/v1/logs")))
     _logs.set_logger_provider(logger_provider)
     logging.getLogger().addHandler(LoggingHandler(level=logging.NOTSET, logger_provider=logger_provider))
+
+    # Auto-instrumentation. httpx/requests inject W3C traceparent on outbound
+    # calls (cross-service tracing); logging stamps trace_id/span_id into logs;
+    # SQLAlchemy emits DB spans; FastAPI emits server spans + HTTP metrics.
+    from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+    from opentelemetry.instrumentation.logging import LoggingInstrumentor
+    from opentelemetry.instrumentation.requests import RequestsInstrumentor
+
+    LoggingInstrumentor().instrument(set_logging_format=False)
+    RequestsInstrumentor().instrument()
+    HTTPXClientInstrumentor().instrument()
+
+    try:
+        from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+
+        from src.shared.infrastructure.database.session import engine
+
+        # Async engines expose the underlying sync engine for instrumentation.
+        SQLAlchemyInstrumentor().instrument(engine=engine.sync_engine)
+    except Exception as exc:  # noqa: BLE001 - DB instrumentation is best-effort
+        logger.warning(f"SQLAlchemy instrumentation skipped: {exc!r}")
+
+    if app is not None:
+        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+        FastAPIInstrumentor.instrument_app(app, tracer_provider=tracer_provider, meter_provider=meter_provider)
