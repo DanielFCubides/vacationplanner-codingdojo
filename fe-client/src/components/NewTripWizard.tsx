@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 // Import step components
 import OverviewStep from './wizard-steps/OverviewStep';
 import FlightsStep from './wizard-steps/FlightsStep';
+import { isValidIata } from './wizard-steps/FlightForm';
 import StaysStep from './wizard-steps/StaysStep';
 import ActivitiesStep from './wizard-steps/ActivitiesStep';
 import BudgetStep from './wizard-steps/BudgetStep';
@@ -107,9 +108,27 @@ const NewTripWizard = () => {
             return;
         }
 
+        // Guard: any flight being submitted must carry valid 3-letter IATA
+        // airport codes, otherwise the backend rejects the request (max_length=3).
+        const flightsToSubmit = formData.flights.filter(f => f.airline || f.flightNumber);
+        const hasInvalidAirport = flightsToSubmit.some(
+            f => !isValidIata(f.departureAirport) || !isValidIata(f.arrivalAirport)
+        );
+        if (hasInvalidAirport) {
+            alert('Please enter a valid 3-letter airport code (e.g., JFK) for each flight.');
+            const flightsStep = steps.findIndex(s => s.id === 'flights');
+            if (flightsStep >= 0) setCurrentStep(flightsStep);
+            return;
+        }
+
         try {
+            // Backend `date` fields reject full ISO datetime strings, so serialize
+            // date-only values as YYYY-MM-DD before sending.
+            const toDateString = (d: string | Date | undefined): string =>
+                (d ? new Date(d) : new Date()).toISOString().split('T')[0];
+
             // Parse budget value
-            const totalBudget = formData.budget.totalBudget 
+            const totalBudget = formData.budget.totalBudget
                 ? parseFloat(formData.budget.totalBudget) 
                 : 0;
             
@@ -159,12 +178,8 @@ const NewTripWizard = () => {
                     name: formData.stays.name || '',
                     type: (formData.stays.type || 'hotel') as 'hotel' | 'airbnb' | 'hostel' | 'resort',
                     image: '',
-                    checkIn: formData.stays.checkIn 
-                        ? new Date(formData.stays.checkIn) 
-                        : new Date(),
-                    checkOut: formData.stays.checkOut 
-                        ? new Date(formData.stays.checkOut) 
-                        : new Date(),
+                    checkIn: toDateString(formData.stays.checkIn),
+                    checkOut: toDateString(formData.stays.checkOut),
                     pricePerNight: pricePerNight,
                     totalPrice: totalPrice,
                     rating: 0,
@@ -183,9 +198,7 @@ const NewTripWizard = () => {
                 activities.push({
                     id: `activity_${Date.now()}`,
                     name: formData.activities.name || '',
-                    date: formData.activities.date 
-                        ? new Date(formData.activities.date) 
-                        : new Date(),
+                    date: toDateString(formData.activities.date),
                     cost: activityCost,
                     status: 'pending' as const,
                     category: formData.activities.category || '',
@@ -215,12 +228,8 @@ const NewTripWizard = () => {
             const tripData = {
                 name: formData.overview.name || 'Untitled Trip',
                 destination: formData.overview.destination || 'TBD',
-                startDate: formData.overview.startDate 
-                    ? new Date(formData.overview.startDate) 
-                    : new Date(),
-                endDate: formData.overview.endDate 
-                    ? new Date(formData.overview.endDate) 
-                    : new Date(),
+                startDate: toDateString(formData.overview.startDate),
+                endDate: toDateString(formData.overview.endDate),
                 status: 'planning' as const,
                 travelers: travelers,
                 flights: flights,
