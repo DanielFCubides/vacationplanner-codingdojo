@@ -108,8 +108,13 @@ const NewTripWizard = () => {
         }
 
         try {
+            // Backend `date` fields reject full ISO datetime strings, so serialize
+            // date-only values as YYYY-MM-DD before sending.
+            const toDateString = (d: string | Date | undefined): string =>
+                (d ? new Date(d) : new Date()).toISOString().split('T')[0];
+
             // Parse budget value
-            const totalBudget = formData.budget.totalBudget 
+            const totalBudget = formData.budget.totalBudget
                 ? parseFloat(formData.budget.totalBudget) 
                 : 0;
             
@@ -159,12 +164,8 @@ const NewTripWizard = () => {
                     name: formData.stays.name || '',
                     type: (formData.stays.type || 'hotel') as 'hotel' | 'airbnb' | 'hostel' | 'resort',
                     image: '',
-                    checkIn: formData.stays.checkIn 
-                        ? new Date(formData.stays.checkIn) 
-                        : new Date(),
-                    checkOut: formData.stays.checkOut 
-                        ? new Date(formData.stays.checkOut) 
-                        : new Date(),
+                    checkIn: toDateString(formData.stays.checkIn),
+                    checkOut: toDateString(formData.stays.checkOut),
                     pricePerNight: pricePerNight,
                     totalPrice: totalPrice,
                     rating: 0,
@@ -183,9 +184,7 @@ const NewTripWizard = () => {
                 activities.push({
                     id: `activity_${Date.now()}`,
                     name: formData.activities.name || '',
-                    date: formData.activities.date 
-                        ? new Date(formData.activities.date) 
-                        : new Date(),
+                    date: toDateString(formData.activities.date),
                     cost: activityCost,
                     status: 'pending' as const,
                     category: formData.activities.category || '',
@@ -215,12 +214,8 @@ const NewTripWizard = () => {
             const tripData = {
                 name: formData.overview.name || 'Untitled Trip',
                 destination: formData.overview.destination || 'TBD',
-                startDate: formData.overview.startDate 
-                    ? new Date(formData.overview.startDate) 
-                    : new Date(),
-                endDate: formData.overview.endDate 
-                    ? new Date(formData.overview.endDate) 
-                    : new Date(),
+                startDate: toDateString(formData.overview.startDate),
+                endDate: toDateString(formData.overview.endDate),
                 status: 'planning' as const,
                 travelers: travelers,
                 flights: flights,
