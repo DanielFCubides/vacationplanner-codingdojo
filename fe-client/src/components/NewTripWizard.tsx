@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 // Import step components
 import OverviewStep from './wizard-steps/OverviewStep';
 import FlightsStep from './wizard-steps/FlightsStep';
+import { isValidIata } from './wizard-steps/FlightForm';
 import StaysStep from './wizard-steps/StaysStep';
 import ActivitiesStep from './wizard-steps/ActivitiesStep';
 import BudgetStep from './wizard-steps/BudgetStep';
@@ -104,6 +105,19 @@ const NewTripWizard = () => {
         if (!isAuthenticated) {
             alert('You must be logged in to create a trip.');
             navigate('/');
+            return;
+        }
+
+        // Guard: any flight being submitted must carry valid 3-letter IATA
+        // airport codes, otherwise the backend rejects the request (max_length=3).
+        const flightsToSubmit = formData.flights.filter(f => f.airline || f.flightNumber);
+        const hasInvalidAirport = flightsToSubmit.some(
+            f => !isValidIata(f.departureAirport) || !isValidIata(f.arrivalAirport)
+        );
+        if (hasInvalidAirport) {
+            alert('Please enter a valid 3-letter airport code (e.g., JFK) for each flight.');
+            const flightsStep = steps.findIndex(s => s.id === 'flights');
+            if (flightsStep >= 0) setCurrentStep(flightsStep);
             return;
         }
 
