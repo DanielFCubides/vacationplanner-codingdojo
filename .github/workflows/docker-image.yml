@@ -65,7 +65,10 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build-and-push
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && github.event.action == 'opened' &&
+      github.event.pull_request.head.repo.full_name == github.repository)
     steps:
       - name: Load SSH key
         uses: webfactory/ssh-agent@v0.9.0
