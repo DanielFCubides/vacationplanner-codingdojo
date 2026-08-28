@@ -4,7 +4,7 @@ export interface Trip {
     destination: string;
     startDate: Date;
     endDate: Date;
-    status: 'planning' | 'confirmed' | 'completed';
+    status: 'planning' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
     travelers: Traveler[];
     flights: Flight[];
     accommodations: Accommodation[];

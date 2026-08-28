@@ -70,3 +70,15 @@ class InvalidStatusTransition(ValidationError):
     descriptive message is surfaced to the client in the response details.
     """
     pass
+
+
+class UnauthorizedAccess(DomainException):
+    """Raised when a user attempts to access a resource they don't own"""
+
+    def __init__(self, resource_type: str, resource_id: str, user_id: str):
+        self.resource_type = resource_type
+        self.resource_id = resource_id
+        self.user_id = user_id
+        super().__init__(
+            f"User '{user_id}' is not authorized to access {resource_type} '{resource_id}'"
+        )

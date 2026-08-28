@@ -8,6 +8,7 @@ from presentation.auth_router import router as auth_router
 from providers.oidc_provider import OIDCProvider, get_oidc_provider
 from config import internal_routes, get_allowed_hosts
 from log_config import get_logger
+from telemetry import setup_telemetry
 
 
 logger = get_logger(__name__)
@@ -17,6 +18,10 @@ app = FastAPI(
     description="Authentication BFF for Vacation Planner",
     version="1.0.0"
 )
+
+# Centralized telemetry — traces/metrics/logs to the OTel collector when it is
+# reachable; otherwise a single warning and local stdout logging only.
+setup_telemetry("auth-service", app)
 
 app.add_middleware(
     CORSMiddleware,

@@ -9,7 +9,20 @@ interface FlightFormProps {
     canRemove: boolean;
 }
 
+// IATA airport codes are exactly three letters (e.g. JFK, BOG, CDG).
+const IATA_PATTERN = /^[A-Z]{3}$/;
+
+// Keep only letters, uppercase, and cap at 3 chars so the field can never
+// hold a value the backend will reject (max_length=3).
+const toIataCode = (value: string): string =>
+    value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+
+export const isValidIata = (value: string): boolean => IATA_PATTERN.test(value);
+
 const FlightForm: React.FC<FlightFormProps> = ({ flight, index, onChange, onRemove, canRemove }) => {
+    const departureInvalid = flight.departureAirport.length > 0 && !isValidIata(flight.departureAirport);
+    const arrivalInvalid = flight.arrivalAirport.length > 0 && !isValidIata(flight.arrivalAirport);
+
     return (
         <div className="border border-gray-200 rounded-xl p-5 space-y-4">
             {/* Header */}
@@ -60,15 +73,24 @@ const FlightForm: React.FC<FlightFormProps> = ({ flight, index, onChange, onRemo
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Airport
+                            Airport (IATA code)
                         </label>
                         <input
                             type="text"
                             value={flight.departureAirport}
-                            onChange={(e) => onChange(index, 'departureAirport', e.target.value)}
-                            placeholder="e.g., JFK or New York"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                            onChange={(e) => onChange(index, 'departureAirport', toIataCode(e.target.value))}
+                            placeholder="e.g., JFK"
+                            maxLength={3}
+                            aria-invalid={departureInvalid}
+                            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent bg-white uppercase ${
+                                departureInvalid
+                                    ? 'border-red-400 focus:ring-red-500'
+                                    : 'border-gray-300 focus:ring-blue-500'
+                            }`}
                         />
+                        {departureInvalid && (
+                            <p className="mt-1 text-xs text-red-600">Enter the 3-letter airport code (e.g., JFK).</p>
+                        )}
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -90,15 +112,24 @@ const FlightForm: React.FC<FlightFormProps> = ({ flight, index, onChange, onRemo
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Airport
+                            Airport (IATA code)
                         </label>
                         <input
                             type="text"
                             value={flight.arrivalAirport}
-                            onChange={(e) => onChange(index, 'arrivalAirport', e.target.value)}
-                            placeholder="e.g., LAX or Los Angeles"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                            onChange={(e) => onChange(index, 'arrivalAirport', toIataCode(e.target.value))}
+                            placeholder="e.g., LAX"
+                            maxLength={3}
+                            aria-invalid={arrivalInvalid}
+                            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent bg-white uppercase ${
+                                arrivalInvalid
+                                    ? 'border-red-400 focus:ring-red-500'
+                                    : 'border-gray-300 focus:ring-blue-500'
+                            }`}
                         />
+                        {arrivalInvalid && (
+                            <p className="mt-1 text-xs text-red-600">Enter the 3-letter airport code (e.g., LAX).</p>
+                        )}
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">

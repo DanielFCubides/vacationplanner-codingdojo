@@ -1,5 +1,4 @@
 import logging
-import os
 import sys
 from functools import cache
 
@@ -27,8 +26,13 @@ def _configure_otel_logging() -> None:
 
 
 def get_logger(name: str, level: int = logging.INFO) -> logging.Logger:
-    _configure_otel_logging()
+    """Return a stdout logger.
 
+    OTLP log export is wired up (only when the collector is reachable) by
+    ``telemetry.setup_telemetry`` via a handler on the root logger. This
+    function only guarantees local stdout logging, which must always work
+    regardless of whether the observability stack is running.
+    """
     logger = logging.getLogger(name)
     logger.setLevel(level)
 
