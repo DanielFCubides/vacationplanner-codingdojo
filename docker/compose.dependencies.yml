@@ -3,8 +3,10 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: vacation
-      POSTGRES_PASSWORD: vacation
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
       POSTGRES_DB: vacation_planner
+    secrets:
+      - postgres_password
     ports:
       - "5432:5432"
     volumes:
@@ -12,9 +14,9 @@ services:
 
   redis-cache:
     image: redis
-    environment:
-      - REDIS_PASSWORD=secret
-      - REDIS_USER=secret
+    command: ["sh", "-c", "exec redis-server --requirepass \"$$(cat /run/secrets/redis_password)\""]
+    secrets:
+      - redis_password
     ports:
       - "6379:6379"
 
