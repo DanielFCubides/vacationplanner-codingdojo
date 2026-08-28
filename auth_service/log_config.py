@@ -17,7 +17,7 @@ def _configure_otel_logging() -> None:
     })
     provider = LoggerProvider(resource=resource)
     exporter = OTLPLogExporter(
-        endpoint=os.getenv("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", "http://otel-collector:4318/v1/logs"),
+        endpoint=os.getenv("OTEL_EXPORTER_LOGS_ENDPOINT", "http://otel-collector:4318/v1/logs"),
     )
     provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
     _logs.set_logger_provider(provider)

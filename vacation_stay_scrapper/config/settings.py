@@ -5,7 +5,9 @@ Centralized configuration for the application.
 """
 import os
 from typing import Optional
+from urllib.parse import quote_plus
 from pydantic_settings import BaseSettings
+from constants import get_secret
 
 
 class Settings(BaseSettings):
@@ -42,7 +44,10 @@ class Settings(BaseSettings):
     log_file: Optional[str] = os.environ.get('LOG_FILE', None)
     
     # Database
-    database_url: str = "postgresql+asyncpg://vacation:vacation@localhost:5432/vacation_planner"
+    database_host: str = os.environ.get('DATABASE_HOST', 'localhost')
+    database_user: str = os.environ.get('DATABASE_USER', 'vacation')
+    database_name: str = os.environ.get('DATABASE_NAME', 'vacation_planner')
+    database_password: str = get_secret('postgres_password', 'vacation')
     database_echo: bool = False
 
     # CORS
@@ -51,6 +56,14 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+
+    @property
+    def database_url(self) -> str:
+        password = quote_plus(self.database_password)
+        return (
+            f"postgresql+asyncpg://{self.database_user}:{password}@"
+            f"{self.database_host}:5432/{self.database_name}"
+        )
 
 
 # Global settings instance

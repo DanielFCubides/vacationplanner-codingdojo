@@ -9,14 +9,20 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - KEYCLOAK_SERVER_URL=https://keycloack.dfcubidesc.com
-      - KEYCLOAK_CLIENT_ID=auth-service
-      - KEYCLOAK_REALM_NAME=habit-tracker
-      - KEYCLOAK_CLIENT_SECRET_KEY=DF4sNVjM7YqB31S7gYyGhhcvDxBNeC2j
-      - REDIS_HOST=redis-cache
-      - REDIS_PORT=6379
-      - REDIS_DB=0
-      - REDIS_PASSWORD=secret
+      - KEYCLOAK_SERVER_URL=${KEYCLOAK_SERVER_URL:-https://keycloack.dfcubidesc.com}
+      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID:-auth-service}
+      - KEYCLOAK_REALM_NAME=${KEYCLOAK_REALM_NAME:-habit-tracker}
+      - KEYCLOAK_REDIRECT_URI=${KEYCLOAK_REDIRECT_URI:-http://localhost:8002/auth/login}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3001}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
+      - REDIS_HOST=${REDIS_HOST:-redis-cache}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_DB=${REDIS_DB:-0}
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-auth-service}
+      - OTEL_EXPORTER_LOGS_ENDPOINT=${OTEL_EXPORTER_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}
+    secrets:
+      - keycloak_client_secret_key
+      - redis_password
     depends_on:
       redis-cache:
         condition: service_started
@@ -30,7 +36,19 @@ services:
     ports:
       - "8001:8000"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://vacation:vacation@postgres:5432/vacation_planner
+      - DATABASE_HOST=${DATABASE_HOST:-postgres}
+      - DATABASE_USER=${DATABASE_USER:-vacation}
+      - DATABASE_NAME=${DATABASE_NAME:-vacation_planner}
+      - DATABASE_ECHO=${DATABASE_ECHO:-false}
+      - MIN_DELAY_ATTEMPT=${MIN_DELAY_ATTEMPT:-60}
+      - MIN_FAILURE_ATTEMPTS=${MIN_FAILURE_ATTEMPTS:-3}
+      - KEYCLOAK_BASE_URL=${KEYCLOAK_BASE_URL:-https://keycloack.dfcubidesc.com}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM:-habit-tracker}
+      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID:-habit-tracker-frontend}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_FILE=${LOG_FILE:-}
+    secrets:
+      - postgres_password
     depends_on:
       postgres:
         condition: service_started
@@ -45,6 +63,8 @@ services:
       target: dev
     environment:
       - SERVER=${SERVER:-rest}
+    secrets:
+      - redis_password
     ports:
       - "8002:8080"
     volumes:
@@ -67,3 +87,11 @@ services:
       - ./fe-client/src:/app/src
       - ./fe-client/index.html:/app/index.html
       - ./fe-client/vite.config.js:/app/vite.config.js
+
+secrets:
+  keycloak_client_secret_key:
+    file: ./secrets/keycloak_client_secret_key
+  redis_password:
+    file: ./secrets/redis_password
+  postgres_password:
+    file: ./secrets/postgres_password
