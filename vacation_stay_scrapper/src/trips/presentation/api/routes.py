@@ -11,6 +11,7 @@ from typing import List, Annotated
 from fastapi.security import HTTPBearer
 
 from src.shared.infrastructure.auth.dependencies import get_current_user
+from src.shared.infrastructure.telemetry.span_enrichment import enrich_span_with_entity_ids
 from src.shared.domain.exceptions import EntityNotFound
 from .schemas import (
     TripCreateRequest,
@@ -42,7 +43,11 @@ from ...domain.value_objects.trip_status import TripStatus
 from ..mappers.trip_mapper import TripMapper
 
 # Create router
-router = APIRouter(prefix="/api/trips", tags=["trips"])
+router = APIRouter(
+    prefix="/api/trips",
+    tags=["trips"],
+    dependencies=[Depends(enrich_span_with_entity_ids)],
+)
 @router.post(
     "",
     response_model=TripResponse,

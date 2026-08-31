@@ -9,6 +9,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from .jwt_validator import JWTValidator
 from .keycloak_config import KeycloakConfig
+from src.shared.infrastructure.telemetry.span_enrichment import set_enduser
 
 
 # Initialize Keycloak configuration
@@ -44,7 +45,10 @@ async def get_current_user(
         def protected_route(user: Annotated[dict, Depends(get_current_user)]):
             return {"user_id": user["sub"], "email": user["email"]}
     """
-    return jwt_validator.validate_token(authorization)
+    claims = jwt_validator.validate_token(authorization)
+    set_enduser(claims)
+
+    return claims
 
 
 # Alias for backward compatibility
