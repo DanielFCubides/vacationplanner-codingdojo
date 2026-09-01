@@ -1,7 +1,10 @@
-from typing import Any, Dict, Optional
+from abc import ABC, abstractmethod
+from typing import Any, Dict, Mapping
 
-from fastapi import Request
 from opentelemetry import trace
+
+# OTel attribute values must be primitives: str, bool, int, float (or sequences of those).
+AttributeValue = str | bool | int | float
 
 ENDUSER_ID_ATTR = "enduser.id"
 
@@ -13,22 +16,73 @@ _ENTITY_ID_ATTRS = {
 }
 
 
-def set_enduser(claims: Dict[str, Any]) -> None:
-    if trace is None:
-        return
-    username = claims.get("preferred_username") or claims.get("sub")
-    if username:
-        trace.get_current_span().set_attribute(ENDUSER_ID_ATTR, str(username))
+class OtelContext(ABC):
+    @property
+    @abstractmethod
+    def attributes(self) -> Mapping[str, AttributeValue]:
+        """All attributes — safe for traces and logs (any cardinality)."""
+
+    @property
+    def metric_labels(self) -> Mapping[str, AttributeValue]:
+        """Low-cardinality subset safe to use as metric dimensions."""
+        return {}
 
 
-def enrich_span_with_entity_ids(request: Request) -> None:
-    if trace is None:
-        return
+class UserContext(OtelContext):
+    """Identifies the acting end user. High cardinality — traces/logs only."""
 
+    def __init__(self, claims: Dict[str, Any]) -> None:
+        self._username = claims.get("preferred_username") or claims.get("sub")
+
+    @property
+    def attributes(self) -> Mapping[str, AttributeValue]:
+        if not self._username:
+            return {}
+        return {ENDUSER_ID_ATTR: str(self._username)}
+    # metric_labels stays empty — user id is high cardinality.
+
+
+class EntityContext(OtelContext):
+    """Domain entity IDs pulled from request path params. High cardinality."""
+
+    def __init__(self, path_params: Mapping[str, Any]) -> None:
+        self._path_params = path_params or {}
+
+    @property
+    def attributes(self) -> Mapping[str, AttributeValue]:
+        return {
+            attr_key: str(self._path_params[param])
+            for param, attr_key in _ENTITY_ID_ATTRS.items()
+            if self._path_params.get(param) is not None
+        }
+
+
+def _merge_attributes(contexts: tuple[OtelContext, ...]) -> Dict[str, AttributeValue]:
+    merged: Dict[str, AttributeValue] = {}
+    for ctx in contexts:
+        merged.update(ctx.attributes)
+    return merged
+
+
+def _merge_metric_labels(contexts: tuple[OtelContext, ...]) -> Dict[str, AttributeValue]:
+    merged: Dict[str, AttributeValue] = {}
+    for ctx in contexts:
+        merged.update(ctx.metric_labels)
+    return merged
+
+
+def enrich_span(*contexts: OtelContext) -> None:
+    """Set every context attribute on the current span."""
     span = trace.get_current_span()
-    path_params: Optional[Dict[str, Any]] = getattr(request, "path_params", None) or {}
-    for param_name, attr_key in _ENTITY_ID_ATTRS.items():
-        value = path_params.get(param_name)
-        if value is not None:
-            span.set_attribute(attr_key, str(value))
+    for key, value in _merge_attributes(contexts).items():
+        span.set_attribute(key, value)
 
+
+def enrich_log(*contexts: OtelContext) -> Dict[str, AttributeValue]:
+    """Return a dict to pass as ``logger.info(..., extra=...)``."""
+    return _merge_attributes(contexts)
+
+
+def record_metric(counter, amount: int, *contexts: OtelContext) -> None:
+    """Add to an OTel counter using only the low-cardinality metric labels."""
+    counter.add(amount, attributes=_merge_metric_labels(contexts))

@@ -9,7 +9,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from .jwt_validator import JWTValidator
 from .keycloak_config import KeycloakConfig
-from src.shared.infrastructure.telemetry.span_enrichment import set_enduser
+from src.shared.infrastructure.telemetry.span_enrichment import enrich_span, UserContext
 
 
 # Initialize Keycloak configuration
@@ -53,3 +53,9 @@ async def get_current_user(
 
 # Alias for backward compatibility
 authenticate = get_current_user
+
+def set_enduser(claims: Dict[str, Any]) -> None:
+    """Backwards-compatible helper: enrich the current span with the user."""
+    enrich_span(UserContext(claims))
+
+
