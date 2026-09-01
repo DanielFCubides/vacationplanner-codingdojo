@@ -4,6 +4,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+try:  # Telemetry is optional — the service must run even without the OTel API.
+    from opentelemetry import trace
+except Exception:  # noqa: BLE001
+    trace = None
+
 from presentation.auth_router import router as auth_router
 from providers.oidc_provider import OIDCProvider, get_oidc_provider
 from config import internal_routes, get_allowed_hosts
@@ -84,6 +89,8 @@ async def proxy_request(
     if not route_allowed:
         raise HTTPException(status_code=404, detail="Endpoint not allowed")
 
+    await log_downstream_target(normalized_endpoint, request, service_name)
+
     session_id = request.cookies.get('session_id')
 
     if not session_id:
@@ -93,6 +100,8 @@ async def proxy_request(
     session_context = await provider.silent_check_session(session_id)
     if not session_context:
         raise HTTPException(status_code=401, detail="Invalid or expired session")
+
+    await log_acting_user(session_context)
 
     target_url = f"{router['main_url']}{endpoint_path}"
 
@@ -136,6 +145,32 @@ async def proxy_request(
         await client.aclose()
         logger.error("Internal proxy error", extra={"error": str(e)})
         raise HTTPException(status_code=500, detail=f"Internal proxy error: {str(e)}")
+
+
+async def log_acting_user(session_context):
+    # Attribute the trace to the acting user (best-effort).
+    try:
+        user_info = session_context.user_info or {}
+        username = user_info.get("preferred_username") or user_info.get("sub")
+        if username:
+            trace.get_current_span().set_attribute("enduser.id", str(username))
+    except Exception as e:
+        logger.error("preferred_username not attached", extra={"error": str(e)})
+
+
+async def log_downstream_target(normalized_endpoint: str, request, service_name: str):
+    # Rename the catch-all proxy span to the real downstream target so traces
+    # show e.g. "POST /vacation-planner/api/trips" instead of
+    # "POST /{service_path:path}". Best-effort — telemetry never breaks the request.
+    try:
+        span = trace.get_current_span()
+        route = f"/{service_name}{normalized_endpoint}"
+        span.update_name(f"{request.method} {route}")
+        span.set_attribute("http.route", route)
+        span.set_attribute("app.proxy.service", service_name)
+    except Exception as e:
+        logger.error("downstream target not attached", extra={"error": str(e)})  # noqa: BLE001
+
 
 def matches_wildcard(route: str, pattern: str) -> bool:
     if '*' not in pattern:
