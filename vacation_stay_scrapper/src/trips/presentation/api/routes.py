@@ -5,12 +5,19 @@ FastAPI routes for trip management CRUD operations.
 """
 import logging
 
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, Request
 from typing import List, Annotated
 
 from fastapi.security import HTTPBearer
 
 from src.shared.infrastructure.auth.dependencies import get_current_user
+from src.shared.infrastructure.telemetry.span_enrichment import enrich_span, EntityContext
+
+
+def enrich_span_with_entity_ids(request: Request) -> None:
+    """Enrich the current span with entity IDs from the request path."""
+    path_params = getattr(request, "path_params", None) or {}
+    enrich_span(EntityContext(path_params))
 from src.shared.domain.exceptions import EntityNotFound
 from .schemas import (
     TripCreateRequest,
@@ -42,7 +49,11 @@ from ...domain.value_objects.trip_status import TripStatus
 from ..mappers.trip_mapper import TripMapper
 
 # Create router
-router = APIRouter(prefix="/api/trips", tags=["trips"])
+router = APIRouter(
+    prefix="/api/trips",
+    tags=["trips"],
+    dependencies=[Depends(enrich_span_with_entity_ids)],
+)
 @router.post(
     "",
     response_model=TripResponse,
