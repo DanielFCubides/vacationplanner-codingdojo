@@ -1,5 +1,5 @@
 import redis
-from constants import config
+from constants import config, get_secret
 
 
 def get_redis_client(
@@ -11,5 +11,6 @@ def get_redis_client(
         host=host,
         port=port,
         db=database,
+        password=get_secret('redis_password'),
         decode_responses=True
     )
