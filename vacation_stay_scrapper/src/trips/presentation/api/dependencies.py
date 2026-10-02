@@ -14,6 +14,7 @@ from ...application.use_cases.get_trip import GetTripUseCase, GetAllTripsUseCase
 from ...application.use_cases.update_trip import UpdateTripUseCase
 from ...application.use_cases.delete_trip import DeleteTripUseCase
 from ...application.use_cases.update_flight_status import UpdateFlightStatusUseCase
+from ...application.use_cases.update_flight import UpdateFlightUseCase
 from ...application.use_cases.update_accommodation_status import UpdateAccommodationStatusUseCase
 from ...application.use_cases.update_activity_status import UpdateActivityStatusUseCase
 
@@ -52,6 +53,12 @@ def get_delete_trip_use_case(
     repository: ITripRepository = Depends(get_trip_repository)
 ) -> DeleteTripUseCase:
     return DeleteTripUseCase(repository)
+
+
+def get_update_flight_use_case(
+    repository: ITripRepository = Depends(get_trip_repository)
+) -> UpdateFlightUseCase:
+    return UpdateFlightUseCase(repository)
 
 
 def get_update_flight_status_use_case(

@@ -26,7 +26,8 @@ from .schemas import (
     TripResponse,
     TripListResponse,
     MessageResponse,
-    ChildStatusUpdateRequest
+    ChildStatusUpdateRequest,
+    FlightUpdateRequest
 )
 from .dependencies import (
     get_create_trip_use_case,
@@ -34,6 +35,7 @@ from .dependencies import (
     get_get_all_trips_use_case,
     get_update_trip_use_case,
     get_delete_trip_use_case,
+    get_update_flight_use_case,
     get_update_flight_status_use_case,
     get_update_accommodation_status_use_case,
     get_update_activity_status_use_case
@@ -43,6 +45,7 @@ from ...application.use_cases.get_trip import GetTripUseCase, GetAllTripsUseCase
 from ...application.use_cases.update_trip import UpdateTripUseCase
 from ...application.use_cases.delete_trip import DeleteTripUseCase
 from ...application.use_cases.update_flight_status import UpdateFlightStatusUseCase
+from ...application.use_cases.update_flight import UpdateFlightUseCase
 from ...application.use_cases.update_accommodation_status import UpdateAccommodationStatusUseCase
 from ...application.use_cases.update_activity_status import UpdateActivityStatusUseCase
 from ...domain.value_objects.trip_status import TripStatus
@@ -177,6 +180,38 @@ async def update_trip(
     # Persist update, scoped to owner
     result = await use_case.execute(trip_id, updated_trip, owner_id=owner_id)
 
+    return TripMapper.to_response(result)
+
+
+@router.put(
+    "/{trip_id}/flights/{flight_id}",
+    response_model=TripResponse,
+    summary="Update a single flight"
+)
+async def update_flight(
+        trip_id: str,
+        flight_id: str,
+        request: FlightUpdateRequest,
+        use_case: UpdateFlightUseCase = Depends(get_update_flight_use_case),
+        get_use_case: GetTripUseCase = Depends(get_get_trip_use_case),
+        current_user: dict = Depends(get_current_user)
+) -> TripResponse:
+    """
+    Update a single flight within a trip by its stable ID. Only the trip
+    owner may do so. Other flights and collections are left untouched.
+    """
+    owner_id = current_user["sub"]
+
+    trip = await get_use_case.execute(trip_id, owner_id=owner_id)
+    flight = next((f for f in trip.flights if f.id == flight_id), None)
+    if flight is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Flight {flight_id} not found"
+        )
+
+    updated_flight = TripMapper.apply_flight_update(flight, request)
+    result = await use_case.execute(trip_id, updated_flight, owner_id=owner_id)
     return TripMapper.to_response(result)
 
 
