@@ -98,6 +98,22 @@ class Trip:
         """Get all confirmed flights"""
         return [f for f in self.flights if f.status == "confirmed"]
 
+    def replace_flight(self, flight: Flight):
+        """
+        Replace an existing flight with an updated instance, keeping its
+        position among the trip's flights and recalculating the budget.
+
+        Raises:
+            ChildNotFound: if no flight with the same id exists on this trip
+        """
+        index = next(
+            (i for i, f in enumerate(self.flights) if f.id == flight.id), None
+        )
+        if index is None:
+            raise ChildNotFound("Flight", flight.id)
+        self.flights[index] = flight
+        self._recalculate_budget()
+
     def update_flight_status(self, flight_id: str, new_status: str):
         """
         Update a flight's status, enforcing the flight state machine.

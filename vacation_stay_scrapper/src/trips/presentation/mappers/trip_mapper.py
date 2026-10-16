@@ -30,6 +30,7 @@ from ..api.schemas import (
     BudgetCategoryResponse,
     TravelerCreateRequest,
     FlightCreateRequest,
+    FlightUpdateRequest,
     AccommodationCreateRequest,
     ActivityCreateRequest,
     BudgetRequest,
@@ -192,6 +193,62 @@ class TripMapper:
     # RESPONSE CONVERTERS (Domain → API Response)
     # ========================================================================
     
+    @staticmethod
+    def apply_flight_update(flight: Flight, request: FlightUpdateRequest) -> Flight:
+        """Apply partial flight updates onto an existing Flight, preserving its id"""
+        return Flight(
+            id=flight.id,
+            airline=request.airline if request.airline is not None else flight.airline,
+            flight_number=(
+                request.flight_number
+                if request.flight_number is not None
+                else flight.flight_number
+            ),
+            departure_airport=Airport(
+                code=(
+                    request.departure.airport
+                    if request.departure
+                    else flight.departure_airport.code
+                ),
+                city=(
+                    request.departure.city
+                    if request.departure
+                    else flight.departure_airport.city
+                ),
+            ),
+            departure_time=(
+                request.departure.time if request.departure else flight.departure_time
+            ),
+            arrival_airport=Airport(
+                code=(
+                    request.arrival.airport
+                    if request.arrival
+                    else flight.arrival_airport.code
+                ),
+                city=(
+                    request.arrival.city
+                    if request.arrival
+                    else flight.arrival_airport.city
+                ),
+            ),
+            arrival_time=(
+                request.arrival.time if request.arrival else flight.arrival_time
+            ),
+            duration=request.duration if request.duration is not None else flight.duration,
+            price=(
+                Money(request.price, "USD")
+                if request.price is not None
+                else flight.price
+            ),
+            stops=request.stops if request.stops is not None else flight.stops,
+            cabin_class=(
+                request.cabin_class
+                if request.cabin_class is not None
+                else flight.cabin_class
+            ),
+            status=request.status if request.status is not None else flight.status,
+        )
+
     @staticmethod
     def _traveler_to_response(traveler: Traveler) -> TravelerResponse:
         """Convert Traveler entity to response matching frontend"""

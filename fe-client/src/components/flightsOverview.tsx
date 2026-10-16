@@ -1,20 +1,41 @@
-import {Trip} from "../Models.ts";
+import {useState} from "react";
+import {Trip, Flight} from "../Models.ts";
 import {formatDate} from "../utils/formatDate.ts";
 import ChildStatusControl from "./ChildStatusControl.tsx";
+import FlightEditForm from "./FlightEditForm.tsx";
 
 interface Props {
     trip: Trip;
     editable?: boolean;
     onStatusChange?: (flightId: string, newStatus: string) => void | Promise<void>;
+    onFlightUpdate?: (flightId: string, updates: Partial<Flight>) => void | Promise<void>;
 }
 
-const TripFlightsOverview = ({trip, editable = true, onStatusChange}: Props) => {
+const TripFlightsOverview = ({trip, editable = true, onStatusChange, onFlightUpdate}: Props) => {
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [saving, setSaving] = useState(false);
+    const [editError, setEditError] = useState<string | null>(null);
+    const canEdit = editable && !!onFlightUpdate;
+
+    const handleSave = async (flightId: string, updates: Partial<Flight>) => {
+        setSaving(true);
+        setEditError(null);
+        try {
+            await onFlightUpdate?.(flightId, updates);
+            setEditingId(null);
+        } catch (err) {
+            setEditError(err instanceof Error ? err.message : "Failed to update flight");
+        } finally {
+            setSaving(false);
+        }
+    };
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-bold mb-4">Flights</h2>
             <div className="space-y-4">
                 {trip.flights.map((flight) => {
                     const cancelled = flight.status === 'cancelled';
+                    const isEditing = editingId === flight.id;
                     return (
                     <div
                         key={flight.id}
@@ -29,13 +50,39 @@ const TripFlightsOverview = ({trip, editable = true, onStatusChange}: Props) => 
                                     {flight.airline} {flight.flightNumber}
                                 </p>
                             </div>
-                            <ChildStatusControl
-                                childType="flight"
-                                status={flight.status}
-                                editable={editable && !!onStatusChange}
-                                onSelect={(next) => onStatusChange?.(flight.id, next)}
-                            />
+                            <div className="flex items-center gap-2">
+                                {canEdit && !isEditing && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setEditingId(flight.id);
+                                            setEditError(null);
+                                        }}
+                                        className="text-sm text-blue-600 hover:underline"
+                                    >
+                                        Edit
+                                    </button>
+                                )}
+                                <ChildStatusControl
+                                    childType="flight"
+                                    status={flight.status}
+                                    editable={editable && !!onStatusChange}
+                                    onSelect={(next) => onStatusChange?.(flight.id, next)}
+                                />
+                            </div>
                         </div>
+                        {isEditing ? (
+                            <FlightEditForm
+                                flight={flight}
+                                saving={saving}
+                                error={editError}
+                                onSave={(updates) => handleSave(flight.id, updates)}
+                                onCancel={() => {
+                                    setEditingId(null);
+                                    setEditError(null);
+                                }}
+                            />
+                        ) : (
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mt-3">
                             <div>
                                 <p className="text-gray-500">Departure</p>
@@ -58,6 +105,7 @@ const TripFlightsOverview = ({trip, editable = true, onStatusChange}: Props) => 
                                 <p className="text-xs text-gray-600">{flight.cabinClass}</p>
                             </div>
                         </div>
+                        )}
                     </div>
                     );
                 })}
