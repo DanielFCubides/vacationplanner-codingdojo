@@ -27,6 +27,7 @@ from .schemas import (
     TripListResponse,
     MessageResponse,
     ChildStatusUpdateRequest,
+    FlightCreateRequest,
     FlightUpdateRequest
 )
 from .dependencies import (
@@ -35,6 +36,7 @@ from .dependencies import (
     get_get_all_trips_use_case,
     get_update_trip_use_case,
     get_delete_trip_use_case,
+    get_add_flight_use_case,
     get_update_flight_use_case,
     get_update_flight_status_use_case,
     get_update_accommodation_status_use_case,
@@ -46,6 +48,7 @@ from ...application.use_cases.update_trip import UpdateTripUseCase
 from ...application.use_cases.delete_trip import DeleteTripUseCase
 from ...application.use_cases.update_flight_status import UpdateFlightStatusUseCase
 from ...application.use_cases.update_flight import UpdateFlightUseCase
+from ...application.use_cases.add_flight import AddFlightUseCase
 from ...application.use_cases.update_accommodation_status import UpdateAccommodationStatusUseCase
 from ...application.use_cases.update_activity_status import UpdateActivityStatusUseCase
 from ...domain.value_objects.trip_status import TripStatus
@@ -180,6 +183,37 @@ async def update_trip(
     # Persist update, scoped to owner
     result = await use_case.execute(trip_id, updated_trip, owner_id=owner_id)
 
+    return TripMapper.to_response(result)
+
+
+@router.post(
+    "/{trip_id}/flights",
+    response_model=TripResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add a flight to an existing trip"
+)
+async def add_flight(
+        trip_id: str,
+        request: FlightCreateRequest,
+        use_case: AddFlightUseCase = Depends(get_add_flight_use_case),
+        current_user: dict = Depends(get_current_user)
+) -> TripResponse:
+    """
+    Add a single flight to a trip. Only the trip owner may do so. New
+    flights always start as pending; status changes go through the
+    flight status endpoint.
+    """
+    owner_id = current_user["sub"]
+
+    try:
+        flight = TripMapper._flight_from_request(request)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        )
+    flight.status = "pending"
+    result = await use_case.execute(trip_id, flight, owner_id=owner_id)
     return TripMapper.to_response(result)
 
 
