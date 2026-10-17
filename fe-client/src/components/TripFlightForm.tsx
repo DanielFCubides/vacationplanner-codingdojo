@@ -1,15 +1,18 @@
 import {useState} from "react";
-import {Flight} from "../Models.ts";
+import {Flight, FlightInput} from "../Models.ts";
+import {isValidIata} from "./wizard-steps/FlightForm.tsx";
 
 interface Props {
-    flight: Flight;
+    // Omit to add a new flight; pass one to edit it.
+    flight?: Flight;
     saving: boolean;
     error: string | null;
-    onSave: (updates: Partial<Flight>) => void;
+    onSave: (values: FlightInput) => void;
     onCancel: () => void;
 }
 
-const toInputValue = (time: Date | string): string => {
+const toInputValue = (time?: Date | string): string => {
+    if (!time) return "";
     const d = new Date(time);
     const pad = (n: number) => String(n).padStart(2, "0");
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -20,32 +23,40 @@ const toIso = (value: string): string => new Date(value).toISOString();
 const inputClass = "w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
 const labelClass = "block text-xs text-gray-500 mb-1";
 
-const FlightEditForm = ({flight, saving, error, onSave, onCancel}: Props) => {
-    const [airline, setAirline] = useState(flight.airline);
-    const [flightNumber, setFlightNumber] = useState(flight.flightNumber);
-    const [departureAirport, setDepartureAirport] = useState(flight.departure.airport);
-    const [departureCity, setDepartureCity] = useState(flight.departure.city);
-    const [departureTime, setDepartureTime] = useState(toInputValue(flight.departure.time));
-    const [arrivalAirport, setArrivalAirport] = useState(flight.arrival.airport);
-    const [arrivalCity, setArrivalCity] = useState(flight.arrival.city);
-    const [arrivalTime, setArrivalTime] = useState(toInputValue(flight.arrival.time));
-    const [duration, setDuration] = useState(flight.duration);
-    const [stops, setStops] = useState(String(flight.stops));
-    const [price, setPrice] = useState(String(flight.price));
-    const [cabinClass, setCabinClass] = useState(flight.cabinClass);
+const TripFlightForm = ({flight, saving, error, onSave, onCancel}: Props) => {
+    const [airline, setAirline] = useState(flight?.airline ?? "");
+    const [flightNumber, setFlightNumber] = useState(flight?.flightNumber ?? "");
+    const [departureAirport, setDepartureAirport] = useState(flight?.departure.airport ?? "");
+    const [departureCity, setDepartureCity] = useState(flight?.departure.city ?? "");
+    const [departureTime, setDepartureTime] = useState(toInputValue(flight?.departure.time));
+    const [arrivalAirport, setArrivalAirport] = useState(flight?.arrival.airport ?? "");
+    const [arrivalCity, setArrivalCity] = useState(flight?.arrival.city ?? "");
+    const [arrivalTime, setArrivalTime] = useState(toInputValue(flight?.arrival.time));
+    const [duration, setDuration] = useState(flight?.duration ?? "");
+    const [stops, setStops] = useState(String(flight?.stops ?? 0));
+    const [price, setPrice] = useState(flight ? String(flight.price) : "");
+    const [cabinClass, setCabinClass] = useState(flight?.cabinClass ?? "Economy");
+    const [validationError, setValidationError] = useState<string | null>(null);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        const departureCode = departureAirport.toUpperCase();
+        const arrivalCode = arrivalAirport.toUpperCase();
+        if (!isValidIata(departureCode) || !isValidIata(arrivalCode)) {
+            setValidationError("Airport codes must be 3-letter IATA codes (e.g. BOG, CDG).");
+            return;
+        }
+        setValidationError(null);
         onSave({
             airline,
             flightNumber,
             departure: {
-                airport: departureAirport.toUpperCase(),
+                airport: departureCode,
                 city: departureCity,
                 time: toIso(departureTime),
             },
             arrival: {
-                airport: arrivalAirport.toUpperCase(),
+                airport: arrivalCode,
                 city: arrivalCity,
                 time: toIso(arrivalTime),
             },
@@ -130,7 +141,9 @@ const FlightEditForm = ({flight, saving, error, onSave, onCancel}: Props) => {
                     </select>
                 </div>
             </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {(validationError || error) && (
+                <p className="text-sm text-red-600">{validationError || error}</p>
+            )}
             <div className="flex gap-2">
                 <button type="submit" disabled={saving}
                         className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50">
@@ -145,4 +158,4 @@ const FlightEditForm = ({flight, saving, error, onSave, onCancel}: Props) => {
     );
 };
 
-export default FlightEditForm;
+export default TripFlightForm;

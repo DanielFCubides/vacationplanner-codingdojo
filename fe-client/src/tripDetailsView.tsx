@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Trip, Flight } from "./Models.ts";
+import { Trip, FlightInput } from "./Models.ts";
 import TripDetailOverview from "./TripDetailOverview.tsx";
 import TripFlightsOverview from "./components/flightsOverview.tsx";
 import StayOverview from "./components/StaysOverview.tsx";
@@ -99,7 +99,22 @@ const TripDetailsView = () => {
         }
     };
 
-    const handleFlightUpdate = async (flightId: string, updates: Partial<Flight>) => {
+    const handleFlightAdd = async (flight: FlightInput) => {
+        if (!trip) return;
+        try {
+            // Authoritative response carries the new flight id and budget.
+            const updated = await tripService.addFlight(trip.id, flight);
+            setTrip(updated);
+        } catch (err) {
+            setToast({
+                message: err instanceof Error ? err.message : 'Failed to add flight',
+                type: 'error',
+            });
+            throw err;
+        }
+    };
+
+    const handleFlightUpdate = async (flightId: string, updates: FlightInput) => {
         if (!trip) return;
         const previous = trip;
         try {
@@ -180,6 +195,7 @@ const TripDetailsView = () => {
                     onStatusChange={(flightId, newStatus) =>
                         handleChildStatusChange('flight', flightId, newStatus)}
                     onFlightUpdate={handleFlightUpdate}
+                    onFlightAdd={handleFlightAdd}
                 />;
 
             case 'stays':

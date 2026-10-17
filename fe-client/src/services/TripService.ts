@@ -1,4 +1,4 @@
-import { Trip, Flight } from "../Models";
+import { Trip, FlightInput } from "../Models";
 import { FEATURE_FLAGS } from "../config/featureFlags";
 import { BACKEND_URL } from "../config/constants.js";
 
@@ -22,7 +22,9 @@ export interface ITripService {
 
     updateFlightStatus(tripId: string, flightId: string, status: string): Promise<Trip>;
 
-    updateFlight(tripId: string, flightId: string, updates: Partial<Flight>): Promise<Trip>;
+    updateFlight(tripId: string, flightId: string, updates: FlightInput): Promise<Trip>;
+
+    addFlight(tripId: string, flight: FlightInput): Promise<Trip>;
 
     updateAccommodationStatus(tripId: string, accommodationId: string, status: string): Promise<Trip>;
 
@@ -168,12 +170,25 @@ class SimpleTripService implements ITripService {
         return trip;
     }
 
-    async updateFlight(tripId: string, flightId: string, updates: Partial<Flight>): Promise<Trip> {
+    async updateFlight(tripId: string, flightId: string, updates: FlightInput): Promise<Trip> {
         await this.delay(200);
         const trip = this.requireTrip(tripId);
         const flight = trip.flights.find(f => f.id === flightId);
         if (!flight) throw new Error('Flight not found in this trip');
         Object.assign(flight, updates, { id: flightId });
+        return trip;
+    }
+
+    async addFlight(tripId: string, flight: FlightInput): Promise<Trip> {
+        await this.delay(200);
+        const trip = this.requireTrip(tripId);
+        trip.flights.push({
+            ...flight,
+            id: crypto.randomUUID(),
+            status: 'pending',
+            departure: { ...flight.departure, time: new Date(flight.departure.time) },
+            arrival: { ...flight.arrival, time: new Date(flight.arrival.time) },
+        });
         return trip;
     }
 
@@ -290,7 +305,7 @@ class ApiTripService implements ITripService {
         return this.patchChildStatus(`${tripId}/flights/${flightId}/status`, status);
     }
 
-    async updateFlight(tripId: string, flightId: string, updates: Partial<Flight>): Promise<Trip> {
+    async updateFlight(tripId: string, flightId: string, updates: FlightInput): Promise<Trip> {
         const response = await fetch(`${this.baseUrl}/${tripId}/flights/${flightId}`, {
             method: 'PUT',
             credentials: 'include',
@@ -304,6 +319,31 @@ class ApiTripService implements ITripService {
             try {
                 const body = await response.json();
                 detail = body.details || body.message || detail;
+            } catch {
+                // response had no JSON body; keep the default message
+            }
+            throw new Error(detail);
+        }
+        return response.json();
+    }
+
+    async addFlight(tripId: string, flight: FlightInput): Promise<Trip> {
+        const response = await fetch(`${this.baseUrl}/${tripId}/flights`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(flight),
+        });
+        if (!response.ok) {
+            // 404 trip not found, 422 validation (e.g. arrival before departure)
+            let detail = 'Failed to add flight';
+            try {
+                const body = await response.json();
+                if (typeof body.detail === 'string') {
+                    detail = body.detail;
+                } else {
+                    detail = body.details || body.message || detail;
+                }
             } catch {
                 // response had no JSON body; keep the default message
             }
