@@ -9,7 +9,7 @@ export const getBaseConfig = () => ({
 });
 
 const getDefaultRedirectUri = () => {
-  return 'http://localhost:8002/auth/login';
+  return 'http://localhost:8000/auth/login';
 };
 
 export const KEYCLOAK_CONFIGS = {
