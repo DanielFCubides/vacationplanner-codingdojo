@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Trip, FlightInput } from "./Models.ts";
+import { Trip, FlightInput, AccommodationInput } from "./Models.ts";
 import TripDetailOverview from "./TripDetailOverview.tsx";
 import TripFlightsOverview from "./components/flightsOverview.tsx";
 import StayOverview from "./components/StaysOverview.tsx";
@@ -114,6 +114,21 @@ const TripDetailsView = () => {
         }
     };
 
+    const handleAccommodationAdd = async (accommodation: AccommodationInput) => {
+        if (!trip) return;
+        try {
+            // Authoritative response carries the new accommodation id and budget.
+            const updated = await tripService.addAccommodation(trip.id, accommodation);
+            setTrip(updated);
+        } catch (err) {
+            setToast({
+                message: err instanceof Error ? err.message : 'Failed to add accommodation',
+                type: 'error',
+            });
+            throw err;
+        }
+    };
+
     const handleFlightUpdate = async (flightId: string, updates: FlightInput) => {
         if (!trip) return;
         const previous = trip;
@@ -203,6 +218,7 @@ const TripDetailsView = () => {
                     trip={trip}
                     onStatusChange={(accommodationId, newStatus) =>
                         handleChildStatusChange('accommodation', accommodationId, newStatus)}
+                    onAccommodationAdd={handleAccommodationAdd}
                 />;
 
             case 'activities':
