@@ -89,7 +89,13 @@ async def create_trip(
     """
     owner_id = current_user["sub"]
 
-    trip = TripMapper.from_create_request(request, owner_id=owner_id)
+    try:
+        trip = TripMapper.from_create_request(request, owner_id=owner_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        )
 
     created_trip = await use_case.execute(trip)
 
@@ -247,7 +253,13 @@ async def update_flight(
             detail=f"Flight {flight_id} not found"
         )
 
-    updated_flight = TripMapper.apply_flight_update(flight, request)
+    try:
+        updated_flight = TripMapper.apply_flight_update(flight, request)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        )
     result = await use_case.execute(trip_id, updated_flight, owner_id=owner_id)
     return TripMapper.to_response(result)
 
