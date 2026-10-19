@@ -134,14 +134,16 @@ class Trip:
     # Accommodation management
     
     def add_accommodation(self, accommodation: Accommodation):
-        """Add an accommodation to the trip"""
+        """Add an accommodation to the trip and recalculate the budget"""
         self.accommodations.append(accommodation)
+        self._recalculate_budget()
     
     def remove_accommodation(self, accommodation_id: str):
-        """Remove an accommodation from the trip"""
+        """Remove an accommodation from the trip and recalculate the budget"""
         self.accommodations = [
             a for a in self.accommodations if a.id != accommodation_id
         ]
+        self._recalculate_budget()
     
     def get_confirmed_accommodations(self) -> List[Accommodation]:
         """Get all confirmed accommodations"""
