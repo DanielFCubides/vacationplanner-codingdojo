@@ -18,7 +18,10 @@ class Money:
     currency: str = "USD"
     
     def __post_init__(self):
-        """Validate money values"""
+        """Normalize amount to Decimal and validate money values"""
+        if not isinstance(self.amount, Decimal):
+            # str() avoids binary float noise (150.1 -> Decimal("150.1"))
+            object.__setattr__(self, "amount", Decimal(str(self.amount)))
         if self.amount < 0:
             raise ValueError("Money amount cannot be negative")
         if not self.currency:

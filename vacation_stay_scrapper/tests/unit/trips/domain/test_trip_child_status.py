@@ -198,3 +198,29 @@ class TestTripUpdateActivityStatus:
 
         with pytest.raises(InvalidStatusTransition):
             trip.update_activity_status("act1", "pending")
+
+
+class TestAddRemoveFlightRecalculatesBudget:
+
+    def test_adding_a_confirmed_flight_adds_its_price_to_spent(self):
+        trip = make_trip(budget=make_budget())
+
+        trip.add_flight(make_flight(status="confirmed"))  # price 150
+
+        assert trip.budget.spent.amount == Decimal("150.0")
+
+    def test_adding_a_pending_flight_leaves_spent_unchanged(self):
+        trip = make_trip(budget=make_budget())
+
+        trip.add_flight(make_flight(status="pending"))
+
+        assert trip.budget.spent.amount == Decimal("0")
+
+    def test_removing_a_confirmed_flight_subtracts_its_price(self):
+        trip = make_trip(budget=make_budget())
+        trip.add_flight(make_flight(flight_id="f1", status="confirmed"))
+        trip.add_flight(make_flight(flight_id="f2", status="confirmed"))
+
+        trip.remove_flight("f1")
+
+        assert trip.budget.spent.amount == Decimal("150.0")

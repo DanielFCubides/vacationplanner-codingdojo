@@ -5,6 +5,7 @@ Verifies that a partial FlightUpdateRequest merges onto an existing
 Flight entity while preserving its id and any fields not provided.
 """
 from datetime import datetime
+from decimal import Decimal
 
 from src.trips.presentation.api.schemas import (
     FlightUpdateRequest,
@@ -82,7 +83,7 @@ class TestApplyFlightUpdate:
         assert result.arrival_airport.code == "BCN"
         assert result.arrival_time == datetime(2025, 7, 2, 9, 15)
         assert result.duration == "1h 15m"
-        assert result.price.amount == 89.99
+        assert result.price.amount == Decimal("89.99")
         assert result.stops == 1
         assert result.cabin_class == "Business"
         assert result.status == "confirmed"
@@ -111,3 +112,13 @@ class TestApplyFlightUpdate:
 
         assert isinstance(result.price, Money)
         assert result.price.amount == 200.0
+
+    def test_price_update_keeps_existing_currency(self):
+        flight = make_flight()
+        flight.price = Money.from_float(150.0, "EUR")
+
+        result = TripMapper.apply_flight_update(
+            flight, FlightUpdateRequest(price=200.0)
+        )
+
+        assert result.price.currency == "EUR"

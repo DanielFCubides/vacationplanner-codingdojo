@@ -54,6 +54,15 @@ export interface Flight {
     status: 'confirmed' | 'pending' | 'cancelled';
 }
 
+type FlightLocationInput = { airport: string; city: string; time: string };
+
+// Flight data sent to the backend: ISO string times; id and status are
+// owned by the backend (new flights always start pending).
+export type FlightInput = Omit<Flight, 'id' | 'status' | 'departure' | 'arrival'> & {
+    departure: FlightLocationInput;
+    arrival: FlightLocationInput;
+};
+
 export interface Accommodation {
     id: string;
     name: string;

@@ -131,3 +131,31 @@ class TestUpdateFlightUseCase:
                 UpdateFlightUseCase(repo).execute("1", merged, "user-1")
             )
         repo.save.assert_not_called()
+
+    def test_updates_confirmed_flight_on_budgeted_trip_loaded_from_db(self):
+        # Regression: Postgres returns Decimal prices, the request mapper
+        # builds float prices; budget recalculation added them -> TypeError.
+        from decimal import Decimal
+        from src.trips.domain.value_objects.budget import Budget
+
+        trip = make_trip(
+            budget=Budget(
+                total=Money(Decimal("1000.00"), "USD"),
+                spent=Money(Decimal("0.00"), "USD"),
+            )
+        )
+        db_flight = make_flight(flight_id="f1")
+        db_flight.price = Money(Decimal("0.00"), "USD")
+        db_flight.status = "confirmed"
+        trip.add_flight(db_flight)
+        repo = make_repo(find_by_owner=trip, save=trip)
+
+        merged = make_flight(flight_id="f1")
+        merged.price = Money(250.0, "USD")
+        merged.status = "confirmed"
+
+        result = asyncio.run(
+            UpdateFlightUseCase(repo).execute("1", merged, "user-1")
+        )
+
+        assert result.budget.spent.amount == Decimal("250")

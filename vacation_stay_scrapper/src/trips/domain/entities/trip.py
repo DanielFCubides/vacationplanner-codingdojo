@@ -87,12 +87,14 @@ class Trip:
     # Flight management
     
     def add_flight(self, flight: Flight):
-        """Add a flight to the trip"""
+        """Add a flight to the trip and recalculate the budget"""
         self.flights.append(flight)
+        self._recalculate_budget()
     
     def remove_flight(self, flight_id: str):
-        """Remove a flight from the trip"""
+        """Remove a flight from the trip and recalculate the budget"""
         self.flights = [f for f in self.flights if f.id != flight_id]
+        self._recalculate_budget()
     
     def get_confirmed_flights(self) -> List[Flight]:
         """Get all confirmed flights"""

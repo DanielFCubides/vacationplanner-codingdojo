@@ -236,7 +236,7 @@ class TripMapper:
             ),
             duration=request.duration if request.duration is not None else flight.duration,
             price=(
-                Money(request.price, "USD")
+                Money(request.price, flight.price.currency)
                 if request.price is not None
                 else flight.price
             ),
