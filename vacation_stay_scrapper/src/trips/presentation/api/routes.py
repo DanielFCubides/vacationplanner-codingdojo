@@ -28,7 +28,8 @@ from .schemas import (
     MessageResponse,
     ChildStatusUpdateRequest,
     FlightCreateRequest,
-    FlightUpdateRequest
+    FlightUpdateRequest,
+    AccommodationCreateRequest
 )
 from .dependencies import (
     get_create_trip_use_case,
@@ -38,6 +39,7 @@ from .dependencies import (
     get_delete_trip_use_case,
     get_add_flight_use_case,
     get_update_flight_use_case,
+    get_add_accommodation_use_case,
     get_update_flight_status_use_case,
     get_update_accommodation_status_use_case,
     get_update_activity_status_use_case
@@ -49,6 +51,7 @@ from ...application.use_cases.delete_trip import DeleteTripUseCase
 from ...application.use_cases.update_flight_status import UpdateFlightStatusUseCase
 from ...application.use_cases.update_flight import UpdateFlightUseCase
 from ...application.use_cases.add_flight import AddFlightUseCase
+from ...application.use_cases.add_accommodation import AddAccommodationUseCase
 from ...application.use_cases.update_accommodation_status import UpdateAccommodationStatusUseCase
 from ...application.use_cases.update_activity_status import UpdateActivityStatusUseCase
 from ...domain.value_objects.trip_status import TripStatus
@@ -277,6 +280,37 @@ async def update_flight_status(
     owner_id = current_user["sub"]
     trip = await use_case.execute(trip_id, flight_id, request.status, owner_id=owner_id)
     return TripMapper.to_response(trip)
+
+
+@router.post(
+    "/{trip_id}/accommodations",
+    response_model=TripResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add an accommodation to an existing trip"
+)
+async def add_accommodation(
+        trip_id: str,
+        request: AccommodationCreateRequest,
+        use_case: AddAccommodationUseCase = Depends(get_add_accommodation_use_case),
+        current_user: dict = Depends(get_current_user)
+) -> TripResponse:
+    """
+    Add a single accommodation to a trip. Only the trip owner may do so.
+    New accommodations always start as pending; status changes go through
+    the accommodation status endpoint.
+    """
+    owner_id = current_user["sub"]
+
+    try:
+        accommodation = TripMapper._accommodation_from_request(request)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        )
+    accommodation.status = "pending"
+    result = await use_case.execute(trip_id, accommodation, owner_id=owner_id)
+    return TripMapper.to_response(result)
 
 
 @router.patch(

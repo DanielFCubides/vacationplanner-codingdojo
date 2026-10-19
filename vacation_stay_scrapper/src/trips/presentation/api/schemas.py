@@ -74,7 +74,7 @@ class AccommodationCreateRequest(BaseModel):
     check_out: date = Field(..., alias="checkOut")
     price_per_night: float = Field(..., gt=0, alias="pricePerNight")
     total_price: float = Field(..., gt=0, alias="totalPrice")
-    rating: float = Field(..., ge=0, le=5)
+    rating: Optional[float] = Field(None, ge=0, le=5)
     amenities: List[str] = Field(default_factory=list)
     status: Literal["confirmed", "pending", "cancelled"] = "pending"
     
@@ -173,7 +173,7 @@ class AccommodationResponse(BaseModel):
     check_out: date = Field(alias="checkOut")
     price_per_night: float = Field(alias="pricePerNight")
     total_price: float = Field(alias="totalPrice")
-    rating: float
+    rating: Optional[float] = None
     amenities: List[str]
     status: Literal["confirmed", "pending", "cancelled"]
     

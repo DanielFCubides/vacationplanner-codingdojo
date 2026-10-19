@@ -151,7 +151,7 @@ class TestChildStatusUpdateRecalculatesBudget:
         trip = make_trip(budget=make_budget())
         trip.add_accommodation(make_accommodation(status="confirmed"))  # total 800
 
-        assert trip.budget.spent.amount == Decimal("0.0")  # not yet recalculated
+        assert trip.budget.spent.amount == Decimal("800.0")
         trip.update_accommodation_status("a1", "cancelled")
 
         assert trip.budget.spent.amount == Decimal("0")

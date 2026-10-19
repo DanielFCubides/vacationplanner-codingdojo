@@ -1,6 +1,6 @@
 # Trip Planning
 
-A traveler plans a Trip by gathering the flights, stays and activities it needs and tracking what has been committed against a budget.
+A traveler plans a Trip by gathering the flights, accommodations and activities it needs and tracking what has been committed against a budget.
 
 ## Language
 
@@ -20,6 +20,18 @@ _Avoid_: Booking, segment, ticket
 An intermediate landing within a single Flight.
 _Avoid_: Layover, connection
 
+**Accommodation**:
+A place where a Trip's travelers sleep, from a check-in date to a check-out date. It is one of four types: hotel, airbnb, hostel or resort. Accommodations may overlap and may fall outside the Trip's dates.
+_Avoid_: Stay, lodging, hotel (hotel is a type, not the thing)
+
+**Nightly rate**:
+The price of one night at an Accommodation.
+_Avoid_: Price, rate
+
+**Accommodation total**:
+The full amount paid for an Accommodation, including fees and taxes beyond the Nightly rate. The user enters it; it is not nights × Nightly rate.
+_Avoid_: Cost, price
+
 **Spent**:
-The amount committed against a Trip's budget: the sum of confirmed Flights and Accommodations and booked Activities.
+The amount committed against a Trip's budget: the sum of confirmed Flight prices, confirmed Accommodation totals and booked Activity costs.
 _Avoid_: Cost, used, expenses

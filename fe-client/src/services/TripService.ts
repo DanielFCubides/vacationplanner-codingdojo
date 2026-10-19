@@ -1,4 +1,4 @@
-import { Trip, FlightInput } from "../Models";
+import { Trip, FlightInput, AccommodationInput } from "../Models";
 import { FEATURE_FLAGS } from "../config/featureFlags";
 import { BACKEND_URL } from "../config/constants.js";
 
@@ -25,6 +25,8 @@ export interface ITripService {
     updateFlight(tripId: string, flightId: string, updates: FlightInput): Promise<Trip>;
 
     addFlight(tripId: string, flight: FlightInput): Promise<Trip>;
+
+    addAccommodation(tripId: string, accommodation: AccommodationInput): Promise<Trip>;
 
     updateAccommodationStatus(tripId: string, accommodationId: string, status: string): Promise<Trip>;
 
@@ -192,6 +194,20 @@ class SimpleTripService implements ITripService {
         return trip;
     }
 
+    async addAccommodation(tripId: string, accommodation: AccommodationInput): Promise<Trip> {
+        await this.delay(200);
+        const trip = this.requireTrip(tripId);
+        trip.accommodations.push({
+            ...accommodation,
+            id: crypto.randomUUID(),
+            status: 'pending',
+            image: '',
+            checkIn: new Date(accommodation.checkIn),
+            checkOut: new Date(accommodation.checkOut),
+        });
+        return trip;
+    }
+
     async updateAccommodationStatus(tripId: string, accommodationId: string, status: string): Promise<Trip> {
         await this.delay(200);
         const trip = this.requireTrip(tripId);
@@ -337,6 +353,31 @@ class ApiTripService implements ITripService {
         if (!response.ok) {
             // 404 trip not found, 422 validation (e.g. arrival before departure)
             let detail = 'Failed to add flight';
+            try {
+                const body = await response.json();
+                if (typeof body.detail === 'string') {
+                    detail = body.detail;
+                } else {
+                    detail = body.details || body.message || detail;
+                }
+            } catch {
+                // response had no JSON body; keep the default message
+            }
+            throw new Error(detail);
+        }
+        return response.json();
+    }
+
+    async addAccommodation(tripId: string, accommodation: AccommodationInput): Promise<Trip> {
+        const response = await fetch(`${this.baseUrl}/${tripId}/accommodations`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(accommodation),
+        });
+        if (!response.ok) {
+            // 404 trip not found, 422 validation (e.g. check-out before check-in)
+            let detail = 'Failed to add accommodation';
             try {
                 const body = await response.json();
                 if (typeof body.detail === 'string') {

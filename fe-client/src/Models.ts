@@ -72,10 +72,16 @@ export interface Accommodation {
     checkOut: Date;
     pricePerNight: number;
     totalPrice: number;
-    rating: number;
+    rating: number | null;
     amenities: string[];
     status: 'confirmed' | 'pending' | 'cancelled';
 }
+
+// Accommodation payload sent when adding; the server assigns id and status.
+export type AccommodationInput = Omit<Accommodation, 'id' | 'status' | 'image' | 'checkIn' | 'checkOut'> & {
+    checkIn: string;  // YYYY-MM-DD
+    checkOut: string; // YYYY-MM-DD
+};
 
 export interface Activity {
     id: string;
