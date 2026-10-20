@@ -93,6 +93,11 @@ export interface Activity {
     description: string;
 }
 
+// Activity payload sent when adding; the server assigns id and status.
+export type ActivityInput = Omit<Activity, 'id' | 'status' | 'date'> & {
+    date: string; // YYYY-MM-DD
+};
+
 export interface BudgetCategory {
     category: string;
     planned: number;

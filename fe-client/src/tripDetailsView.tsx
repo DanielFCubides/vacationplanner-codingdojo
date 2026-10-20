@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Trip, FlightInput, AccommodationInput } from "./Models.ts";
+import { Trip, FlightInput, AccommodationInput, ActivityInput } from "./Models.ts";
 import TripDetailOverview from "./TripDetailOverview.tsx";
 import TripFlightsOverview from "./components/flightsOverview.tsx";
 import StayOverview from "./components/StaysOverview.tsx";
@@ -129,6 +129,21 @@ const TripDetailsView = () => {
         }
     };
 
+    const handleActivityAdd = async (activity: ActivityInput) => {
+        if (!trip) return;
+        try {
+            // Authoritative response carries the new activity id and budget.
+            const updated = await tripService.addActivity(trip.id, activity);
+            setTrip(updated);
+        } catch (err) {
+            setToast({
+                message: err instanceof Error ? err.message : 'Failed to add activity',
+                type: 'error',
+            });
+            throw err;
+        }
+    };
+
     const handleFlightUpdate = async (flightId: string, updates: FlightInput) => {
         if (!trip) return;
         const previous = trip;
@@ -226,6 +241,7 @@ const TripDetailsView = () => {
                     trip={trip}
                     onStatusChange={(activityId, newStatus) =>
                         handleChildStatusChange('activity', activityId, newStatus)}
+                    onActivityAdd={handleActivityAdd}
                 />;
 
             case 'budget':
