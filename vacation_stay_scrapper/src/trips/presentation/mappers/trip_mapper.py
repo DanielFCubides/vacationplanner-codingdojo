@@ -6,6 +6,7 @@ Ensures compatibility with frontend Models.ts
 Supports creating trips with nested objects (flights, accommodations, etc.)
 """
 from datetime import date as date_type
+from typing import List, Tuple
 from uuid import uuid4
 
 from ...domain.entities.trip import Trip
@@ -34,7 +35,8 @@ from ..api.schemas import (
     AccommodationCreateRequest,
     ActivityCreateRequest,
     BudgetRequest,
-    BudgetCategoryRequest
+    BudgetCategoryRequest,
+    BudgetUpdateRequest
 )
 
 
@@ -404,16 +406,32 @@ class TripMapper:
         )
     
     @staticmethod
-    def _budget_from_request(request: BudgetRequest) -> Budget:
-        """Convert budget request to Budget value object"""
-        categories = [
+    def budget_update_from_request(
+        request: BudgetUpdateRequest,
+    ) -> Tuple[Money, List[BudgetCategory]]:
+        """Convert a budget edit to the Budget total and Budget categories"""
+        return (
+            Money(request.total, "USD"),
+            TripMapper._budget_categories_from_request(request.categories),
+        )
+
+    @staticmethod
+    def _budget_categories_from_request(
+        categories: List[BudgetCategoryRequest],
+    ) -> List[BudgetCategory]:
+        return [
             BudgetCategory(
                 category=cat.category,
                 planned=Money(cat.planned, "USD"),
                 spent=Money(cat.spent, "USD")
             )
-            for cat in request.categories
+            for cat in categories
         ]
+
+    @staticmethod
+    def _budget_from_request(request: BudgetRequest) -> Budget:
+        """Convert budget request to Budget value object"""
+        categories = TripMapper._budget_categories_from_request(request.categories)
         
         return Budget(
             total=Money(request.total, "USD"),

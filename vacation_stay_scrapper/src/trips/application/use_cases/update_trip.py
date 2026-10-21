@@ -35,6 +35,9 @@ class UpdateTripUseCase:
         if existing_trip is None:
             raise EntityNotFound(entity_type="Trip", entity_id=trip_id)
 
+        # Spent is derived from committed children, never taken from the client.
+        updated_trip.recalculate_spent()
+
         return await self._repository.save(updated_trip)
 
     async def update_status(self, trip_id: str, owner_id: str, new_status: TripStatus) -> Trip:

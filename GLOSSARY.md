@@ -48,6 +48,22 @@ _Avoid_: Confirmed (for Activities)
 A planned spending bucket on a Trip's budget, with its own planned and spent amounts, kept by hand. It is not linked to Activity categories.
 _Avoid_: Category (bare)
 
+**Budget total**:
+The amount the traveler plans to spend on a Trip, set by the traveler. 0 means no budget has been set.
+_Avoid_: Budget (bare, when the total is meant), limit
+
 **Spent**:
-The amount committed against a Trip's budget: the sum of confirmed Flight prices, confirmed Accommodation totals and booked Activity costs.
+The amount committed against a Trip's budget: the sum of confirmed Flight prices, confirmed Accommodation totals and booked Activity costs. It is always derived, never entered by the traveler.
 _Avoid_: Cost, used, expenses
+
+**Remaining**:
+Budget total minus Spent. It goes negative when the Trip is over budget.
+_Avoid_: Left, balance
+
+**Category spent**:
+An amount the traveler records by hand against one Budget category. It is independent of Spent, so the Category spent amounts need not add up to Spent.
+_Avoid_: Spent (bare)
+
+**Unallocated**:
+Budget total minus the sum of the Budget categories' planned amounts. It goes negative when more is planned than the Budget total.
+_Avoid_: Free, unassigned

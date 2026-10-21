@@ -30,7 +30,8 @@ from .schemas import (
     FlightCreateRequest,
     FlightUpdateRequest,
     AccommodationCreateRequest,
-    ActivityCreateRequest
+    ActivityCreateRequest,
+    BudgetUpdateRequest
 )
 from .dependencies import (
     get_create_trip_use_case,
@@ -42,6 +43,7 @@ from .dependencies import (
     get_update_flight_use_case,
     get_add_accommodation_use_case,
     get_add_activity_use_case,
+    get_update_budget_use_case,
     get_update_flight_status_use_case,
     get_update_accommodation_status_use_case,
     get_update_activity_status_use_case
@@ -55,6 +57,7 @@ from ...application.use_cases.update_flight import UpdateFlightUseCase
 from ...application.use_cases.add_flight import AddFlightUseCase
 from ...application.use_cases.add_accommodation import AddAccommodationUseCase
 from ...application.use_cases.add_activity import AddActivityUseCase
+from ...application.use_cases.update_budget import UpdateBudgetUseCase
 from ...application.use_cases.update_accommodation_status import UpdateAccommodationStatusUseCase
 from ...application.use_cases.update_activity_status import UpdateActivityStatusUseCase
 from ...domain.value_objects.trip_status import TripStatus
@@ -325,6 +328,34 @@ async def add_accommodation(
         )
     accommodation.status = "pending"
     result = await use_case.execute(trip_id, accommodation, owner_id=owner_id)
+    return TripMapper.to_response(result)
+
+
+@router.put(
+    "/{trip_id}/budget",
+    response_model=TripResponse,
+    summary="Edit the budget of an existing trip"
+)
+async def update_budget(
+        trip_id: str,
+        request: BudgetUpdateRequest,
+        use_case: UpdateBudgetUseCase = Depends(get_update_budget_use_case),
+        current_user: dict = Depends(get_current_user)
+) -> TripResponse:
+    """
+    Replace the Budget total and Budget categories of a trip. Only the trip
+    owner may do so. Spent is always re-derived from committed children.
+    """
+    owner_id = current_user["sub"]
+
+    total, categories = TripMapper.budget_update_from_request(request)
+    try:
+        result = await use_case.execute(trip_id, total, categories, owner_id=owner_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        )
     return TripMapper.to_response(result)
 
 

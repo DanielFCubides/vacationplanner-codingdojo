@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Trip, FlightInput, AccommodationInput, ActivityInput } from "./Models.ts";
+import { Trip, FlightInput, AccommodationInput, ActivityInput, BudgetInput } from "./Models.ts";
 import TripDetailOverview from "./TripDetailOverview.tsx";
 import TripFlightsOverview from "./components/flightsOverview.tsx";
 import StayOverview from "./components/StaysOverview.tsx";
@@ -144,6 +144,21 @@ const TripDetailsView = () => {
         }
     };
 
+    const handleBudgetUpdate = async (budget: BudgetInput) => {
+        if (!trip) return;
+        try {
+            // Authoritative response carries the re-derived Spent.
+            const updated = await tripService.updateBudget(trip.id, budget);
+            setTrip(updated);
+        } catch (err) {
+            setToast({
+                message: err instanceof Error ? err.message : 'Failed to update budget',
+                type: 'error',
+            });
+            throw err;
+        }
+    };
+
     const handleFlightUpdate = async (flightId: string, updates: FlightInput) => {
         if (!trip) return;
         const previous = trip;
@@ -245,7 +260,7 @@ const TripDetailsView = () => {
                 />;
 
             case 'budget':
-                return <BudgetOverview trip={trip} />;
+                return <BudgetOverview trip={trip} onBudgetUpdate={handleBudgetUpdate} />;
 
             case 'team':
                 return <TravellersOverview trip={trip} />;

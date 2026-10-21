@@ -103,3 +103,9 @@ export interface BudgetCategory {
     planned: number;
     spent: number;
 }
+
+// What the traveler edits on the Budget tab; Spent is always derived.
+export type BudgetInput = {
+    total: number;
+    categories: BudgetCategory[];
+};
