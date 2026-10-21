@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tripService } from '../services/TripService';
 import { useAuth } from '../hooks/useAuth';
+import { parseDate, toLocalDateString } from '../utils/formatDate';
 
 // Import step components
 import OverviewStep from './wizard-steps/OverviewStep';
@@ -123,9 +124,9 @@ const NewTripWizard = () => {
 
         try {
             // Backend `date` fields reject full ISO datetime strings, so serialize
-            // date-only values as YYYY-MM-DD before sending.
+            // date-only values as YYYY-MM-DD (local calendar day) before sending.
             const toDateString = (d: string | Date | undefined): string =>
-                (d ? new Date(d) : new Date()).toISOString().split('T')[0];
+                d ? toLocalDateString(parseDate(d)) : toLocalDateString();
 
             // Parse budget value
             const totalBudget = formData.budget.totalBudget

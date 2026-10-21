@@ -1,5 +1,5 @@
 import {Trip} from "./Models.ts";
-import {formatDate,formatTime} from "./utils/formatDate.ts"
+import {formatDate,formatTime,parseDate} from "./utils/formatDate.ts"
 import {getStatusColor} from "./utils/StatusColors.ts"
 
 interface TimelineItem {
@@ -40,7 +40,7 @@ const TripDetailOverview = ({trip}: { trip: Trip }) => {
             status: activity.status,
             icon: '📅',
         })),
-    ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    ].sort((a, b) => parseDate(a.date).getTime() - parseDate(b.date).getTime());
 
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -68,7 +68,8 @@ const TripDetailOverview = ({trip}: { trip: Trip }) => {
 
                                 <div className="text-right">
                                     <p className="text-sm text-gray-600 mb-1">
-                                        {formatDate(item.date)} • {formatTime(item.date)}
+                                        {formatDate(item.date)}
+                                        {item.type === 'flight' && ` • ${formatTime(item.date)}`}
                                     </p>
                                     <span
                                         className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>

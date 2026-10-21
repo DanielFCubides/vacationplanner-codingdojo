@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {tripService} from '../services/TripService';
+import {parseDate} from '../utils/formatDate';
 
 const TripPlansList = () => {
     const navigate = useNavigate();
@@ -44,7 +45,7 @@ const TripPlansList = () => {
     };
 
     const formatDate = (date) => {
-        return new Date(date).toLocaleDateString('en-US', {
+        return parseDate(date).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
