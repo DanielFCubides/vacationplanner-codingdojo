@@ -1,4 +1,4 @@
-import { Trip, FlightInput, AccommodationInput, ActivityInput } from "../Models";
+import { Trip, FlightInput, AccommodationInput, ActivityInput, BudgetInput } from "../Models";
 import { FEATURE_FLAGS } from "../config/featureFlags";
 import { BACKEND_URL } from "../config/constants.js";
 
@@ -29,6 +29,8 @@ export interface ITripService {
     addAccommodation(tripId: string, accommodation: AccommodationInput): Promise<Trip>;
 
     addActivity(tripId: string, activity: ActivityInput): Promise<Trip>;
+
+    updateBudget(tripId: string, budget: BudgetInput): Promise<Trip>;
 
     updateAccommodationStatus(tripId: string, accommodationId: string, status: string): Promise<Trip>;
 
@@ -207,6 +209,13 @@ class SimpleTripService implements ITripService {
             checkIn: new Date(accommodation.checkIn),
             checkOut: new Date(accommodation.checkOut),
         });
+        return trip;
+    }
+
+    async updateBudget(tripId: string, budget: BudgetInput): Promise<Trip> {
+        await this.delay(200);
+        const trip = this.requireTrip(tripId);
+        trip.budget = { ...trip.budget, total: budget.total, categories: budget.categories };
         return trip;
     }
 
@@ -392,6 +401,31 @@ class ApiTripService implements ITripService {
         if (!response.ok) {
             // 404 trip not found, 422 validation (e.g. check-out before check-in)
             let detail = 'Failed to add accommodation';
+            try {
+                const body = await response.json();
+                if (typeof body.detail === 'string') {
+                    detail = body.detail;
+                } else {
+                    detail = body.details || body.message || detail;
+                }
+            } catch {
+                // response had no JSON body; keep the default message
+            }
+            throw new Error(detail);
+        }
+        return response.json();
+    }
+
+    async updateBudget(tripId: string, budget: BudgetInput): Promise<Trip> {
+        const response = await fetch(`${this.baseUrl}/${tripId}/budget`, {
+            method: 'PUT',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(budget),
+        });
+        if (!response.ok) {
+            // 404 trip not found, 422 validation (e.g. duplicate category name)
+            let detail = 'Failed to update budget';
             try {
                 const body = await response.json();
                 if (typeof body.detail === 'string') {
