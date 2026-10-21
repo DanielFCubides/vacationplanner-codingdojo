@@ -42,6 +42,9 @@ class CreateTripUseCase:
         if not trip.owner_id or not trip.owner_id.strip():
             raise ValueError("Cannot create a trip without an owner")
 
+        # Spent is derived from committed children, never taken from the client.
+        trip.recalculate_spent()
+
         saved_trip = await self._repository.save(trip)
 
         return saved_trip

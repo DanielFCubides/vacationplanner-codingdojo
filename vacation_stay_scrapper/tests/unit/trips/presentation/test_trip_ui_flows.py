@@ -315,6 +315,114 @@ class TestActivitiesTab:
         assert response.status_code == 422
 
 
+def budget_form_body(**overrides) -> dict:
+    """Budget as the Budget tab edit form submits it."""
+    body = {
+        "total": 3000,
+        "categories": [
+            {"category": "Food", "planned": 600, "spent": 120},
+            {"category": "Transport", "planned": 400, "spent": 0},
+        ],
+    }
+    body.update(overrides)
+    return body
+
+
+def put_budget(ui, trip_id: str, **overrides):
+    return ui.put(f"{TRIPS}/{trip_id}/budget", json=budget_form_body(**overrides))
+
+
+class TestBudgetTab:
+
+    def test_edit_total_and_categories_keeps_spent_derived(self, ui):
+        trip_id = create_trip(ui)["id"]
+        flight = add_flight(ui, trip_id, price=900)
+        set_status(ui, trip_id, "flights", flight["id"], "confirmed")
+
+        response = put_budget(ui, trip_id)
+
+        assert response.status_code == 200
+        assert response.json()["budget"] == {
+            "total": 3000,
+            "spent": 900,
+            "categories": [
+                {"category": "Food", "planned": 600, "spent": 120},
+                {"category": "Transport", "planned": 400, "spent": 0},
+            ],
+        }
+        assert ui.get(f"{TRIPS}/{trip_id}").json()["budget"]["total"] == 3000
+
+    def test_spent_sent_by_the_client_is_ignored(self, ui):
+        trip_id = create_trip(ui)["id"]
+
+        response = ui.put(
+            f"{TRIPS}/{trip_id}/budget", json={**budget_form_body(), "spent": 999}
+        )
+
+        assert response.json()["budget"]["spent"] == 0
+
+    def test_removing_every_category_and_zero_total_is_allowed(self, ui):
+        trip_id = create_trip(ui)["id"]
+        put_budget(ui, trip_id)
+
+        response = put_budget(ui, trip_id, total=0, categories=[])
+
+        assert response.status_code == 200
+        assert response.json()["budget"] == {"total": 0, "spent": 0, "categories": []}
+
+    def test_total_below_spent_is_allowed(self, ui):
+        trip_id = create_trip(ui)["id"]
+        flight = add_flight(ui, trip_id, price=900)
+        set_status(ui, trip_id, "flights", flight["id"], "confirmed")
+
+        response = put_budget(ui, trip_id, total=500)
+
+        assert response.status_code == 200
+        assert response.json()["budget"]["spent"] == 900
+
+    def test_duplicate_category_names_return_422(self, ui):
+        trip_id = create_trip(ui)["id"]
+
+        response = put_budget(ui, trip_id, categories=[
+            {"category": "Food", "planned": 100, "spent": 0},
+            {"category": " food ", "planned": 50, "spent": 0},
+        ])
+
+        assert response.status_code == 422
+        assert ui.get(f"{TRIPS}/{trip_id}").json()["budget"]["total"] == 5000
+
+    @pytest.mark.parametrize("body", [
+        {"total": -1},
+        {"categories": [{"category": "Food", "planned": -1, "spent": 0}]},
+        {"categories": [{"category": "Food", "planned": 10, "spent": -1}]},
+        {"categories": [{"category": "", "planned": 10, "spent": 0}]},
+        {"categories": [{"category": "   ", "planned": 10, "spent": 0}]},
+    ])
+    def test_invalid_budget_returns_422(self, ui, body):
+        trip_id = create_trip(ui)["id"]
+
+        assert put_budget(ui, trip_id, **body).status_code == 422
+
+    def test_missing_trip_returns_404(self, ui):
+        assert put_budget(ui, "999").status_code == 404
+
+    def test_trip_update_cannot_overwrite_spent(self, ui):
+        trip_id = create_trip(ui)["id"]
+
+        response = ui.put(
+            f"{TRIPS}/{trip_id}",
+            json={"budget": {"total": 100, "spent": 999, "categories": []}},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["budget"]["spent"] == 0
+
+    def test_trip_creation_cannot_set_spent(self, ui):
+        trip = create_trip(ui, budget={"total": 100, "spent": 999, "categories": []})
+
+        assert trip["budget"]["spent"] == 0
+
+
 class TestOwnership:
 
     @pytest.fixture
@@ -333,6 +441,7 @@ class TestOwnership:
         assert ui.post(
             f"{TRIPS}/{trip['id']}/accommodations", json=accommodation_form_body()
         ).status_code == 404
+        assert put_budget(ui, trip["id"]).status_code == 404
 
     def test_cannot_change_children_of_someone_elses_trip(self, ui, foreign_trip):
         trip, flight = foreign_trip

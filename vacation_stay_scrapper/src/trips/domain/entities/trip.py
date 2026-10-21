@@ -4,12 +4,13 @@ Trip Aggregate Root
 Main entity representing a complete trip with all its components.
 Matches frontend Trip model in Models.ts
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date
 from typing import List, Optional
 
 from ..value_objects.trip_status import TripStatus
-from ..value_objects.budget import Budget
+from ..value_objects.budget import Budget, BudgetCategory
+from ..value_objects.money import Money
 from ..services.child_status_transition import (
     FlightStatusTransitionValidator,
     AccommodationStatusTransitionValidator,
@@ -211,6 +212,37 @@ class Trip:
     def set_budget(self, budget: Budget):
         """Set the trip budget"""
         self.budget = budget
+
+    def update_budget(self, total: Money, categories: List[BudgetCategory]):
+        """
+        Replace the Budget total and Budget categories set by the traveler.
+
+        Category names are trimmed and must be non-empty and unique
+        (ignoring case). Spent is always re-derived from committed
+        children, never taken from the caller.
+
+        Raises:
+            ValueError: blank or duplicate category name
+        """
+        cleaned = []
+        seen = set()
+        for cat in categories:
+            name = cat.category.strip()
+            if not name:
+                raise ValueError("Budget category name cannot be blank")
+            if name.lower() in seen:
+                raise ValueError(f"Duplicate budget category: {name}")
+            seen.add(name.lower())
+            cleaned.append(replace(cat, category=name))
+
+        self.budget = Budget(
+            total=total, spent=Money.zero(total.currency), categories=cleaned
+        )
+        self._recalculate_budget()
+
+    def recalculate_spent(self):
+        """Re-derive Spent from committed children (e.g. after a bulk update)."""
+        self._recalculate_budget()
 
     def _recalculate_budget(self):
         """

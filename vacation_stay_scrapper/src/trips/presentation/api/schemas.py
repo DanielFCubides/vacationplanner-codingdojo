@@ -106,6 +106,12 @@ class BudgetRequest(BaseModel):
     categories: List[BudgetCategoryRequest] = Field(default_factory=list)
 
 
+class BudgetUpdateRequest(BaseModel):
+    """Request schema for editing a trip's budget (Spent is always derived)"""
+    total: float = Field(..., ge=0)
+    categories: List[BudgetCategoryRequest] = Field(default_factory=list)
+
+
 # ============================================================================
 # RESPONSE SCHEMAS (Nested structures)
 # ============================================================================
