@@ -1,6 +1,6 @@
 import {useState} from "react";
 import {Trip, AccommodationInput} from "../Models.ts";
-import {formatDate} from "../utils/formatDate.ts";
+import {formatDate, parseDate} from "../utils/formatDate.ts";
 import ChildStatusControl from "./ChildStatusControl.tsx";
 import TripAccommodationForm from "./TripAccommodationForm.tsx";
 
@@ -12,7 +12,7 @@ interface Props {
 }
 
 const byCheckIn = (a: Trip["accommodations"][number], b: Trip["accommodations"][number]) =>
-    new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime();
+    parseDate(a.checkIn).getTime() - parseDate(b.checkIn).getTime();
 
 const StaysOverview = ({trip, editable = true, onStatusChange, onAccommodationAdd}: Props) => {
     const [adding, setAdding] = useState(false);
