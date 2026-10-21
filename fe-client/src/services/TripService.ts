@@ -1,4 +1,4 @@
-import { Trip, FlightInput, AccommodationInput } from "../Models";
+import { Trip, FlightInput, AccommodationInput, ActivityInput } from "../Models";
 import { FEATURE_FLAGS } from "../config/featureFlags";
 import { BACKEND_URL } from "../config/constants.js";
 
@@ -27,6 +27,8 @@ export interface ITripService {
     addFlight(tripId: string, flight: FlightInput): Promise<Trip>;
 
     addAccommodation(tripId: string, accommodation: AccommodationInput): Promise<Trip>;
+
+    addActivity(tripId: string, activity: ActivityInput): Promise<Trip>;
 
     updateAccommodationStatus(tripId: string, accommodationId: string, status: string): Promise<Trip>;
 
@@ -217,6 +219,18 @@ class SimpleTripService implements ITripService {
         return trip;
     }
 
+    async addActivity(tripId: string, activity: ActivityInput): Promise<Trip> {
+        await this.delay(200);
+        const trip = this.requireTrip(tripId);
+        trip.activities.push({
+            ...activity,
+            id: crypto.randomUUID(),
+            status: 'pending',
+            date: new Date(activity.date),
+        });
+        return trip;
+    }
+
     async updateActivityStatus(tripId: string, activityId: string, status: string): Promise<Trip> {
         await this.delay(200);
         const trip = this.requireTrip(tripId);
@@ -395,6 +409,31 @@ class ApiTripService implements ITripService {
 
     async updateAccommodationStatus(tripId: string, accommodationId: string, status: string): Promise<Trip> {
         return this.patchChildStatus(`${tripId}/accommodations/${accommodationId}/status`, status);
+    }
+
+    async addActivity(tripId: string, activity: ActivityInput): Promise<Trip> {
+        const response = await fetch(`${this.baseUrl}/${tripId}/activities`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(activity),
+        });
+        if (!response.ok) {
+            // 404 trip not found, 422 validation (e.g. negative cost)
+            let detail = 'Failed to add activity';
+            try {
+                const body = await response.json();
+                if (typeof body.detail === 'string') {
+                    detail = body.detail;
+                } else {
+                    detail = body.details || body.message || detail;
+                }
+            } catch {
+                // response had no JSON body; keep the default message
+            }
+            throw new Error(detail);
+        }
+        return response.json();
     }
 
     async updateActivityStatus(tripId: string, activityId: string, status: string): Promise<Trip> {

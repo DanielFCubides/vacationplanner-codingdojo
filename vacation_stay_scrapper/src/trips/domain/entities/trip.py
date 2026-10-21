@@ -176,12 +176,14 @@ class Trip:
     # Activity management
     
     def add_activity(self, activity: Activity):
-        """Add an activity to the trip"""
+        """Add an activity to the trip and recalculate the budget"""
         self.activities.append(activity)
+        self._recalculate_budget()
     
     def remove_activity(self, activity_id: str):
-        """Remove an activity from the trip"""
+        """Remove an activity from the trip and recalculate the budget"""
         self.activities = [a for a in self.activities if a.id != activity_id]
+        self._recalculate_budget()
     
     def get_booked_activities(self) -> List[Activity]:
         """Get all booked activities"""

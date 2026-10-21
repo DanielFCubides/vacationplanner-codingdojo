@@ -29,7 +29,8 @@ from .schemas import (
     ChildStatusUpdateRequest,
     FlightCreateRequest,
     FlightUpdateRequest,
-    AccommodationCreateRequest
+    AccommodationCreateRequest,
+    ActivityCreateRequest
 )
 from .dependencies import (
     get_create_trip_use_case,
@@ -40,6 +41,7 @@ from .dependencies import (
     get_add_flight_use_case,
     get_update_flight_use_case,
     get_add_accommodation_use_case,
+    get_add_activity_use_case,
     get_update_flight_status_use_case,
     get_update_accommodation_status_use_case,
     get_update_activity_status_use_case
@@ -52,6 +54,7 @@ from ...application.use_cases.update_flight_status import UpdateFlightStatusUseC
 from ...application.use_cases.update_flight import UpdateFlightUseCase
 from ...application.use_cases.add_flight import AddFlightUseCase
 from ...application.use_cases.add_accommodation import AddAccommodationUseCase
+from ...application.use_cases.add_activity import AddActivityUseCase
 from ...application.use_cases.update_accommodation_status import UpdateAccommodationStatusUseCase
 from ...application.use_cases.update_activity_status import UpdateActivityStatusUseCase
 from ...domain.value_objects.trip_status import TripStatus
@@ -343,6 +346,37 @@ async def update_accommodation_status(
     owner_id = current_user["sub"]
     trip = await use_case.execute(trip_id, accommodation_id, request.status, owner_id=owner_id)
     return TripMapper.to_response(trip)
+
+
+@router.post(
+    "/{trip_id}/activities",
+    response_model=TripResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add an activity to an existing trip"
+)
+async def add_activity(
+        trip_id: str,
+        request: ActivityCreateRequest,
+        use_case: AddActivityUseCase = Depends(get_add_activity_use_case),
+        current_user: dict = Depends(get_current_user)
+) -> TripResponse:
+    """
+    Add a single activity to a trip. Only the trip owner may do so. New
+    activities always start as pending; booking goes through the activity
+    status endpoint.
+    """
+    owner_id = current_user["sub"]
+
+    try:
+        activity = TripMapper._activity_from_request(request)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        )
+    activity.status = "pending"
+    result = await use_case.execute(trip_id, activity, owner_id=owner_id)
+    return TripMapper.to_response(result)
 
 
 @router.patch(

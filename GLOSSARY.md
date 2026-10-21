@@ -32,6 +32,22 @@ _Avoid_: Price, rate
 The full amount paid for an Accommodation, including fees and taxes beyond the Nightly rate. The user enters it; it is not nights × Nightly rate.
 _Avoid_: Cost, price
 
+**Activity**:
+Something the Trip's travelers do on one date, e.g. a tour, a show or a dinner. It has an Activity category and a cost, which may be 0. It may fall outside the Trip's dates.
+_Avoid_: Event, experience, excursion
+
+**Activity category**:
+The kind of Activity: Sightseeing, Adventure, Food & Dining, Entertainment, Relaxation or Shopping.
+_Avoid_: Category (bare), type
+
+**Booked**:
+The committed state of an Activity. Flights and Accommodations use confirmed instead.
+_Avoid_: Confirmed (for Activities)
+
+**Budget category**:
+A planned spending bucket on a Trip's budget, with its own planned and spent amounts, kept by hand. It is not linked to Activity categories.
+_Avoid_: Category (bare)
+
 **Spent**:
 The amount committed against a Trip's budget: the sum of confirmed Flight prices, confirmed Accommodation totals and booked Activity costs.
 _Avoid_: Cost, used, expenses
