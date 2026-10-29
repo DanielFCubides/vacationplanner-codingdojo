@@ -4,7 +4,7 @@ export interface Trip {
     destination: string;
     startDate: Date;
     endDate: Date;
-    status: 'planning' | 'confirmed' | 'completed';
+    status: 'planning' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
     travelers: Traveler[];
     flights: Flight[];
     accommodations: Accommodation[];
@@ -54,6 +54,15 @@ export interface Flight {
     status: 'confirmed' | 'pending' | 'cancelled';
 }
 
+type FlightLocationInput = { airport: string; city: string; time: string };
+
+// Flight data sent to the backend: ISO string times; id and status are
+// owned by the backend (new flights always start pending).
+export type FlightInput = Omit<Flight, 'id' | 'status' | 'departure' | 'arrival'> & {
+    departure: FlightLocationInput;
+    arrival: FlightLocationInput;
+};
+
 export interface Accommodation {
     id: string;
     name: string;
@@ -63,10 +72,16 @@ export interface Accommodation {
     checkOut: Date;
     pricePerNight: number;
     totalPrice: number;
-    rating: number;
+    rating: number | null;
     amenities: string[];
     status: 'confirmed' | 'pending' | 'cancelled';
 }
+
+// Accommodation payload sent when adding; the server assigns id and status.
+export type AccommodationInput = Omit<Accommodation, 'id' | 'status' | 'image' | 'checkIn' | 'checkOut'> & {
+    checkIn: string;  // YYYY-MM-DD
+    checkOut: string; // YYYY-MM-DD
+};
 
 export interface Activity {
     id: string;
@@ -78,8 +93,19 @@ export interface Activity {
     description: string;
 }
 
+// Activity payload sent when adding; the server assigns id and status.
+export type ActivityInput = Omit<Activity, 'id' | 'status' | 'date'> & {
+    date: string; // YYYY-MM-DD
+};
+
 export interface BudgetCategory {
     category: string;
     planned: number;
     spent: number;
 }
+
+// What the traveler edits on the Budget tab; Spent is always derived.
+export type BudgetInput = {
+    total: number;
+    categories: BudgetCategory[];
+};

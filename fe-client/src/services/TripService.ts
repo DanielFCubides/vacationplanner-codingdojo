@@ -1,4 +1,4 @@
-import { Trip } from "../Models";
+import { Trip, FlightInput, AccommodationInput, ActivityInput, BudgetInput } from "../Models";
 import { FEATURE_FLAGS } from "../config/featureFlags";
 import { BACKEND_URL } from "../config/constants.js";
 
@@ -16,9 +16,21 @@ export interface ITripService {
 
     updateTrip(id: string, updates: Partial<Trip>): Promise<Trip>;
 
+    updateTripStatus(id: string, status: string): Promise<Trip>;
+
     deleteTrip(id: string): Promise<boolean>;
 
     updateFlightStatus(tripId: string, flightId: string, status: string): Promise<Trip>;
+
+    updateFlight(tripId: string, flightId: string, updates: FlightInput): Promise<Trip>;
+
+    addFlight(tripId: string, flight: FlightInput): Promise<Trip>;
+
+    addAccommodation(tripId: string, accommodation: AccommodationInput): Promise<Trip>;
+
+    addActivity(tripId: string, activity: ActivityInput): Promise<Trip>;
+
+    updateBudget(tripId: string, budget: BudgetInput): Promise<Trip>;
 
     updateAccommodationStatus(tripId: string, accommodationId: string, status: string): Promise<Trip>;
 
@@ -113,6 +125,30 @@ class SimpleTripService implements ITripService {
     }
 
     /**
+     * Update trip status
+     */
+    async updateTripStatus(id: string, status: string): Promise<Trip> {
+        await this.delay(200);
+
+        const index = this.trips.findIndex(t => t.id === id);
+        if (index === -1) {
+            throw new Error(`Trip with id ${id} not found`);
+        }
+
+        // Update status
+        const updatedTrip = {
+            ...this.trips[index],
+            status: status as Trip['status'],
+        };
+
+        this.trips[index] = updatedTrip;
+
+        console.log('✅ Trip status updated:', updatedTrip);
+
+        return updatedTrip;
+    }
+
+    /**
      * Delete trip
      */
     async deleteTrip(id: string): Promise<boolean> {
@@ -140,12 +176,67 @@ class SimpleTripService implements ITripService {
         return trip;
     }
 
+    async updateFlight(tripId: string, flightId: string, updates: FlightInput): Promise<Trip> {
+        await this.delay(200);
+        const trip = this.requireTrip(tripId);
+        const flight = trip.flights.find(f => f.id === flightId);
+        if (!flight) throw new Error('Flight not found in this trip');
+        Object.assign(flight, updates, { id: flightId });
+        return trip;
+    }
+
+    async addFlight(tripId: string, flight: FlightInput): Promise<Trip> {
+        await this.delay(200);
+        const trip = this.requireTrip(tripId);
+        trip.flights.push({
+            ...flight,
+            id: crypto.randomUUID(),
+            status: 'pending',
+            departure: { ...flight.departure, time: new Date(flight.departure.time) },
+            arrival: { ...flight.arrival, time: new Date(flight.arrival.time) },
+        });
+        return trip;
+    }
+
+    async addAccommodation(tripId: string, accommodation: AccommodationInput): Promise<Trip> {
+        await this.delay(200);
+        const trip = this.requireTrip(tripId);
+        trip.accommodations.push({
+            ...accommodation,
+            id: crypto.randomUUID(),
+            status: 'pending',
+            image: '',
+            checkIn: new Date(accommodation.checkIn),
+            checkOut: new Date(accommodation.checkOut),
+        });
+        return trip;
+    }
+
+    async updateBudget(tripId: string, budget: BudgetInput): Promise<Trip> {
+        await this.delay(200);
+        const trip = this.requireTrip(tripId);
+        trip.budget = { ...trip.budget, total: budget.total, categories: budget.categories };
+        return trip;
+    }
+
     async updateAccommodationStatus(tripId: string, accommodationId: string, status: string): Promise<Trip> {
         await this.delay(200);
         const trip = this.requireTrip(tripId);
         const accommodation = trip.accommodations.find(a => a.id === accommodationId);
         if (!accommodation) throw new Error('Accommodation not found in this trip');
         accommodation.status = status as Trip['accommodations'][number]['status'];
+        return trip;
+    }
+
+    async addActivity(tripId: string, activity: ActivityInput): Promise<Trip> {
+        await this.delay(200);
+        const trip = this.requireTrip(tripId);
+        trip.activities.push({
+            ...activity,
+            id: crypto.randomUUID(),
+            status: 'pending',
+            date: new Date(activity.date),
+        });
         return trip;
     }
 
@@ -230,6 +321,17 @@ class ApiTripService implements ITripService {
         return response.json();
     }
 
+    async updateTripStatus(id: string, status: string): Promise<Trip> {
+        const response = await fetch(`${this.baseUrl}/${id}/status`, {
+            method: 'PATCH',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status }),
+        });
+        if (!response.ok) throw new Error('Failed to update trip status');
+        return response.json();
+    }
+
     async deleteTrip(id: string): Promise<boolean> {
         const response = await fetch(`${this.baseUrl}/${id}`, {
             method: 'DELETE',
@@ -242,8 +344,130 @@ class ApiTripService implements ITripService {
         return this.patchChildStatus(`${tripId}/flights/${flightId}/status`, status);
     }
 
+    async updateFlight(tripId: string, flightId: string, updates: FlightInput): Promise<Trip> {
+        const response = await fetch(`${this.baseUrl}/${tripId}/flights/${flightId}`, {
+            method: 'PUT',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates),
+        });
+        if (!response.ok) {
+            // Surface the backend's descriptive message (404 trip/flight
+            // not found, 422 validation) so the caller can show it inline.
+            let detail = 'Failed to update flight';
+            try {
+                const body = await response.json();
+                detail = body.details || body.message || detail;
+            } catch {
+                // response had no JSON body; keep the default message
+            }
+            throw new Error(detail);
+        }
+        return response.json();
+    }
+
+    async addFlight(tripId: string, flight: FlightInput): Promise<Trip> {
+        const response = await fetch(`${this.baseUrl}/${tripId}/flights`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(flight),
+        });
+        if (!response.ok) {
+            // 404 trip not found, 422 validation (e.g. arrival before departure)
+            let detail = 'Failed to add flight';
+            try {
+                const body = await response.json();
+                if (typeof body.detail === 'string') {
+                    detail = body.detail;
+                } else {
+                    detail = body.details || body.message || detail;
+                }
+            } catch {
+                // response had no JSON body; keep the default message
+            }
+            throw new Error(detail);
+        }
+        return response.json();
+    }
+
+    async addAccommodation(tripId: string, accommodation: AccommodationInput): Promise<Trip> {
+        const response = await fetch(`${this.baseUrl}/${tripId}/accommodations`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(accommodation),
+        });
+        if (!response.ok) {
+            // 404 trip not found, 422 validation (e.g. check-out before check-in)
+            let detail = 'Failed to add accommodation';
+            try {
+                const body = await response.json();
+                if (typeof body.detail === 'string') {
+                    detail = body.detail;
+                } else {
+                    detail = body.details || body.message || detail;
+                }
+            } catch {
+                // response had no JSON body; keep the default message
+            }
+            throw new Error(detail);
+        }
+        return response.json();
+    }
+
+    async updateBudget(tripId: string, budget: BudgetInput): Promise<Trip> {
+        const response = await fetch(`${this.baseUrl}/${tripId}/budget`, {
+            method: 'PUT',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(budget),
+        });
+        if (!response.ok) {
+            // 404 trip not found, 422 validation (e.g. duplicate category name)
+            let detail = 'Failed to update budget';
+            try {
+                const body = await response.json();
+                if (typeof body.detail === 'string') {
+                    detail = body.detail;
+                } else {
+                    detail = body.details || body.message || detail;
+                }
+            } catch {
+                // response had no JSON body; keep the default message
+            }
+            throw new Error(detail);
+        }
+        return response.json();
+    }
+
     async updateAccommodationStatus(tripId: string, accommodationId: string, status: string): Promise<Trip> {
         return this.patchChildStatus(`${tripId}/accommodations/${accommodationId}/status`, status);
+    }
+
+    async addActivity(tripId: string, activity: ActivityInput): Promise<Trip> {
+        const response = await fetch(`${this.baseUrl}/${tripId}/activities`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(activity),
+        });
+        if (!response.ok) {
+            // 404 trip not found, 422 validation (e.g. negative cost)
+            let detail = 'Failed to add activity';
+            try {
+                const body = await response.json();
+                if (typeof body.detail === 'string') {
+                    detail = body.detail;
+                } else {
+                    detail = body.details || body.message || detail;
+                }
+            } catch {
+                // response had no JSON body; keep the default message
+            }
+            throw new Error(detail);
+        }
+        return response.json();
     }
 
     async updateActivityStatus(tripId: string, activityId: string, status: string): Promise<Trip> {

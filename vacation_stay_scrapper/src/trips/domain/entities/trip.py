@@ -4,12 +4,13 @@ Trip Aggregate Root
 Main entity representing a complete trip with all its components.
 Matches frontend Trip model in Models.ts
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date
 from typing import List, Optional
 
 from ..value_objects.trip_status import TripStatus
-from ..value_objects.budget import Budget
+from ..value_objects.budget import Budget, BudgetCategory
+from ..value_objects.money import Money
 from ..services.child_status_transition import (
     FlightStatusTransitionValidator,
     AccommodationStatusTransitionValidator,
@@ -87,16 +88,34 @@ class Trip:
     # Flight management
     
     def add_flight(self, flight: Flight):
-        """Add a flight to the trip"""
+        """Add a flight to the trip and recalculate the budget"""
         self.flights.append(flight)
+        self._recalculate_budget()
     
     def remove_flight(self, flight_id: str):
-        """Remove a flight from the trip"""
+        """Remove a flight from the trip and recalculate the budget"""
         self.flights = [f for f in self.flights if f.id != flight_id]
+        self._recalculate_budget()
     
     def get_confirmed_flights(self) -> List[Flight]:
         """Get all confirmed flights"""
         return [f for f in self.flights if f.status == "confirmed"]
+
+    def replace_flight(self, flight: Flight):
+        """
+        Replace an existing flight with an updated instance, keeping its
+        position among the trip's flights and recalculating the budget.
+
+        Raises:
+            ChildNotFound: if no flight with the same id exists on this trip
+        """
+        index = next(
+            (i for i, f in enumerate(self.flights) if f.id == flight.id), None
+        )
+        if index is None:
+            raise ChildNotFound("Flight", flight.id)
+        self.flights[index] = flight
+        self._recalculate_budget()
 
     def update_flight_status(self, flight_id: str, new_status: str):
         """
@@ -116,14 +135,16 @@ class Trip:
     # Accommodation management
     
     def add_accommodation(self, accommodation: Accommodation):
-        """Add an accommodation to the trip"""
+        """Add an accommodation to the trip and recalculate the budget"""
         self.accommodations.append(accommodation)
+        self._recalculate_budget()
     
     def remove_accommodation(self, accommodation_id: str):
-        """Remove an accommodation from the trip"""
+        """Remove an accommodation from the trip and recalculate the budget"""
         self.accommodations = [
             a for a in self.accommodations if a.id != accommodation_id
         ]
+        self._recalculate_budget()
     
     def get_confirmed_accommodations(self) -> List[Accommodation]:
         """Get all confirmed accommodations"""
@@ -156,12 +177,14 @@ class Trip:
     # Activity management
     
     def add_activity(self, activity: Activity):
-        """Add an activity to the trip"""
+        """Add an activity to the trip and recalculate the budget"""
         self.activities.append(activity)
+        self._recalculate_budget()
     
     def remove_activity(self, activity_id: str):
-        """Remove an activity from the trip"""
+        """Remove an activity from the trip and recalculate the budget"""
         self.activities = [a for a in self.activities if a.id != activity_id]
+        self._recalculate_budget()
     
     def get_booked_activities(self) -> List[Activity]:
         """Get all booked activities"""
@@ -189,6 +212,37 @@ class Trip:
     def set_budget(self, budget: Budget):
         """Set the trip budget"""
         self.budget = budget
+
+    def update_budget(self, total: Money, categories: List[BudgetCategory]):
+        """
+        Replace the Budget total and Budget categories set by the traveler.
+
+        Category names are trimmed and must be non-empty and unique
+        (ignoring case). Spent is always re-derived from committed
+        children, never taken from the caller.
+
+        Raises:
+            ValueError: blank or duplicate category name
+        """
+        cleaned = []
+        seen = set()
+        for cat in categories:
+            name = cat.category.strip()
+            if not name:
+                raise ValueError("Budget category name cannot be blank")
+            if name.lower() in seen:
+                raise ValueError(f"Duplicate budget category: {name}")
+            seen.add(name.lower())
+            cleaned.append(replace(cat, category=name))
+
+        self.budget = Budget(
+            total=total, spent=Money.zero(total.currency), categories=cleaned
+        )
+        self._recalculate_budget()
+
+    def recalculate_spent(self):
+        """Re-derive Spent from committed children (e.g. after a bulk update)."""
+        self._recalculate_budget()
 
     def _recalculate_budget(self):
         """

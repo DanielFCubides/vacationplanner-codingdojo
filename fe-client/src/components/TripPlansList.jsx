@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {tripService} from '../services/TripService';
+import {parseDate} from '../utils/formatDate';
 
 const TripPlansList = () => {
     const navigate = useNavigate();
@@ -31,16 +32,20 @@ const TripPlansList = () => {
             case 'confirmed':
                 return 'bg-green-100 text-green-800 border-green-200';
             case 'planning':
-                return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                return 'bg-blue-100 text-blue-800 border-blue-200';
+            case 'in_progress':
+                return 'bg-amber-100 text-amber-800 border-amber-200';
             case 'completed':
                 return 'bg-gray-100 text-gray-800 border-gray-200';
+            case 'cancelled':
+                return 'bg-red-100 text-red-800 border-red-200';
             default:
                 return 'bg-gray-100 text-gray-800 border-gray-200';
         }
     };
 
     const formatDate = (date) => {
-        return new Date(date).toLocaleDateString('en-US', {
+        return parseDate(date).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',

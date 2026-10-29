@@ -6,6 +6,7 @@ Ensures compatibility with frontend Models.ts
 Supports creating trips with nested objects (flights, accommodations, etc.)
 """
 from datetime import date as date_type
+from typing import List, Tuple
 from uuid import uuid4
 
 from ...domain.entities.trip import Trip
@@ -30,10 +31,12 @@ from ..api.schemas import (
     BudgetCategoryResponse,
     TravelerCreateRequest,
     FlightCreateRequest,
+    FlightUpdateRequest,
     AccommodationCreateRequest,
     ActivityCreateRequest,
     BudgetRequest,
-    BudgetCategoryRequest
+    BudgetCategoryRequest,
+    BudgetUpdateRequest
 )
 
 
@@ -193,6 +196,62 @@ class TripMapper:
     # ========================================================================
     
     @staticmethod
+    def apply_flight_update(flight: Flight, request: FlightUpdateRequest) -> Flight:
+        """Apply partial flight updates onto an existing Flight, preserving its id"""
+        return Flight(
+            id=flight.id,
+            airline=request.airline if request.airline is not None else flight.airline,
+            flight_number=(
+                request.flight_number
+                if request.flight_number is not None
+                else flight.flight_number
+            ),
+            departure_airport=Airport(
+                code=(
+                    request.departure.airport
+                    if request.departure
+                    else flight.departure_airport.code
+                ),
+                city=(
+                    request.departure.city
+                    if request.departure
+                    else flight.departure_airport.city
+                ),
+            ),
+            departure_time=(
+                request.departure.time if request.departure else flight.departure_time
+            ),
+            arrival_airport=Airport(
+                code=(
+                    request.arrival.airport
+                    if request.arrival
+                    else flight.arrival_airport.code
+                ),
+                city=(
+                    request.arrival.city
+                    if request.arrival
+                    else flight.arrival_airport.city
+                ),
+            ),
+            arrival_time=(
+                request.arrival.time if request.arrival else flight.arrival_time
+            ),
+            duration=request.duration if request.duration is not None else flight.duration,
+            price=(
+                Money(request.price, flight.price.currency)
+                if request.price is not None
+                else flight.price
+            ),
+            stops=request.stops if request.stops is not None else flight.stops,
+            cabin_class=(
+                request.cabin_class
+                if request.cabin_class is not None
+                else flight.cabin_class
+            ),
+            status=request.status if request.status is not None else flight.status,
+        )
+
+    @staticmethod
     def _traveler_to_response(traveler: Traveler) -> TravelerResponse:
         """Convert Traveler entity to response matching frontend"""
         return TravelerResponse(
@@ -347,16 +406,32 @@ class TripMapper:
         )
     
     @staticmethod
-    def _budget_from_request(request: BudgetRequest) -> Budget:
-        """Convert budget request to Budget value object"""
-        categories = [
+    def budget_update_from_request(
+        request: BudgetUpdateRequest,
+    ) -> Tuple[Money, List[BudgetCategory]]:
+        """Convert a budget edit to the Budget total and Budget categories"""
+        return (
+            Money(request.total, "USD"),
+            TripMapper._budget_categories_from_request(request.categories),
+        )
+
+    @staticmethod
+    def _budget_categories_from_request(
+        categories: List[BudgetCategoryRequest],
+    ) -> List[BudgetCategory]:
+        return [
             BudgetCategory(
                 category=cat.category,
                 planned=Money(cat.planned, "USD"),
                 spent=Money(cat.spent, "USD")
             )
-            for cat in request.categories
+            for cat in categories
         ]
+
+    @staticmethod
+    def _budget_from_request(request: BudgetRequest) -> Budget:
+        """Convert budget request to Budget value object"""
+        categories = TripMapper._budget_categories_from_request(request.categories)
         
         return Budget(
             total=Money(request.total, "USD"),

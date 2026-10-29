@@ -25,7 +25,7 @@ class Accommodation:
     check_out: date
     price_per_night: Money
     total_price: Money
-    rating: float
+    rating: Optional[float]  # None when the user has no rating
     amenities: List[str]
     
     # Optional fields (with defaults)
@@ -40,7 +40,7 @@ class Accommodation:
             raise ValueError(f"Invalid accommodation type: {self.type}")
         if self.check_in >= self.check_out:
             raise ValueError("Check-out date must be after check-in date")
-        if self.rating < 0 or self.rating > 5:
+        if self.rating is not None and not 0 <= self.rating <= 5:
             raise ValueError("Rating must be between 0 and 5")
         if self.status not in ["confirmed", "pending", "cancelled"]:
             raise ValueError(f"Invalid status: {self.status}")

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Trip } from "./Models.ts";
+import { Trip, FlightInput, AccommodationInput, ActivityInput, BudgetInput } from "./Models.ts";
 import TripDetailOverview from "./TripDetailOverview.tsx";
 import TripFlightsOverview from "./components/flightsOverview.tsx";
 import StayOverview from "./components/StaysOverview.tsx";
@@ -13,6 +13,7 @@ import { tripService } from "./services/TripService.ts";
 import { ChildType } from "./config/childStatusTransitions.ts";
 
 type TabKey = 'overview' | 'flights' | 'stays' | 'activities' | 'budget' | 'team';
+type TripStatus = 'planning' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
 
 interface Tab {
     key: TabKey;
@@ -61,6 +62,9 @@ const TripDetailsView = () => {
     const [trip, setTrip] = useState<Trip | null>(null);
     const [activeTab, setActiveTab] = useState<TabKey>('overview');
     const [toast, setToast] = useState<Toast | null>(null);
+    const [originalStatus, setOriginalStatus] = useState<TripStatus | null>(null);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
     /**
@@ -95,6 +99,83 @@ const TripDetailsView = () => {
         }
     };
 
+    const handleFlightAdd = async (flight: FlightInput) => {
+        if (!trip) return;
+        try {
+            // Authoritative response carries the new flight id and budget.
+            const updated = await tripService.addFlight(trip.id, flight);
+            setTrip(updated);
+        } catch (err) {
+            setToast({
+                message: err instanceof Error ? err.message : 'Failed to add flight',
+                type: 'error',
+            });
+            throw err;
+        }
+    };
+
+    const handleAccommodationAdd = async (accommodation: AccommodationInput) => {
+        if (!trip) return;
+        try {
+            // Authoritative response carries the new accommodation id and budget.
+            const updated = await tripService.addAccommodation(trip.id, accommodation);
+            setTrip(updated);
+        } catch (err) {
+            setToast({
+                message: err instanceof Error ? err.message : 'Failed to add accommodation',
+                type: 'error',
+            });
+            throw err;
+        }
+    };
+
+    const handleActivityAdd = async (activity: ActivityInput) => {
+        if (!trip) return;
+        try {
+            // Authoritative response carries the new activity id and budget.
+            const updated = await tripService.addActivity(trip.id, activity);
+            setTrip(updated);
+        } catch (err) {
+            setToast({
+                message: err instanceof Error ? err.message : 'Failed to add activity',
+                type: 'error',
+            });
+            throw err;
+        }
+    };
+
+    const handleBudgetUpdate = async (budget: BudgetInput) => {
+        if (!trip) return;
+        try {
+            // Authoritative response carries the re-derived Spent.
+            const updated = await tripService.updateBudget(trip.id, budget);
+            setTrip(updated);
+        } catch (err) {
+            setToast({
+                message: err instanceof Error ? err.message : 'Failed to update budget',
+                type: 'error',
+            });
+            throw err;
+        }
+    };
+
+    const handleFlightUpdate = async (flightId: string, updates: FlightInput) => {
+        if (!trip) return;
+        const previous = trip;
+        try {
+            // Authoritative response carries the recalculated budget.
+            const updated = await tripService.updateFlight(previous.id, flightId, updates);
+            setTrip(updated);
+        } catch (err) {
+            setTrip(previous);
+            setToast({
+                message: err instanceof Error ? err.message : 'Failed to update flight',
+                type: 'error',
+            });
+            throw err;
+        }
+    };
+
     // Define tabs
     const tabs: Tab[] = [
         { key: 'overview', label: 'Overview', icon: '📋' },
@@ -108,7 +189,11 @@ const TripDetailsView = () => {
     useEffect(() => {
         const timer = setTimeout(async () => {
             if (tripId) {
-                setTrip(await tripService.getTripById(tripId));
+                const fetchedTrip = await tripService.getTripById(tripId);
+                if (fetchedTrip) {
+                    setTrip(fetchedTrip);
+                    setOriginalStatus(fetchedTrip.status);
+                }
             }
         }, 500);
 
@@ -122,6 +207,26 @@ const TripDetailsView = () => {
         return () => clearTimeout(timer);
     }, [toast]);
 
+    const handleStatusChange = async (newStatus: TripStatus) => {
+        if (!trip || !tripId) return;
+
+        setIsUpdating(true);
+        setError(null);
+
+        try {
+            const updatedTrip = await tripService.updateTripStatus(tripId, newStatus);
+            setTrip(updatedTrip);
+            setOriginalStatus(updatedTrip.status);
+        } catch (err) {
+            setError('Failed to update status');
+            if (trip) {
+                setTrip({ ...trip, status: originalStatus || trip.status });
+            }
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
     const renderTabContent = () => {
         if (!trip) return null;
 
@@ -134,6 +239,8 @@ const TripDetailsView = () => {
                     trip={trip}
                     onStatusChange={(flightId, newStatus) =>
                         handleChildStatusChange('flight', flightId, newStatus)}
+                    onFlightUpdate={handleFlightUpdate}
+                    onFlightAdd={handleFlightAdd}
                 />;
 
             case 'stays':
@@ -141,6 +248,7 @@ const TripDetailsView = () => {
                     trip={trip}
                     onStatusChange={(accommodationId, newStatus) =>
                         handleChildStatusChange('accommodation', accommodationId, newStatus)}
+                    onAccommodationAdd={handleAccommodationAdd}
                 />;
 
             case 'activities':
@@ -148,10 +256,11 @@ const TripDetailsView = () => {
                     trip={trip}
                     onStatusChange={(activityId, newStatus) =>
                         handleChildStatusChange('activity', activityId, newStatus)}
+                    onActivityAdd={handleActivityAdd}
                 />;
 
             case 'budget':
-                return <BudgetOverview trip={trip} />;
+                return <BudgetOverview trip={trip} onBudgetUpdate={handleBudgetUpdate} />;
 
             case 'team':
                 return <TravellersOverview trip={trip} />;
@@ -220,13 +329,31 @@ const TripDetailsView = () => {
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
                     <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
                         <div className="flex-1">
-                            {/* Title and Status Badge */}
+                            {/* Title and Status Badge (Clickable Dropdown) */}
                             <div className="flex items-center gap-3 mb-3">
                                 <h1 className="text-3xl font-bold text-gray-900">{trip.name}</h1>
-                                <span
-                                    className={`inline-block px-3 py-1 rounded-full text-sm font-medium capitalize ${getStatusColor(trip.status)}`}>
-                                    {trip.status}
-                                </span>
+                                <select
+                                    value={trip.status}
+                                    onChange={(e) => handleStatusChange(e.target.value as TripStatus)}
+                                    disabled={isUpdating}
+                                    className={`px-3 py-1 rounded-full text-sm font-medium capitalize border-2 ${
+                                        isUpdating
+                                            ? `opacity-50 cursor-not-allowed ${getStatusColor(trip.status)}`
+                                            : `${getStatusColor(trip.status)} cursor-pointer hover:opacity-80`
+                                    }`}
+                                >
+                                    <option value="planning">Planning</option>
+                                    <option value="confirmed">Confirmed</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                                {isUpdating && (
+                                    <span className="text-sm text-gray-500">Updating...</span>
+                                )}
+                                {error && (
+                                    <span className="text-sm text-red-600 ml-2">{error}</span>
+                                )}
                             </div>
 
                             {/* Location */}

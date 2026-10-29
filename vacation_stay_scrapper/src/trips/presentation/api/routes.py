@@ -5,19 +5,33 @@ FastAPI routes for trip management CRUD operations.
 """
 import logging
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, HTTPException, Request
 from typing import List, Annotated
 
 from fastapi.security import HTTPBearer
 
 from src.shared.infrastructure.auth.dependencies import get_current_user
+from src.shared.infrastructure.telemetry.span_enrichment import enrich_span, EntityContext
+
+
+def enrich_span_with_entity_ids(request: Request) -> None:
+    """Enrich the current span with entity IDs from the request path."""
+    path_params = getattr(request, "path_params", None) or {}
+    enrich_span(EntityContext(path_params))
+from src.shared.domain.exceptions import EntityNotFound
 from .schemas import (
     TripCreateRequest,
     TripUpdateRequest,
+    UpdateTripStatusRequest,
     TripResponse,
     TripListResponse,
     MessageResponse,
-    ChildStatusUpdateRequest
+    ChildStatusUpdateRequest,
+    FlightCreateRequest,
+    FlightUpdateRequest,
+    AccommodationCreateRequest,
+    ActivityCreateRequest,
+    BudgetUpdateRequest
 )
 from .dependencies import (
     get_create_trip_use_case,
@@ -25,6 +39,11 @@ from .dependencies import (
     get_get_all_trips_use_case,
     get_update_trip_use_case,
     get_delete_trip_use_case,
+    get_add_flight_use_case,
+    get_update_flight_use_case,
+    get_add_accommodation_use_case,
+    get_add_activity_use_case,
+    get_update_budget_use_case,
     get_update_flight_status_use_case,
     get_update_accommodation_status_use_case,
     get_update_activity_status_use_case
@@ -34,12 +53,22 @@ from ...application.use_cases.get_trip import GetTripUseCase, GetAllTripsUseCase
 from ...application.use_cases.update_trip import UpdateTripUseCase
 from ...application.use_cases.delete_trip import DeleteTripUseCase
 from ...application.use_cases.update_flight_status import UpdateFlightStatusUseCase
+from ...application.use_cases.update_flight import UpdateFlightUseCase
+from ...application.use_cases.add_flight import AddFlightUseCase
+from ...application.use_cases.add_accommodation import AddAccommodationUseCase
+from ...application.use_cases.add_activity import AddActivityUseCase
+from ...application.use_cases.update_budget import UpdateBudgetUseCase
 from ...application.use_cases.update_accommodation_status import UpdateAccommodationStatusUseCase
 from ...application.use_cases.update_activity_status import UpdateActivityStatusUseCase
+from ...domain.value_objects.trip_status import TripStatus
 from ..mappers.trip_mapper import TripMapper
 
 # Create router
-router = APIRouter(prefix="/api/trips", tags=["trips"])
+router = APIRouter(
+    prefix="/api/trips",
+    tags=["trips"],
+    dependencies=[Depends(enrich_span_with_entity_ids)],
+)
 @router.post(
     "",
     response_model=TripResponse,
@@ -66,7 +95,13 @@ async def create_trip(
     """
     owner_id = current_user["sub"]
 
-    trip = TripMapper.from_create_request(request, owner_id=owner_id)
+    try:
+        trip = TripMapper.from_create_request(request, owner_id=owner_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        )
 
     created_trip = await use_case.execute(trip)
 
@@ -166,6 +201,75 @@ async def update_trip(
     return TripMapper.to_response(result)
 
 
+@router.post(
+    "/{trip_id}/flights",
+    response_model=TripResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add a flight to an existing trip"
+)
+async def add_flight(
+        trip_id: str,
+        request: FlightCreateRequest,
+        use_case: AddFlightUseCase = Depends(get_add_flight_use_case),
+        current_user: dict = Depends(get_current_user)
+) -> TripResponse:
+    """
+    Add a single flight to a trip. Only the trip owner may do so. New
+    flights always start as pending; status changes go through the
+    flight status endpoint.
+    """
+    owner_id = current_user["sub"]
+
+    try:
+        flight = TripMapper._flight_from_request(request)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        )
+    flight.status = "pending"
+    result = await use_case.execute(trip_id, flight, owner_id=owner_id)
+    return TripMapper.to_response(result)
+
+
+@router.put(
+    "/{trip_id}/flights/{flight_id}",
+    response_model=TripResponse,
+    summary="Update a single flight"
+)
+async def update_flight(
+        trip_id: str,
+        flight_id: str,
+        request: FlightUpdateRequest,
+        use_case: UpdateFlightUseCase = Depends(get_update_flight_use_case),
+        get_use_case: GetTripUseCase = Depends(get_get_trip_use_case),
+        current_user: dict = Depends(get_current_user)
+) -> TripResponse:
+    """
+    Update a single flight within a trip by its stable ID. Only the trip
+    owner may do so. Other flights and collections are left untouched.
+    """
+    owner_id = current_user["sub"]
+
+    trip = await get_use_case.execute(trip_id, owner_id=owner_id)
+    flight = next((f for f in trip.flights if f.id == flight_id), None)
+    if flight is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Flight {flight_id} not found"
+        )
+
+    try:
+        updated_flight = TripMapper.apply_flight_update(flight, request)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        )
+    result = await use_case.execute(trip_id, updated_flight, owner_id=owner_id)
+    return TripMapper.to_response(result)
+
+
 @router.patch(
     "/{trip_id}/flights/{flight_id}/status",
     response_model=TripResponse,
@@ -196,6 +300,65 @@ async def update_flight_status(
     return TripMapper.to_response(trip)
 
 
+@router.post(
+    "/{trip_id}/accommodations",
+    response_model=TripResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add an accommodation to an existing trip"
+)
+async def add_accommodation(
+        trip_id: str,
+        request: AccommodationCreateRequest,
+        use_case: AddAccommodationUseCase = Depends(get_add_accommodation_use_case),
+        current_user: dict = Depends(get_current_user)
+) -> TripResponse:
+    """
+    Add a single accommodation to a trip. Only the trip owner may do so.
+    New accommodations always start as pending; status changes go through
+    the accommodation status endpoint.
+    """
+    owner_id = current_user["sub"]
+
+    try:
+        accommodation = TripMapper._accommodation_from_request(request)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        )
+    accommodation.status = "pending"
+    result = await use_case.execute(trip_id, accommodation, owner_id=owner_id)
+    return TripMapper.to_response(result)
+
+
+@router.put(
+    "/{trip_id}/budget",
+    response_model=TripResponse,
+    summary="Edit the budget of an existing trip"
+)
+async def update_budget(
+        trip_id: str,
+        request: BudgetUpdateRequest,
+        use_case: UpdateBudgetUseCase = Depends(get_update_budget_use_case),
+        current_user: dict = Depends(get_current_user)
+) -> TripResponse:
+    """
+    Replace the Budget total and Budget categories of a trip. Only the trip
+    owner may do so. Spent is always re-derived from committed children.
+    """
+    owner_id = current_user["sub"]
+
+    total, categories = TripMapper.budget_update_from_request(request)
+    try:
+        result = await use_case.execute(trip_id, total, categories, owner_id=owner_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        )
+    return TripMapper.to_response(result)
+
+
 @router.patch(
     "/{trip_id}/accommodations/{accommodation_id}/status",
     response_model=TripResponse,
@@ -214,6 +377,37 @@ async def update_accommodation_status(
     owner_id = current_user["sub"]
     trip = await use_case.execute(trip_id, accommodation_id, request.status, owner_id=owner_id)
     return TripMapper.to_response(trip)
+
+
+@router.post(
+    "/{trip_id}/activities",
+    response_model=TripResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add an activity to an existing trip"
+)
+async def add_activity(
+        trip_id: str,
+        request: ActivityCreateRequest,
+        use_case: AddActivityUseCase = Depends(get_add_activity_use_case),
+        current_user: dict = Depends(get_current_user)
+) -> TripResponse:
+    """
+    Add a single activity to a trip. Only the trip owner may do so. New
+    activities always start as pending; booking goes through the activity
+    status endpoint.
+    """
+    owner_id = current_user["sub"]
+
+    try:
+        activity = TripMapper._activity_from_request(request)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        )
+    activity.status = "pending"
+    result = await use_case.execute(trip_id, activity, owner_id=owner_id)
+    return TripMapper.to_response(result)
 
 
 @router.patch(
@@ -263,3 +457,42 @@ async def delete_trip(
     return MessageResponse(
         message=f"Trip {trip_id} deleted successfully"
     )
+
+
+@router.patch(
+    "/{trip_id}/status",
+    response_model=TripResponse,
+    summary="Update trip status"
+)
+async def update_trip_status(
+        trip_id: str,
+        request: UpdateTripStatusRequest,
+        use_case: UpdateTripUseCase = Depends(get_update_trip_use_case),
+        current_user: dict = Depends(get_current_user)
+) -> TripResponse:
+    """
+    Update the status of a trip. Only the owner can update their trip's status.
+
+    Args:
+        trip_id: Trip identifier
+        request: Update trip status request
+        use_case: Update trip use case (injected)
+        current_user: Decoded JWT claims from the authenticated user
+
+    Returns:
+        Updated trip details
+
+    Raises:
+        HTTPException: 404 if trip not found or not owned by user
+    """
+    owner_id = current_user["sub"]
+
+    try:
+        new_status = TripStatus.from_string(request.status)
+        updated_trip = await use_case.update_status(trip_id, owner_id, new_status)
+        return TripMapper.to_response(updated_trip)
+    except EntityNotFound as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )

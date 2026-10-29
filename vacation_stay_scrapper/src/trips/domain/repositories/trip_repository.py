@@ -87,11 +87,25 @@ class ITripRepository(ABC):
     async def exists(self, trip_id: int) -> bool:
         """
         Check if trip exists
-        
+
         Args:
             trip_id: Trip identifier
-            
+
         Returns:
             True if exists, False otherwise
+        """
+        pass
+
+    @abstractmethod
+    async def update_status(self, trip_id: int, status: str) -> bool:
+        """
+        Update the status of a trip
+
+        Args:
+            trip_id: Trip identifier
+            status: New status value
+
+        Returns:
+            True if updated, False if not found
         """
         pass

@@ -59,6 +59,8 @@ class Trip(Base):
         back_populates="trip",
         cascade="all, delete-orphan",
         lazy="selectin",
+        # Keep Budget categories in the order the traveler entered them.
+        order_by="BudgetCategory.id_",
     )
 
 

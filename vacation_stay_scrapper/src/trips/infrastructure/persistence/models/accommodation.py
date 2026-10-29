@@ -32,7 +32,7 @@ class Accommodation(Base):
     total_price_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     total_price_currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
 
-    rating: Mapped[float] = mapped_column(Float, nullable=False)
+    rating: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     amenities: Mapped[List[str]] = mapped_column(JSONB, nullable=False, default=list)
     status: Mapped[str] = mapped_column(String, nullable=False, default="pending")
     image: Mapped[Optional[str]] = mapped_column(String, nullable=True)
