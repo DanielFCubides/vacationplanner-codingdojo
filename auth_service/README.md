@@ -74,7 +74,8 @@ You can configure the behavior via environment variables (or a `.env` file):
 KEYCLOAK_SERVER_URL=http://localhost:8080/
 KEYCLOAK_CLIENT_ID=backend-client
 KEYCLOAK_REALM_NAME=master
-KEYCLOAK_CLIENT_SECRET_KEY=secret
+KEYCLOAK_CLIENT_SECRET_FILE=/run/secrets/keycloak_client_secret_key
+# For direct local runs, KEYCLOAK_CLIENT_SECRET_KEY can be supplied instead.
 
 # Redis
 REDIS_HOST=localhost

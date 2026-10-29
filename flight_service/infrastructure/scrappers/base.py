@@ -1,4 +1,5 @@
 import logging
+import os
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Union
 
@@ -47,7 +48,11 @@ class DriverFactory:
         """
 
         driver = driver.lower()
-        hub_url = hub_url or f'{config["Selenium"]["host"]}:{config["Selenium"]["port"]}/wd/hub'
+        hub_url = (
+            hub_url
+            or os.getenv("SELENIUM_REMOTE_URL")
+            or f'{config["Selenium"]["host"]}:{config["Selenium"]["port"]}/wd/hub'
+        )
         if driver not in cls.DRIVER_OPTIONS:
             raise ValueError(f"Unsupported driver: {driver}. Supported drivers: {list(cls.DRIVER_OPTIONS.keys())}")
 

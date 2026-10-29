@@ -12,11 +12,14 @@ services:
       - KEYCLOAK_SERVER_URL=https://keycloack.dfcubidesc.com
       - KEYCLOAK_CLIENT_ID=auth-service
       - KEYCLOAK_REALM_NAME=habit-tracker
-      - KEYCLOAK_CLIENT_SECRET_KEY=DF4sNVjM7YqB31S7gYyGhhcvDxBNeC2j
+      - KEYCLOAK_CLIENT_SECRET_FILE=/run/secrets/keycloak_client_secret_key
       - REDIS_HOST=redis-cache
       - REDIS_PORT=6379
       - REDIS_DB=0
-      - REDIS_PASSWORD=secret
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password
+    secrets:
+      - keycloak_client_secret_key
+      - redis_password
     depends_on:
       redis-cache:
         condition: service_started
@@ -30,7 +33,13 @@ services:
     ports:
       - "8001:8000"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://vacation:vacation@postgres:5432/vacation_planner
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=vacation
+      - POSTGRES_DB=vacation_planner
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+    secrets:
+      - postgres_password
     depends_on:
       postgres:
         condition: service_started
@@ -45,8 +54,14 @@ services:
       target: dev
     environment:
       - SERVER=${SERVER:-rest}
+      - SELENIUM_REMOTE_URL=${SELENIUM_REMOTE_URL:-}
+      - REDIS_HOST=redis-cache
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password
     ports:
       - "8002:8080"
+    secrets:
+      - redis_password
     volumes:
       - ./flight_service:/flight_service
     depends_on:
@@ -63,7 +78,17 @@ services:
       target: dev
     ports:
       - "3001:3001"
+    environment:
+      - VITE_AUTH_BACKEND_URL=${VITE_AUTH_BACKEND_URL:-http://localhost:8000}
     volumes:
       - ./fe-client/src:/app/src
       - ./fe-client/index.html:/app/index.html
       - ./fe-client/vite.config.js:/app/vite.config.js
+
+secrets:
+  keycloak_client_secret_key:
+    file: ./secrets/keycloak_client_secret_key
+  redis_password:
+    file: ./secrets/redis_password
+  postgres_password:
+    file: ./secrets/postgres_password

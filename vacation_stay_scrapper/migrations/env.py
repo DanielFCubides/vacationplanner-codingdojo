@@ -4,6 +4,7 @@ from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy.ext.asyncio import create_async_engine
+from config.settings import settings
 
 from src.shared.infrastructure.database.base import Base
 
@@ -22,7 +23,7 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
-database_url = os.environ.get("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
+database_url = os.environ.get("DATABASE_URL") or settings.database_url or config.get_main_option("sqlalchemy.url")
 config.set_main_option("sqlalchemy.url", database_url)
 
 
