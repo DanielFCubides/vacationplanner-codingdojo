@@ -1,8 +1,8 @@
 COMPOSE ?= docker compose --project-directory .
 PROJECT ?= vacationplanner-codingdojo
 
-MAIN_FILES := -f compose.yml -f docker/compose.dependencies.yml
-ALL_FILES := -f compose.yml -f docker/compose.dependencies.yml -f docker/compose.observability.yml
+MAIN_FILES := -f compose.yml
+ALL_FILES := -f compose.yml -f docker/compose.observability.yml
 TEST_FILES := -f docker/compose.tests.yml
 OBS_FILES := -f docker/compose.observability.yml
 

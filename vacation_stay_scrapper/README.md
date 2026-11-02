@@ -21,10 +21,12 @@ The service runs on `http://localhost:8000`. On startup it automatically runs
 
 ### Locally
 
-Requires a running PostgreSQL instance. Set `DATABASE_URL` before starting:
+Requires a running PostgreSQL instance. Set `DATABASE_URL` before starting, or
+provide the `POSTGRES_*` settings and `POSTGRES_PASSWORD_FILE` as used by the
+Compose development stack:
 
 ```shell
-export DATABASE_URL=postgresql+asyncpg://vacation:vacation@localhost:5432/vacation_planner
+export DATABASE_URL='postgresql+asyncpg://USER:PASSWORD@HOST:5432/DATABASE'
 cd vacation_stay_scrapper
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
@@ -33,7 +35,12 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 | Variable | Default | Description |
 |---|---|---|
-| `DATABASE_URL` | `postgresql+asyncpg://vacation:vacation@localhost:5432/vacation_planner` | Async PostgreSQL connection URL |
+| `DATABASE_URL` | unset | Optional async PostgreSQL connection URL; overrides the individual `POSTGRES_*` settings |
+| `POSTGRES_HOST` | `localhost` | PostgreSQL host when `DATABASE_URL` is unset |
+| `POSTGRES_PORT` | `5432` | PostgreSQL port |
+| `POSTGRES_USER` | `vacation` | PostgreSQL user |
+| `POSTGRES_DB` | `vacation_planner` | PostgreSQL database name |
+| `POSTGRES_PASSWORD_FILE` | unset | Path to a file containing the PostgreSQL password |
 | `DATABASE_ECHO` | `false` | Log all SQL statements |
 
 ## Database migrations

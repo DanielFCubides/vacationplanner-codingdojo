@@ -25,3 +25,20 @@ COPY requirements_test.txt /tmp/requirements_test.txt
 RUN pip install --no-cache-dir -r /tmp/requirements_test.txt
 
 CMD ["pytest", ".", "--cov", ".", "--cov-report", "html"]
+
+FROM python:3.11.15-bookworm as prod
+
+ENV VIRTUAL_ENV=/opt/app/env
+COPY --from=builder /opt/app/env /opt/app/env
+ENV PATH=/opt/app/env/bin:$PATH \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /flight_service
+COPY . .
+
+RUN useradd --create-home --uid 10001 app && chown -R app:app /flight_service
+USER app
+
+EXPOSE 8080
+CMD ["python", "production.py"]

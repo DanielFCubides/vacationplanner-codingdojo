@@ -86,3 +86,9 @@ services:
 
 volumes:
   postgres_data:
+
+secrets:
+  postgres_password:
+    file: ../secrets/postgres_password
+  redis_password:
+    file: ../secrets/redis_password

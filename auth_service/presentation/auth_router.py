@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, Request, status
 from fastapi.responses import RedirectResponse
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3001")
-KEYCLOAK_REDIRECT_URI = os.getenv("KEYCLOAK_REDIRECT_URI", "http://localhost:8002/auth/login")
+KEYCLOAK_REDIRECT_URI = os.getenv("KEYCLOAK_REDIRECT_URI", "http://localhost:8000/auth/login")
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 

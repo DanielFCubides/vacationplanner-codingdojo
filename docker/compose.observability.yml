@@ -40,10 +40,12 @@ services:
 
   grafana:
     image: grafana/grafana:latest
+    entrypoint: ["/bin/sh", "-ec", "export GF_SECURITY_ADMIN_PASSWORD=\"$$(cat /run/secrets/grafana_admin_password)\"; exec /run.sh"]
     environment:
       GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
       GF_USERS_ALLOW_SIGN_UP: "false"
+    secrets:
+      - grafana_admin_password
     volumes:
       - grafana_data:/var/lib/grafana
       - ./docker/opentelemetry/grafana/provisioning:/etc/grafana/provisioning:ro
@@ -59,3 +61,7 @@ volumes:
   prometheus_data:
   grafana_data:
   loki_data:
+
+secrets:
+  grafana_admin_password:
+    file: ./secrets/grafana_admin_password

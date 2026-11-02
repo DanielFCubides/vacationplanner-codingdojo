@@ -139,3 +139,10 @@ node_modules/
 # Keys
 *.pem
 .vscode
+
+# skills
+.opencode
+.skills
+
+# Local development secrets (never commit)
+/secrets/

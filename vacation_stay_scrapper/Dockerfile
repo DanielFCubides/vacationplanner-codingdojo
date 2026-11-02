@@ -22,6 +22,22 @@ EXPOSE 8000
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
+FROM python:3.10-slim-buster as prod
+
+ENV VIRTUAL_ENV=/opt/app/env
+COPY --from=builder /opt/app/env /opt/app/env
+ENV PATH=/opt/app/env/bin:$PATH
+
+WORKDIR /vacation_stay_scrapper
+COPY . .
+ENV PYTHONPATH="/vacation_stay_scrapper"
+
+RUN useradd --create-home --uid 10001 app && chown -R app:app /vacation_stay_scrapper
+USER app
+
+EXPOSE 8000
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
 
 FROM builder as tests
 
@@ -35,7 +51,6 @@ WORKDIR /vacation_stay_scrapper
 COPY . $WORKDIR
 
 CMD ["pytest", ".", "--cov", ".", "--cov-report", "html"]
-
 
 
 

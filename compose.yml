@@ -9,17 +9,14 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - KEYCLOAK_SERVER_URL=${KEYCLOAK_SERVER_URL:-https://keycloack.dfcubidesc.com}
-      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID:-auth-service}
-      - KEYCLOAK_REALM_NAME=${KEYCLOAK_REALM_NAME:-habit-tracker}
-      - KEYCLOAK_REDIRECT_URI=${KEYCLOAK_REDIRECT_URI:-http://localhost:8002/auth/login}
-      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3001}
-      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
-      - REDIS_HOST=${REDIS_HOST:-redis-cache}
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - REDIS_DB=${REDIS_DB:-0}
-      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-auth-service}
-      - OTEL_EXPORTER_LOGS_ENDPOINT=${OTEL_EXPORTER_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}
+      - KEYCLOAK_SERVER_URL=https://keycloack.dfcubidesc.com
+      - KEYCLOAK_CLIENT_ID=auth-service
+      - KEYCLOAK_REALM_NAME=habit-tracker
+      - KEYCLOAK_CLIENT_SECRET_FILE=/run/secrets/keycloak_client_secret_key
+      - REDIS_HOST=redis-cache
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password
     secrets:
       - keycloak_client_secret_key
       - redis_password
@@ -36,17 +33,11 @@ services:
     ports:
       - "8001:8000"
     environment:
-      - DATABASE_HOST=${DATABASE_HOST:-postgres}
-      - DATABASE_USER=${DATABASE_USER:-vacation}
-      - DATABASE_NAME=${DATABASE_NAME:-vacation_planner}
-      - DATABASE_ECHO=${DATABASE_ECHO:-false}
-      - MIN_DELAY_ATTEMPT=${MIN_DELAY_ATTEMPT:-60}
-      - MIN_FAILURE_ATTEMPTS=${MIN_FAILURE_ATTEMPTS:-3}
-      - KEYCLOAK_BASE_URL=${KEYCLOAK_BASE_URL:-https://keycloack.dfcubidesc.com}
-      - KEYCLOAK_REALM=${KEYCLOAK_REALM:-habit-tracker}
-      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID:-habit-tracker-frontend}
-      - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - LOG_FILE=${LOG_FILE:-}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=vacation
+      - POSTGRES_DB=vacation_planner
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
     secrets:
       - postgres_password
     depends_on:
@@ -63,10 +54,14 @@ services:
       target: dev
     environment:
       - SERVER=${SERVER:-rest}
-    secrets:
-      - redis_password
+      - SELENIUM_REMOTE_URL=${SELENIUM_REMOTE_URL:-}
+      - REDIS_HOST=redis-cache
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password
     ports:
       - "8002:8080"
+    secrets:
+      - redis_password
     volumes:
       - ./flight_service:/flight_service
     depends_on:
@@ -83,6 +78,8 @@ services:
       target: dev
     ports:
       - "3001:3001"
+    environment:
+      - VITE_AUTH_BACKEND_URL=${VITE_AUTH_BACKEND_URL:-http://localhost:8000}
     volumes:
       - ./fe-client/src:/app/src
       - ./fe-client/index.html:/app/index.html

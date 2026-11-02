@@ -16,11 +16,14 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
+ARG VITE_AUTH_BACKEND_URL
+ENV VITE_AUTH_BACKEND_URL=${VITE_AUTH_BACKEND_URL}
+
 COPY package.json ./
 RUN npm install
 
 COPY . .
-RUN npm run build
+RUN test -n "$VITE_AUTH_BACKEND_URL" && npm run build
 
 FROM nginx:alpine AS prod
 
