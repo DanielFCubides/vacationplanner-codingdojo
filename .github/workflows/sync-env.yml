@@ -1,0 +1,53 @@
+name: Synchronize production configuration
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: Service to synchronize
+        type: choice
+        required: true
+        default: all
+        options: [all, auth-service, vacation-planner, flight-service, fe-client]
+      validate_only:
+        description: Validate without changing server files
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-config-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Synchronize configuration
+        env:
+          SYNC_SERVICE: ${{ inputs.service }}
+          SYNC_VALIDATE_ONLY: ${{ inputs.validate_only }}
+          SERVICES_HOST: ${{ vars.SERVICES_HOST }}
+          SERVICES_SSH_USER: ${{ vars.SERVICES_SSH_USER }}
+          SERVICES_SSH_KEY: ${{ secrets.SERVICES_SSH_KEY }}
+          SERVICES_SSH_KNOWN_HOSTS: ${{ secrets.SERVICES_SSH_KNOWN_HOSTS }}
+          KEYCLOAK_SERVER_URL: ${{ vars.KEYCLOAK_SERVER_URL }}
+          KEYCLOAK_CLIENT_ID: ${{ vars.KEYCLOAK_CLIENT_ID }}
+          KEYCLOAK_REALM_NAME: ${{ vars.KEYCLOAK_REALM_NAME }}
+          KEYCLOAK_BASE_URL: ${{ vars.KEYCLOAK_BASE_URL }}
+          KEYCLOAK_REALM: ${{ vars.KEYCLOAK_REALM }}
+          FRONTEND_URL: ${{ vars.FRONTEND_URL }}
+          KEYCLOAK_REDIRECT_URI: ${{ vars.KEYCLOAK_REDIRECT_URI }}
+          POSTGRES_HOST: ${{ vars.POSTGRES_HOST }}
+          POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+          POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+          REDIS_HOST: ${{ vars.REDIS_HOST }}
+          SELENIUM_REMOTE_URL: ${{ vars.SELENIUM_REMOTE_URL }}
+          KEYCLOAK_CLIENT_SECRET_KEY: ${{ secrets.KEYCLOAK_CLIENT_SECRET_KEY }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          REDIS_SECRET: ${{ secrets.REDIS_SECRET }}
+        run: python3 scripts/sync_config.py
