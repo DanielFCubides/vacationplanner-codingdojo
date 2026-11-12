@@ -86,6 +86,9 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except (ValueError, OSError, subprocess.CalledProcessError) as exc:
+    except subprocess.CalledProcessError as exc:
+        print(f"Configuration synchronization failed: SSH exited with status {exc.returncode}; see preceding output", file=sys.stderr)
+        sys.exit(1)
+    except (ValueError, OSError) as exc:
         print(f"Configuration synchronization failed: {exc}", file=sys.stderr)
         sys.exit(1)
