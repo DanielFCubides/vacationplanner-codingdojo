@@ -10,6 +10,7 @@ import tempfile
 import time
 
 ROOT = Path("/opt/vacation-planner")
+# Numeric ID of the host's dedicated vacation-secrets group.
 SECRET_GROUP = 10001
 ALLOWED = {
     "config/auth-service.env", "config/vacation-planner.env", "config/flight-service.env", "config/fe-client.env",
@@ -19,7 +20,7 @@ ALLOWED = {
 
 def check_directory(path):
     info = path.lstat()
-    if not stat.S_ISDIR(info.st_mode) or info.st_uid != 0 or info.st_mode & 0o027:
+    if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.geteuid() or info.st_mode & 0o027:
         raise ValueError(f"Unsafe directory: {path}")
 
 
@@ -34,8 +35,10 @@ def main():
     files = payload.get("files")
     if not isinstance(files, dict) or not files or not set(files) <= ALLOWED or type(payload.get("validate_only")) is not bool:
         raise ValueError("Invalid sync payload")
-    if os.geteuid() != 0:
-        raise ValueError("Sync must run as root to create root-owned files")
+    if os.geteuid() == 0:
+        raise ValueError("Sync must run as the unprivileged directory owner")
+    if SECRET_GROUP not in os.getgroups() and SECRET_GROUP != os.getegid():
+        raise ValueError(f"Sync user must belong to group {SECRET_GROUP}; reconnect after updating group membership")
     for path in (ROOT, ROOT / "config", ROOT / "secrets", ROOT / "backups"):
         check_directory(path)
     for path in (ROOT, ROOT / "secrets"):
@@ -49,13 +52,13 @@ def main():
         if destination.exists():
             info = destination.stat()
             expected_mode = 0o640 if relative.startswith("secrets/") else 0o600
-            if info.st_uid != 0 or stat.S_IMODE(info.st_mode) != expected_mode or (relative.startswith("secrets/") and info.st_gid != SECRET_GROUP):
+            if info.st_uid != os.geteuid() or stat.S_IMODE(info.st_mode) != expected_mode or (relative.startswith("secrets/") and info.st_gid != SECRET_GROUP):
                 raise ValueError(f"Unsafe ownership or permissions: {relative}")
     lock_path = ROOT / ".sync.lock"
     if lock_path.is_symlink() or not lock_path.is_file():
         raise ValueError("Missing or unsafe synchronization lock file")
     lock_info = lock_path.stat()
-    if lock_info.st_uid != 0 or lock_info.st_mode & 0o077:
+    if lock_info.st_uid != os.geteuid() or lock_info.st_mode & 0o077:
         raise ValueError("Unsafe synchronization lock permissions")
     if payload["validate_only"]:
         print("Validation succeeded; no server files changed")
@@ -89,7 +92,7 @@ def main():
                 staged.append(temporary)
                 with os.fdopen(fd, "wb") as output:
                     if relative.startswith("secrets/"):
-                        os.fchown(output.fileno(), 0, SECRET_GROUP)
+                        os.fchown(output.fileno(), -1, SECRET_GROUP)
                         os.fchmod(output.fileno(), 0o640)
                     else:
                         os.fchmod(output.fileno(), 0o600)
