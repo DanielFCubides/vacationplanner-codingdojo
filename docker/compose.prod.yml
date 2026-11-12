@@ -1,0 +1,49 @@
+services:
+  auth-service:
+    image: ${DOCKER_HUB_REGISTRY_SEBAS:?Set DOCKER_HUB_REGISTRY_SEBAS}/auth-service:${AUTH_SERVICE_TAG:?Set AUTH_SERVICE_TAG}
+    env_file:
+      - /opt/vacation-planner/config/auth-service.env
+    group_add:
+      - "10001"
+    secrets:
+      - keycloak_client_secret_key
+      - redis_password
+    ports:
+      - "8000:8000"
+
+  vacation-planner:
+    image: ${DOCKER_HUB_REGISTRY_SEBAS:?Set DOCKER_HUB_REGISTRY_SEBAS}/vacation-planner:${VACATION_PLANNER_TAG:?Set VACATION_PLANNER_TAG}
+    env_file:
+      - /opt/vacation-planner/config/vacation-planner.env
+    group_add:
+      - "10001"
+    secrets:
+      - postgres_password
+    ports:
+      - "8001:8000"
+
+  flight-service:
+    image: ${DOCKER_HUB_REGISTRY_SEBAS:?Set DOCKER_HUB_REGISTRY_SEBAS}/flight-service:${FLIGHT_SERVICE_TAG:?Set FLIGHT_SERVICE_TAG}
+    env_file:
+      - /opt/vacation-planner/config/flight-service.env
+    group_add:
+      - "10001"
+    secrets:
+      - redis_password
+    ports:
+      - "8002:8080"
+
+  fe-client:
+    image: ${DOCKER_HUB_REGISTRY_SEBAS:?Set DOCKER_HUB_REGISTRY_SEBAS}/fe-client:${FE_CLIENT_TAG:?Set FE_CLIENT_TAG}
+    env_file:
+      - /opt/vacation-planner/config/fe-client.env
+    ports:
+      - "3001:80"
+
+secrets:
+  keycloak_client_secret_key:
+    file: /opt/vacation-planner/secrets/keycloak_client_secret_key
+  postgres_password:
+    file: /opt/vacation-planner/secrets/postgres_password
+  redis_password:
+    file: /opt/vacation-planner/secrets/redis_password
