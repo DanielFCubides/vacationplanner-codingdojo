@@ -27,10 +27,10 @@ Create a root `.env` for Docker Compose:
 SERVER=rest
 
 # Auth service and Keycloak
-KEYCLOAK_SERVER_URL=https://keycloak.example.test
+KEYCLOAK_SERVER_URL=https://keycloak.dfcubidesc.com
 KEYCLOAK_CLIENT_ID=auth-service
-KEYCLOAK_REALM_NAME=vacation-planner
-KEYCLOAK_REDIRECT_URI=http://localhost:8002/auth/login
+KEYCLOAK_REALM_NAME=habit-tracker
+KEYCLOAK_REDIRECT_URI=http://localhost:8000/auth/login
 FRONTEND_URL=http://localhost:3001
 
 # Redis
@@ -51,8 +51,8 @@ DATABASE_ECHO=false
 # Vacation planner optional settings
 MIN_DELAY_ATTEMPT=60
 MIN_FAILURE_ATTEMPTS=3
-KEYCLOAK_BASE_URL=https://keycloak.example.test
-KEYCLOAK_REALM=vacation-planner
+KEYCLOAK_BASE_URL=https://keycloak.dfcubidesc.com
+KEYCLOAK_REALM=habit-tracker
 LOG_LEVEL=INFO
 LOG_FILE=
 ```
@@ -60,10 +60,10 @@ LOG_FILE=
 Create `fe-client/.env.development` for the frontend:
 
 ```env
-VITE_KEYCLOAK_URL=https://keycloak.example.test
-VITE_KEYCLOAK_REALM=vacation-planner
+VITE_KEYCLOAK_URL=https://keycloak.dfcubidesc.com
+VITE_KEYCLOAK_REALM=habit-tracker
 VITE_KEYCLOAK_CLIENT_ID=auth-service
-VITE_KEYCLOAK_REDIRECT_URI=http://localhost:8002/auth/login
+VITE_KEYCLOAK_REDIRECT_URI=http://localhost:8000/auth/login
 VITE_KEYCLOAK_SCOPES=openid profile email
 VITE_AUTH_BACKEND_URL=http://localhost:8002
 
